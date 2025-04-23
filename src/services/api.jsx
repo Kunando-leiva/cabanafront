@@ -3,6 +3,7 @@ import axios from 'axios';
 // Configura la URL base de tu backend (ajusta el puerto si es necesario)
 const API_URL = 'https://backendcabana.onrender.com';
 
+
 export const getOccupiedDates = async () => {
   try {
     const response = await axios.get('https://backendcabana.onrender.com/api/reservas/ocupadas');
