@@ -1,0 +1,36 @@
+.ubicacion-container {
+    max-width: 1200px;
+  }
+  
+  .info-card {
+    border: none;
+    transition: all 0.3s ease;
+    height: 100%;
+  }
+  
+  .info-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  }
+  
+  .map-container {
+    border: 2px solid #f8f9fa;
+  }
+  
+  .btn-primary {
+    padding: 8px 24px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  /* Estilos para las tarjetas en móvil */
+  @media (max-width: 767.98px) {
+    .info-card {
+      margin-bottom: 1rem;
+    }
+  }

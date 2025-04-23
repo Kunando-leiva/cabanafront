@@ -28,6 +28,10 @@ export default function ConfirmacionReserva() {
   Nombre: ${state?.nombre}
   Email: ${state?.email}
   Teléfono: ${state?.telefono}
+  DNI: ${state?.dni}
+  Dirección: ${state?.direccion}
+  Ciudad: ${state?.ciudad}
+  
   
   Comentarios: ${state?.comentarios || 'Ninguno'}`;
 

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { useAuth } from '../../context/AuthContext';
 import {API_URL} from '../../config'
+import { Suspense } from 'react';
 
 
 export default function Cabanas() {
@@ -67,12 +68,20 @@ export default function Cabanas() {
           <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h2 className="mb-0">Administrar Cabañas</h2>
             <button
-              onClick={() => navigate('/admin/cabanas/crear')}
+              onClick={() => {
+                // Forzar un pequeño retraso para permitir que React complete las operaciones pendientes
+                setTimeout(() => navigate('/admin/cabanas/crear'), 50);
+              }}
               className="btn btn-success"
             >
               <i className="fas fa-plus me-2"></i>
               Crear Nueva Cabaña
             </button>
+            <Suspense fallback={<div>Cargando...</div>}>
+  <div className="table-responsive">
+    {/* Tabla existente */}
+  </div>
+</Suspense>
           </div>
 
           <div className="card-body">
