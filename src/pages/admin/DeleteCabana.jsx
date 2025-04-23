@@ -14,7 +14,8 @@ export default function DeleteCabana({ cabanaId, onSuccess, buttonLabel = '' }) 
     if (result) {
       setIsDeleting(true);
       try {
-        await axios.delete(`http://localhost:5000/api/cabanas/${cabanaId}`, {
+        await axios.delete(
+          `${import.meta.env.VITE_API_URL}/api/cabanas/${cabanaId}`,{
           headers: { Authorization: `Bearer ${token}` }
         });
         onSuccess(cabanaId);

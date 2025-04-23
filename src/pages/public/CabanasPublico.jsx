@@ -13,7 +13,7 @@ export default function CabanasPublico() {
   useEffect(() => {
     const fetchCabanas = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/cabanas');
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cabanas`);
         setCabanas(response.data);
       } catch (error) {
         setError('Error al cargar las cabañas. Intenta nuevamente.');
@@ -52,7 +52,8 @@ export default function CabanasPublico() {
                   variant="top" 
                   src={cabana.imagenes[0].startsWith('http') 
                     ? cabana.imagenes[0] 
-                    : `http://localhost:5000/uploads/${cabana.imagenes[0]}`
+                    : `${import.meta.env.VITE_API_URL}/uploads/${cabana.imagenes[0]}`
+
                   } 
                   style={{ height: '200px', objectFit: 'cover' }} 
                 />

@@ -13,14 +13,16 @@ export default function Galeria() {
   useEffect(() => {
     const fetchCabanas = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/cabanas');
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cabanas`
+);
         
         // Procesar imágenes con sus cabañas correspondientes
         const cabanasConImagenes = response.data.map(cabana => ({
           ...cabana,
           // Asegurar que las URLs de imágenes sean absolutas
           imagenes: cabana.imagenes?.map(img => 
-            img.startsWith('http') ? img : `http://localhost:5000/uploads/${img}`
+            img.startsWith('http') ? img : `${import.meta.env.VITE_API_URL}/uploads/${img}`
+
           ) || []
         }));
 

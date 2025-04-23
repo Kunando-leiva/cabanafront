@@ -126,7 +126,8 @@ const CreateCabana = () => {
         )
       };
 
-      const response = await fetch('http://localhost:5000/api/cabanas', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cabanas`, {
+
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -174,7 +175,8 @@ const CreateCabana = () => {
         const formData = new FormData();
         formData.append('image', file);
 
-        const response = await fetch('http://localhost:5000/api/upload', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload`, {
+
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -343,7 +345,9 @@ const CreateCabana = () => {
                     <Card>
                       <Card.Img 
                         variant="top" 
-                        src={img.startsWith('http') ? img : `http://localhost:5000/uploads/${img}`}
+                        src={img.startsWith('http') ? img : `${import.meta.env.VITE_API_URL}/uploads/${img}`}
+
+
                         style={{ height: '150px', objectFit: 'cover' }}
                         onError={(e) => {
                           e.target.onerror = null;

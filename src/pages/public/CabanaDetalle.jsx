@@ -342,7 +342,8 @@ export default function CabanaDetalle() {
   useEffect(() => {
     const fetchCabana = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/cabanas/${id}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cabanas/${id}`
+);
         
         // Procesamiento de imágenes compatible con el backend
         const cabanaData = {
@@ -350,7 +351,8 @@ export default function CabanaDetalle() {
           imagenes: response.data.imagenes?.map(img => {
             // Si es solo el nombre del archivo (como se guarda en el backend)
             if (!img.startsWith('http')) {
-              return `http://localhost:5000/uploads/${img}`;
+              return `${import.meta.env.VITE_API_URL}/uploads/${img}`;
+
             }
             return img;
           }) || []

@@ -12,7 +12,8 @@ export default function HomePublico() {
   useEffect(() => {
     const fetchCabanas = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/cabanas?limit=3'); // Limitamos a 3 cabañas destacadas
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cabanas?limit=3`
+); // Limitamos a 3 cabañas destacadas
         setCabanas(response.data);
       } catch (error) {
         console.error('Error fetching cabañas:', error);

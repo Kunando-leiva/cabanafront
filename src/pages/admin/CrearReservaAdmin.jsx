@@ -55,7 +55,8 @@ const CrearReservaAdmin = () => {
     const fetchCabanas = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/cabanas', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cabanas`, {
+
           headers: { 
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -159,7 +160,8 @@ const CrearReservaAdmin = () => {
         }
       };
 
-      const response = await fetch('http://localhost:5000/api/reservas/admin/crear', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reservas/admin/crear`, {
+
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

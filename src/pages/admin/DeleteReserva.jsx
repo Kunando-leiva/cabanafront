@@ -12,7 +12,7 @@ export default function DeleteReserva({ reservaId, onSuccess }) {
   const handleDelete = async () => {
     setLoading(true);
     try {
-      await axios.delete(`http://localhost:5000/api/reservas/admin/eliminar/${reservaId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/reservas/admin/eliminar/${reservaId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       onSuccess(reservaId);

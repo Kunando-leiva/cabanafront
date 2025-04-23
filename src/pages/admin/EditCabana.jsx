@@ -22,7 +22,7 @@ export default function EditCabana() {
     const fetchCabana = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5000/api/cabanas/${id}`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cabanas/${id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

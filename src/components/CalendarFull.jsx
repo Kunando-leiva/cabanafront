@@ -14,7 +14,8 @@ const CalendarFull = ({ cabanaId, onDatesSelected, precioPorNoche }) => {
     const fetchOccupiedDates = async () => {
       try {
         const response = await fetch(
-          `http://localhost:5000/api/reservas/ocupadas${cabanaId ? `?cabanaId=${cabanaId}` : ''}`
+          `${import.meta.env.VITE_API_URL}/api/reservas/ocupadas${cabanaId ? `?cabanaId=${cabanaId}` : ''}`
+
         );
         
         if (!response.ok) throw new Error('Error al obtener fechas ocupadas');

@@ -19,7 +19,10 @@ export default function CalendarioDisponibilidad({ cabanaId }) {
 
     const fetchFechasOcupadas = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/reservas/ocupadas?cabanaId=${cabanaId}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/reservas/ocupadas?cabanaId=${cabanaId}`);
+        if (response.status !== 200) {
+          throw new Error('Error al cargar fechas ocupadas');
+        }
         const fechasOcupadas = response.data.map((reserva) => ({
           title: 'Ocupado',
           start: new Date(reserva.fechaInicio),

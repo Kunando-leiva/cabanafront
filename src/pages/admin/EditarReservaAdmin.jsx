@@ -35,13 +35,14 @@ export default function EditarReservaAdmin() {
       try {
         // Cargar reserva actual
         const reservaResponse = await axios.get(
-          `http://localhost:5000/api/reservas/admin/${id}`,
+          `${import.meta.env.VITE_API_URL}/api/reservas/admin/${id}`,
+
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
         // Cargar lista de cabañas disponibles
         const cabanasResponse = await axios.get(
-          'http://localhost:5000/api/cabanas',
+          `${import.meta.env.VITE_API_URL}/api/cabanas`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -79,7 +80,8 @@ export default function EditarReservaAdmin() {
     setLoading(true);
     try {
       await axios.put(
-        `http://localhost:5000/api/reservas/admin/${id}`,
+        `${import.meta.env.VITE_API_URL}/api/reservas/admin/${id}`,
+
         {
           ...formData,
           cabana: formData.cabanaId // Asegura compatibilidad con el backend

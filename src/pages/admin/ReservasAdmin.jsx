@@ -34,7 +34,8 @@ const paginatedReservas = reservas.slice(
   useEffect(() => {
     const fetchReservas = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/reservas/admin', {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/reservas/admin`
+, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setReservas(response.data);

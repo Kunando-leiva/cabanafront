@@ -17,7 +17,7 @@ export default function Cabanas() {
       try {
         setLoading(true);
         setError(null);
-        const response = await axios.get('http://localhost:5000/api/cabanas', {
+        const response = await axios.get('${import.meta.env.VITE_API_URL}/api/cabanas', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -37,14 +37,15 @@ export default function Cabanas() {
   const eliminarCabana = async (id) => {
     const confirmacion = window.confirm('¿Estás seguro de que deseas eliminar esta cabaña?');
     if (!confirmacion) return;
-
+  
     setDeletingId(id);
     try {
-      await axios.delete(`http://localhost:5000/api/cabanas/${id}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/cabanas/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+  
       setCabanas(cabanas.filter(c => c._id !== id));
       alert('Cabaña eliminada correctamente.');
     } catch (error) {
@@ -54,6 +55,7 @@ export default function Cabanas() {
       setDeletingId(null);
     }
   };
+  
 
   return (
     <AdminLayout>
@@ -101,7 +103,7 @@ export default function Cabanas() {
       src={
         cabana.imagenes[0].startsWith('http') 
           ? cabana.imagenes[0] 
-          : `http://localhost:5000/uploads/${cabana.imagenes[0]}`
+          : `${import.meta.env.VITE_API_URL}/uploads/${cabana.imagenes[0]}`
       }
       alt={`Cabaña ${cabana.nombre}`}
       className="img-thumbnail"
