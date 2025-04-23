@@ -4,6 +4,7 @@ import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import axios from 'axios';
+import { API_URL } from '../../config'; // Asegúrate de que la ruta sea correcta
 
 const locales = { 'es': require('date-fns/locale/es') };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
@@ -19,7 +20,7 @@ export default function CalendarioDisponibilidad({ cabanaId }) {
 
     const fetchFechasOcupadas = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/reservas/ocupadas?cabanaId=${cabanaId}`);
+        const response = await axios.get(`${API_URL}/api/reservas/ocupadas?cabanaId=${cabanaId}`);
         if (response.status !== 200) {
           throw new Error('Error al cargar fechas ocupadas');
         }

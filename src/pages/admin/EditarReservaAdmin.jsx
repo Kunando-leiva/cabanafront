@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Form, Button, Alert, Spinner, Card } from 'react-bootstrap';
 import { AdminLayout } from '../../components/admin/AdminLayout';
+import { API_URL } from '../../config'; // Asegúrate de que la ruta sea correcta
 
 export default function EditarReservaAdmin() {
   const { id } = useParams();
@@ -35,14 +36,14 @@ export default function EditarReservaAdmin() {
       try {
         // Cargar reserva actual
         const reservaResponse = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/reservas/admin/${id}`,
+          `${API_URL}/api/reservas/admin/${id}`,
 
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
         // Cargar lista de cabañas disponibles
         const cabanasResponse = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/cabanas`,
+          `${API_URL}/api/cabanas`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -80,7 +81,7 @@ export default function EditarReservaAdmin() {
     setLoading(true);
     try {
       await axios.put(
-        `${import.meta.env.VITE_API_URL}/api/reservas/admin/${id}`,
+        `${API_URL}/api/reservas/admin/${id}`,
 
         {
           ...formData,

@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import CalendarioDisponibilidad from '../../components/admin/CalendarioDisponibilidad';
 import 'react-datepicker/dist/react-datepicker.css';
+import { API_URL } from '../../../config'; // Asegúrate de que la ruta sea correcta
 
 export default function CreateReserva() {
   const { token } = useAuth();
@@ -30,9 +31,9 @@ export default function CreateReserva() {
     const fetchData = async () => {
       try {
         const [usuariosRes, cabanasRes, reservasRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}/api/usuarios`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/cabanas`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/reservas`, { headers: { Authorization: `Bearer ${token}` } })
+          axios.get(`${API_URL}/api/usuarios`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API_URL}/api/cabanas`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API_URL}/api/reservas`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
         setUsuarios(usuariosRes.data);
         setCabanas(cabanasRes.data);
@@ -49,7 +50,7 @@ export default function CreateReserva() {
     if (window.confirm('¿Estás seguro de eliminar esta reserva?')) {
       try {
         setLoading(true);
-        await axios.delete(`${import.meta.env.VITE_API_URL}/api/reservas/admin/${reservaId}`, {
+        await axios.delete(`${API_URL}/api/reservas/admin/${reservaId}`, {
           headers: {
           headers: { Authorization: `Bearer ${token}` }
         }});
@@ -80,7 +81,7 @@ export default function CreateReserva() {
     setLoading(true);
     try {
       await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/reservas/admin/crear`,
+        `${API_URL}/api/reservas/admin/crear`,
         {
           usuarioId: formData.usuarioId,
           cabanaId: formData.cabanaId,

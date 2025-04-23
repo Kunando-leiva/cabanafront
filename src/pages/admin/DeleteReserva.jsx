@@ -2,6 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { Modal, Button } from 'react-bootstrap';
+import { API_URL } from '../../config'; // Asegúrate de que la ruta sea correcta
 
 export default function DeleteReserva({ reservaId, onSuccess }) {
   const [showModal, setShowModal] = useState(false);
@@ -12,7 +13,7 @@ export default function DeleteReserva({ reservaId, onSuccess }) {
   const handleDelete = async () => {
     setLoading(true);
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/api/reservas/admin/eliminar/${reservaId}`, {
+      await axios.delete(`${API_URL}/api/reservas/admin/eliminar/${reservaId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       onSuccess(reservaId);

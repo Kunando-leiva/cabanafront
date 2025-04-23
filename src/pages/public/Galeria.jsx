@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Modal, Spinner, Alert } from 'react-bootstrap';
 import axios from 'axios';
 import PublicNavbar from '../../components/PublicNavbar';
+import { API_URL } from '../../config'; // Asegúrate de que la ruta sea correcta
 
 export default function Galeria() {
   const [cabanas, setCabanas] = useState([]);
@@ -13,7 +14,7 @@ export default function Galeria() {
   useEffect(() => {
     const fetchCabanas = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cabanas`
+        const response = await axios.get(`${API_URL}/api/cabanas`
 );
         
         // Procesar imágenes con sus cabañas correspondientes
@@ -21,7 +22,7 @@ export default function Galeria() {
           ...cabana,
           // Asegurar que las URLs de imágenes sean absolutas
           imagenes: cabana.imagenes?.map(img => 
-            img.startsWith('http') ? img : `${import.meta.env.VITE_API_URL}/uploads/${img}`
+            img.startsWith('http') ? img : `${API_URL}/uploads/${img}`
 
           ) || []
         }));

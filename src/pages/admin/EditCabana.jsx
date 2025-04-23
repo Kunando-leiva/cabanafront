@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { useAuth } from '../../context/AuthContext';
+import { API_URL } from '../../config'; // Asegúrate de que la ruta sea correcta
 
 export default function EditCabana() {
   const { id } = useParams();
@@ -22,7 +23,7 @@ export default function EditCabana() {
     const fetchCabana = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cabanas/${id}`, {
+        const response = await axios.get(`${API_URL}/api/cabanas/${id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -67,7 +68,7 @@ export default function EditCabana() {
     try {
       setLoading(true);
       await axios.put(
-        `http://localhost:5000/api/cabanas/${id}`,
+        `${API_URL}/api/cabanas/${id}`,
         cabana,
         {
           headers: {

@@ -317,6 +317,7 @@ import {
 } from 'react-icons/fa';
 import axios from 'axios';
 import CalendarFull from '../../components/CalendarFull';
+import { API_URL } from '../../config'; // Asegúrate de que la ruta sea correcta
 
 export default function CabanaDetalle() {
   const { id } = useParams();
@@ -342,7 +343,7 @@ export default function CabanaDetalle() {
   useEffect(() => {
     const fetchCabana = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cabanas/${id}`
+        const response = await axios.get(`${API_URL}/api/cabanas/${id}`
 );
         
         // Procesamiento de imágenes compatible con el backend
@@ -351,7 +352,7 @@ export default function CabanaDetalle() {
           imagenes: response.data.imagenes?.map(img => {
             // Si es solo el nombre del archivo (como se guarda en el backend)
             if (!img.startsWith('http')) {
-              return `${import.meta.env.VITE_API_URL}/uploads/${img}`;
+              return `${API_URL}/uploads/${img}`;
 
             }
             return img;

@@ -20,6 +20,7 @@ import {
   } from 'react-icons/fa';
   import { BiFridge, BiMicrophone } from 'react-icons/bi';
 import { GiElectric } from 'react-icons/gi';
+import { API_URL } from '../../config'; // Asegúrate de que la ruta sea correcta
 
 const CreateCabana = () => {
   const SERVICIOS = [
@@ -126,7 +127,7 @@ const CreateCabana = () => {
         )
       };
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cabanas`, {
+      const response = await fetch(`${API_URL}/api/cabanas`, {
 
         method: 'POST',
         headers: {
@@ -175,7 +176,7 @@ const CreateCabana = () => {
         const formData = new FormData();
         formData.append('image', file);
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload`, {
+        const response = await fetch(`${API_URL}/api/upload`, {
 
           method: 'POST',
           headers: {

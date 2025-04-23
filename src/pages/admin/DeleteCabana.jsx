@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { API_URL } from '../../config'; // Asegúrate de que la ruta sea correcta
 
 export default function DeleteCabana({ cabanaId, onSuccess, buttonLabel = '' }) {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -15,7 +16,7 @@ export default function DeleteCabana({ cabanaId, onSuccess, buttonLabel = '' }) 
       setIsDeleting(true);
       try {
         await axios.delete(
-          `${import.meta.env.VITE_API_URL}/api/cabanas/${cabanaId}`,{
+          `${API_URL}/api/cabanas/${cabanaId}`,{
           headers: { Authorization: `Bearer ${token}` }
         });
         onSuccess(cabanaId);

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Card, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import PublicNavbar from '../../components/PublicNavbar';
+import { API_URL } from '../../config'; // Asegúrate de que la ruta sea correcta
 import { FaWifi, FaSwimmingPool, FaSnowflake, FaUtensils, FaParking, FaTv } from 'react-icons/fa';
 
 export default function CabanasPublico() {
@@ -13,7 +14,7 @@ export default function CabanasPublico() {
   useEffect(() => {
     const fetchCabanas = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cabanas`);
+        const response = await axios.get(`${API_URL}/api/cabanas`);
         setCabanas(response.data);
       } catch (error) {
         setError('Error al cargar las cabañas. Intenta nuevamente.');
@@ -52,7 +53,7 @@ export default function CabanasPublico() {
                   variant="top" 
                   src={cabana.imagenes[0].startsWith('http') 
                     ? cabana.imagenes[0] 
-                    : `${import.meta.env.VITE_API_URL}/uploads/${cabana.imagenes[0]}`
+                    : `${API_URL}/uploads/${cabana.imagenes[0]}`
 
                   } 
                   style={{ height: '200px', objectFit: 'cover' }} 

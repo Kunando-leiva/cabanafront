@@ -3,9 +3,10 @@ import axios from 'axios';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../../config'; // Asegúrate de que la ruta sea correcta
 import DeleteReserva from './DeleteReserva'; // Asegúrate que esta ruta sea correcta
-
 import { Pagination } from 'react-bootstrap'; // Asegúrate de tener react-bootstrap instalado
+
 
 export default function ReservasAdmin() {
   const [reservas, setReservas] = useState([]);
@@ -34,7 +35,7 @@ const paginatedReservas = reservas.slice(
   useEffect(() => {
     const fetchReservas = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/reservas/admin`
+        const response = await axios.get(`${API_URL}/api/reservas/admin`
 , {
           headers: { Authorization: `Bearer ${token}` },
         });

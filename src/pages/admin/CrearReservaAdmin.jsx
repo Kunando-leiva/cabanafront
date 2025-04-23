@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Container, Form, Row, Col, Card, Button, Alert, Spinner } from 'react-bootstrap';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { API_URL } from '../../config';
 
 const CrearReservaAdmin = () => {
   const { user, token, isAuthenticated, logout, isAdmin } = useAuth();
@@ -55,7 +56,7 @@ const CrearReservaAdmin = () => {
     const fetchCabanas = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cabanas`, {
+        const response = await fetch(`${API_URL}/api/cabanas`, {
 
           headers: { 
             'Authorization': `Bearer ${token}`,
@@ -160,7 +161,7 @@ const CrearReservaAdmin = () => {
         }
       };
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reservas/admin/crear`, {
+      const response = await fetch(`${API_URL}/api/reservas/admin/crear`, {
 
         method: 'POST',
         headers: {

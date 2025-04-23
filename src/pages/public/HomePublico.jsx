@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Button, Container, Row, Col, Card, Spinner } from 'react-bootstrap';
 import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar } from 'react-icons/fa';
 import PublicNavbar from '../../components/PublicNavbar';
+import { API_URL } from '../../config'; // Asegúrate de que la ruta sea correcta
 
 export default function HomePublico() {
   const [cabanas, setCabanas] = useState([]);
@@ -12,7 +13,7 @@ export default function HomePublico() {
   useEffect(() => {
     const fetchCabanas = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cabanas?limit=3`
+        const response = await axios.get(`${API_URL}/api/cabanas?limit=3`
 ); // Limitamos a 3 cabañas destacadas
         setCabanas(response.data);
       } catch (error) {

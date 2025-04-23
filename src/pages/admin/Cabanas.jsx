@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { useAuth } from '../../context/AuthContext';
+import {API_URL} from '../../config'
+
 
 export default function Cabanas() {
   const [cabanas, setCabanas] = useState([]);
@@ -11,13 +13,14 @@ export default function Cabanas() {
   const [deletingId, setDeletingId] = useState(null); // Para saber cuál se está eliminando
   const navigate = useNavigate();
   const { token } = useAuth();
+ 
 
   useEffect(() => {
     const fetchCabanas = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await axios.get('${import.meta.env.VITE_API_URL}/api/cabanas', {
+        const response = await axios.get(`${API_URL}/api/cabanas`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -40,7 +43,7 @@ export default function Cabanas() {
   
     setDeletingId(id);
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/api/cabanas/${id}`, {
+      await axios.delete(`${API_URL}/api/cabanas/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -103,7 +106,7 @@ export default function Cabanas() {
       src={
         cabana.imagenes[0].startsWith('http') 
           ? cabana.imagenes[0] 
-          : `${import.meta.env.VITE_API_URL}/uploads/${cabana.imagenes[0]}`
+          : `${API_URL}/uploads/${cabana.imagenes[0]}`
       }
       alt={`Cabaña ${cabana.nombre}`}
       className="img-thumbnail"
