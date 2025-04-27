@@ -88,7 +88,7 @@ export const Login = () => {
       case 'admin':
         return '/admin/Dashboard';
       case 'user':
-        return '/user/home';
+        return '/';
       default:
         return '/';
     }

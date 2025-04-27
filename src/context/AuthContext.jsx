@@ -1,15 +1,15 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-export const AuthContext = createContext();
+// Crear el contexto primero
+const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
+// Componente proveedor como exportación por defecto
+const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const isMounted = useRef(true);
-  
 
-  // Cargar usuario al iniciar
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -28,12 +28,11 @@ export function AuthProvider({ children }) {
     return () => { isMounted.current = false; };
   }, []);
 
-  // Función de login
   const login = (userData, token) => {
     if (isMounted.current) {
       localStorage.setItem('user', JSON.stringify({
         ...userData,
-        id: userData._id || userData.id // Normaliza el ID
+        id: userData._id || userData.id
       }));
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -41,7 +40,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Función de logout
   const logout = () => {
     if (isMounted.current) {
       localStorage.removeItem('user');
@@ -51,22 +49,19 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Verifica autenticación (EN TIEMPO REAL)
   const isAuthenticated = () => {
     const token = localStorage.getItem('token');
-    if (!token || !user) return false; // Si no hay token o usuario
+    if (!token || !user) return false;
     
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      const tokenValido = payload.exp * 1000 > Date.now();
-      return tokenValido;
+      return payload.exp * 1000 > Date.now();
     } catch (error) {
       console.error("Error al verificar token:", error);
       return false;
     }
   };
 
-  // Verifica si es admin
   const isAdmin = () => user?.rol === 'admin';
 
   return (
@@ -75,17 +70,21 @@ export function AuthProvider({ children }) {
       loading,
       login,
       logout,
-      isAuthenticated, // <- Función
-      isAdmin,         // <- Función
+      isAuthenticated,
+      isAdmin,
       token: localStorage.getItem('token'),
     }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export const useAuth = () => {
+// Hook como exportación nombrada
+const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth debe usarse dentro de AuthProvider');
   return context;
 };
+
+export default AuthProvider;
+export { AuthContext, useAuth };

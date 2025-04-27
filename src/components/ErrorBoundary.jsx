@@ -1,28 +1,56 @@
-// src/components/ErrorBoundary.jsx
 import React, { Component } from 'react';
 
 export default class ErrorBoundary extends Component {
-  state = { hasError: false };
+  state = { 
+    hasError: false,
+    error: null,       // Asegurar que error esté definido en el estado
+    errorInfo: null 
+  };
 
   static getDerivedStateFromError(error) {
+    // Ignorar errores específicos de DOM
+    if (error.message.includes("insertBefore") || 
+        error.message.includes("removeChild")) {
+      console.warn("Error de DOM ignorado:", error);
+      return null; // No actualizar el estado para estos errores
+    }
     return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error("ErrorBoundary caught:", error, errorInfo);
+    // Solo registrar errores importantes
+    if (!error.message.includes("insertBefore") && 
+        !error.message.includes("removeChild")) {
+      console.error("Error capturado:", error, errorInfo);
+    }
   }
+
+  handleReload = () => window.location.reload();
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-4 bg-red-100 text-red-700 rounded-lg mx-auto my-8 max-w-md">
-          <h2 className="text-xl font-bold mb-2">Algo salió mal</h2>
-          <p>Por favor recarga la página o intenta nuevamente más tarde.</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+        <div style={{
+          padding: '2rem',
+          textAlign: 'center',
+          backgroundColor: '#ffecec',
+          borderRadius: '8px',
+          margin: '2rem'
+        }}>
+          <h2 style={{ color: '#d32f2f' }}>Error en la aplicación</h2>
+          <p style={{ margin: '1rem 0' }}>Por favor recarga la página para continuar</p>
+          <button
+            onClick={this.handleReload}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#d32f2f',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
           >
-            Recargar Página
+            Recargar página
           </button>
         </div>
       );

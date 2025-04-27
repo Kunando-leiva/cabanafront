@@ -1,21 +1,30 @@
 import { Outlet } from 'react-router-dom';
-import AdminNav from '../components/admin/AdminNav';
 import { useAuth } from '../context/AuthContext';
+import ErrorBoundary from './ErrorBoundary';
 
-const AdminLayout = () => {
-  const { user, loading } = useAuth();
+export default function AdminLayout() {
+  const { loading } = useAuth();
 
-  if (loading) return <div>Cargando...</div>;
-  
-  return (
-    <div className="d-flex">
-      
-      {/* Contenido principal */}
-      <div className="flex-grow-1 p-4">
-        <Outlet />
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh'
+      }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando...</span>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="admin-layout">
+      <ErrorBoundary>
+        <Outlet />
+      </ErrorBoundary>
     </div>
   );
-};
-
-export default AdminLayout;
+}

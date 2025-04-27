@@ -42,6 +42,7 @@ import ConfirmacionReserva from './pages/public/ConfirmacionReserva';
 import Nosotros from './pages/public/Nosotros';
 import Ubicacion from './pages/public/Ubicacion';
 import Galeria from './pages/public/Galeria';
+import {Register} from './pages/admin/Register'; // Asegúrate de crear este componente
 
 function App() {
   return (
@@ -59,6 +60,11 @@ function App() {
         
         {/* Login */}
         <Route path="/login" element={<Login />} />
+
+        {/* register */}
+        <Route path="/register" element={<Register />} />
+
+        {/* Rutas protegidas */}
         
         {/* Área de administración */}
         <Route path="/admin" element={

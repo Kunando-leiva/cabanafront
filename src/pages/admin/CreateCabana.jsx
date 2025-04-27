@@ -101,8 +101,24 @@ const CreateCabana = () => {
       return;
     }
 
-    setLoading(true);
-    setError('');
+    try {
+      setLoading(true);
+      await axios.post(`${API_URL}/api/cabanas`, cabanaData, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      // Esperar un ciclo de renderizado antes de redirigir
+      setTimeout(() => {
+        navigate('/admin/cabanas', { 
+          state: { success: 'Cabaña creada exitosamente' }
+        });
+      }, 100);
+      
+    } catch (error) {
+      // Manejo de errores
+    } finally {
+      setLoading(false);
+    }
 
     try {
       const cabanaData = {
@@ -164,15 +180,18 @@ const CreateCabana = () => {
     setError('');
 
     try {
-      const uploadPromises = Array.from(e.target.files).map(async (file) => {
-        // Validación básica de imagen
+      // Validación previa de todos los archivos
+      const files = Array.from(e.target.files);
+      files.forEach(file => {
         if (!file.type.startsWith('image/')) {
-          throw new Error('Solo se permiten archivos de imagen');
+          throw new Error(`El archivo ${file.name} no es una imagen válida (JPEG, JPG, PNG, GIF)`);
         }
-        if (file.size > 5 * 1024 * 1024) { // 5MB
-          throw new Error('Las imágenes deben ser menores a 5MB');
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error(`El archivo ${file.name} excede el límite de 5MB`);
         }
+      });
 
+      const uploadPromises = files.map(async (file) => {
         const formData = new FormData();
         formData.append('image', file);
 
@@ -185,9 +204,22 @@ const CreateCabana = () => {
           signal: controller.signal
         });
 
+        // Mejor manejo de errores HTTP
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Error al subir imagen');
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch {
+            errorData = { error: 'Error desconocido al subir imagen' };
+          }
+          
+          // Manejo específico de errores 401 (no autorizado)
+          if (response.status === 401) {
+            logout();
+            throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+          }
+          
+          throw new Error(errorData.error || `Error ${response.status} al subir imagen`);
         }
 
         return response.json();
@@ -203,12 +235,22 @@ const CreateCabana = () => {
 
     } catch (error) {
       if (error.name !== 'AbortError' && isMounted.current) {
-        console.error('Error al subir imágenes:', error);
-        setError(error.message || 'Error al subir imágenes');
+        console.error('Error en handleImageUpload:', error);
+        
+        // Mensajes de error más descriptivos
+        let errorMessage = error.message;
+        if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'Error de conexión con el servidor. Verifica tu conexión a internet.';
+        } else if (error.message.includes('NetworkError')) {
+          errorMessage = 'Error de red. Intenta nuevamente.';
+        }
+        
+        setError(errorMessage);
       }
     } finally {
       if (isMounted.current) {
         setUploadingImages(false);
+        e.target.value = ''; // Limpia el input para permitir reselección
       }
     }
   };
