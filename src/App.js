@@ -34,18 +34,19 @@ import EditarReservaAdmin from './pages/admin/EditarReservaAdmin';
 
 
 // Páginas públicas
-import HomePublico from './pages/public/HomePublico';
-import CabanasPublico from './pages/public/CabanasPublico';
-import CabanaDetalle from './pages/public/CabanaDetalle';
-import Reservar from './pages/public/Reservar';
-import ConfirmacionReserva from './pages/public/ConfirmacionReserva';
-import Nosotros from './pages/public/Nosotros';
-import Ubicacion from './pages/public/Ubicacion';
-import Galeria from './pages/public/Galeria';
+import HomePublico from './pages/cliente/HomePublico';
+import CabanasPublico from './pages/cliente/CabanasPublico';
+import CabanaDetalle from './pages/cliente/CabanaDetalle';
+import Reservar from './pages/cliente/Reservar';
+import ConfirmacionReserva from './pages/cliente/ConfirmacionReserva';
+import Nosotros from './pages/cliente/Nosotros';
+import Ubicacion from './pages/cliente/Ubicacion';
+import Galeria from './pages/cliente/Galeria';
 import {Register} from './pages/admin/Register'; // Asegúrate de crear este componente
 
 function App() {
   return (
+    
     <BrowserRouter>
       <Routes>
         {/* Rutas públicas */}

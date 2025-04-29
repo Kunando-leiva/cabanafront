@@ -4,7 +4,8 @@ import axios from 'axios';
 import { Button, Container, Row, Col, Card, Spinner } from 'react-bootstrap';
 import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar } from 'react-icons/fa';
 import PublicNavbar from '../../components/PublicNavbar';
-import { API_URL } from '../../config'; // Asegúrate de que la ruta sea correcta
+import { API_URL } from '../../config';
+import logo from '../../assets/images/WhatsApp Image 2025-02-13 at 7.49.07 AM.jpeg'; // Importa tu logo
 
 export default function HomePublico() {
   const [cabanas, setCabanas] = useState([]);
@@ -13,8 +14,7 @@ export default function HomePublico() {
   useEffect(() => {
     const fetchCabanas = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/cabanas?limit=3`
-); // Limitamos a 3 cabañas destacadas
+        const response = await axios.get(`${API_URL}/api/cabanas?limit=3`);
         setCabanas(response.data);
       } catch (error) {
         console.error('Error fetching cabañas:', error);
@@ -27,13 +27,15 @@ export default function HomePublico() {
 
   return (
     <div className="home-publico">
-        <PublicNavbar />
+      <PublicNavbar />
 
-      {/* Hero Section */}
-      <section className="hero-section bg-dark text-white text-center py-5">
-        <Container>
-          <h1 className="display-4 fw-bold mb-4">Escapa a la Naturaleza</h1>
-          <p className="lead mb-4">Descubre nuestras cabañas exclusivas en los mejores entornos naturales.</p>
+      {/* Hero Section con Logo */}
+      <section className="hero-section bg-dark text-white text-center py-5 position-relative">
+        <div className="hero-overlay"></div>
+        <Container className="position-relative z-index-1">
+          <h1 className="display-4 fw-bold mb-4">Complejo Los Alerces</h1>
+          <p className="lead mb-4">Libertad - Pontevedra</p>
+          <p className="mb-4">Descubre nuestras cabañas exclusivas en los mejores entornos naturales.</p>
           <Button as={Link} to="/cabanas" variant="primary" size="lg">
             Ver Cabañas Disponibles
           </Button>
