@@ -36,3 +36,23 @@
     transform: rotate(360deg);
   }
 }
+
+/* Estilos para el logo */
+.main-logo {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  transition: transform 0.3s ease;
+}
+
+.main-logo:hover {
+  transform: scale(1.03);
+}
+
+.navbar-brand img {
+  max-height: 100%;
+  width: auto;
+}
+
+/* Para fondos oscuros */
+.dark-mode .main-logo {
+  filter: brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}

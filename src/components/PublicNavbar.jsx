@@ -1,7 +1,7 @@
 import { Container, Nav, Navbar, NavDropdown } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FaHome, FaTree, FaMapMarkedAlt, FaImages, FaUsers } from 'react-icons/fa';
-import logo from '../assets/images/WhatsApp Image 2025-02-13 at 7.49.07 AM.jpeg'; // Importa tu logo
+import logo from '../assets/images/logo-alerces.png'; // Importa tu logo
 
 export default function PublicNavbar() {
   return (

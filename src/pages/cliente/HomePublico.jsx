@@ -5,7 +5,7 @@ import { Button, Container, Row, Col, Card, Spinner } from 'react-bootstrap';
 import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar } from 'react-icons/fa';
 import PublicNavbar from '../../components/PublicNavbar';
 import { API_URL } from '../../config';
-import logo from '../../assets/images/WhatsApp Image 2025-02-13 at 7.49.07 AM.jpeg'; // Importa tu logo
+import logo from '../../assets/images/logo-alerces.png'; // Importa tu logo
 
 export default function HomePublico() {
   const [cabanas, setCabanas] = useState([]);
