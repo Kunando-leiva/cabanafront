@@ -23,12 +23,23 @@ export default function Cabanas() {
           headers: { 'Authorization': `Bearer ${token}` },
           signal: controller.signal,
         });
+    
+        // Verifica ambas posibles estructuras de respuesta
+        const cabanasData = Array.isArray(response.data) 
+          ? response.data 
+          : response.data.data || [];
+    
+        if (!Array.isArray(cabanasData)) {
+          throw new Error('Formato de respuesta inválido: se esperaba un array');
+        }
+    
         if (isMounted) {
-          setCabanas(response.data);
+          setCabanas(cabanasData);
         }
       } catch (error) {
         if (isMounted && error.name !== 'CanceledError') {
           console.error('Error al cargar cabañas:', error);
+          // Opcional: establecer un estado de error para mostrar al usuario
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -120,11 +131,11 @@ export default function Cabanas() {
                         <td>
                           {cabana.imagenes?.length > 0 ? (
                             <img
-                              src={
-                                cabana.imagenes[0].startsWith('http')
-                                  ? cabana.imagenes[0]
-                                  : `${API_URL}/uploads/${cabana.imagenes[0]}`
-                              }
+                            src={
+                              cabana.imagenes?.[0]?.startsWith('http')
+                                ? cabana.imagenes[0]
+                                : `${API_URL}/uploads/${cabana.imagenes?.[0] || 'default.jpg'}`
+                            }
                               alt={`Cabaña ${cabana.nombre}`}
                               className="img-thumbnail"
                               style={{
