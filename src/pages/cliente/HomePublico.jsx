@@ -1,27 +1,43 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Button, Container, Row, Col, Card, Spinner } from 'react-bootstrap';
+import { Button, Container, Row, Col, Card, Spinner, Alert } from 'react-bootstrap';
 import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar } from 'react-icons/fa';
 import PublicNavbar from '../../components/PublicNavbar';
 import { API_URL } from '../../config';
-import logo from '../../assets/images/logo-alerces.png'; // Importa tu logo
+import logo from '../../assets/images/logo-alerces.png';
 
 export default function HomePublico() {
   const [cabanas, setCabanas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchCabanas = async () => {
       try {
         const response = await axios.get(`${API_URL}/api/cabanas?limit=3`);
-        setCabanas(response.data);
+        
+        // Maneja tanto { data: [...] } como [...]
+        const data = response.data.data || response.data;
+        
+        if (!Array.isArray(data)) {
+          throw new Error('Formato de respuesta inválido');
+        }
+        
+        setCabanas(data.map(cabana => ({
+          ...cabana,
+          imagenes: cabana.imagenes || [] // Asegura array
+        })));
+        
       } catch (error) {
-        console.error('Error fetching cabañas:', error);
+        console.error('Error:', error);
+        setError(error.response?.data?.message || error.message);
+        setCabanas([]);
       } finally {
         setLoading(false);
       }
     };
+    
     fetchCabanas();
   }, []);
 
@@ -29,7 +45,7 @@ export default function HomePublico() {
     <div className="home-publico">
       <PublicNavbar />
 
-      {/* Hero Section con Logo */}
+      {/* Hero Section */}
       <section className="hero-section bg-dark text-white text-center py-5 position-relative">
         <div className="hero-overlay"></div>
         <Container className="position-relative z-index-1">
@@ -46,21 +62,34 @@ export default function HomePublico() {
       <section className="py-5">
         <Container>
           <h2 className="text-center mb-5">Nuestras Cabañas Destacadas</h2>
-          {loading ? (
+          
+          {error ? (
+            <Alert variant="danger" className="text-center">
+              {error}
+            </Alert>
+          ) : loading ? (
             <Spinner animation="border" className="d-block mx-auto" />
+          ) : cabanas.length === 0 ? (
+            <Alert variant="info" className="text-center">
+              No hay cabañas disponibles
+            </Alert>
           ) : (
             <Row xs={1} md={3} className="g-4">
               {cabanas.map((cabana) => (
                 <Col key={cabana._id}>
                   <Card className="h-100 shadow-sm">
-                    {cabana.imagenes?.[0] && (
+                    {cabana.imagenes[0] && (
                       <Card.Img 
                         variant="top" 
                         src={cabana.imagenes[0]} 
-                        style={{ height: '180px', objectFit: 'cover' }} 
+                        style={{ height: '180px', objectFit: 'cover' }}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '/placeholder-cabana.jpg';
+                        }}
                       />
                     )}
-                    <Card.Body>
+                    <Card.Body className="d-flex flex-column">
                       <Card.Title>{cabana.nombre}</Card.Title>
                       <Card.Text>
                         <small className="text-muted">
@@ -72,6 +101,7 @@ export default function HomePublico() {
                         to={`/cabanas/${cabana._id}`} 
                         variant="outline-primary" 
                         size="sm"
+                        className="mt-auto"
                       >
                         Ver Detalles
                       </Button>

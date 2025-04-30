@@ -20,10 +20,12 @@ export default function Galeria() {
         // Procesar imágenes con sus cabañas correspondientes
         const cabanasConImagenes = response.data.map(cabana => ({
           ...cabana,
-          // Asegurar que las URLs de imágenes sean absolutas
-          imagenes: cabana.imagenes?.map(img => 
-            img.startsWith('http') ? img : `${API_URL}/uploads/${img}`
-
+          imagenes: cabana.imagenes?.map(img =>
+            img.startsWith('http://')
+              ? img.replace('http://', 'https://')
+              : img.startsWith('https://')
+                ? img
+                : `${API_URL}/uploads/${img}`
           ) || []
         }));
 

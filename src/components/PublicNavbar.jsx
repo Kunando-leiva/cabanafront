@@ -14,7 +14,7 @@ export default function PublicNavbar() {
             style={{ height: '50px' }}
             className="me-2"
           />
-          Cabañas del Bosque
+          Complejo Los Alerces
         </Link>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
