@@ -343,32 +343,58 @@ export default function CabanaDetalle() {
   useEffect(() => {
     const fetchCabana = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/cabanas/${id}`
-);
+        setLoading(true);
+        setError('');
         
-        // Procesamiento de imágenes compatible con el backend
+        const response = await axios.get(`${API_URL}/api/cabanas/${id}`);
+        console.log('Respuesta completa:', response); // Para debug
+        console.log('Respuesta del backend:', response.data); // Para debug
+        
+        if (!response.data || !response.data._id) {
+          throw new Error('La cabaña no existe o la respuesta es inválida');
+        }
+  
         const cabanaData = {
-          ...response.data,
-          imagenes: response.data.imagenes?.map(img => {
-            // Si es solo el nombre del archivo (como se guarda en el backend)
-            if (!img.startsWith('http')) {
-              return `${API_URL}/uploads/${img}`;
-
-            }
-            return img;
-          }) || []
+          _id: response.data._id,
+          nombre: response.data.nombre || 'Nombre no disponible',
+          precio: response.data.precio ? Number(response.data.precio) : 0,
+          capacidad: response.data.capacidad ? Number(response.data.capacidad) : 1,
+          descripcion: cabanaData.descripcion || cabanaData.description || '',
+          servicios: Array.isArray(response.data.servicios) ? response.data.servicios : [],
+          imagenes: procesarImagenes(response.data.imagenes)
         };
-        
+  
         setCabana(cabanaData);
+        
       } catch (err) {
-        console.error('Error cargando cabaña:', err);
-        setError('No se pudo cargar la información de la cabaña');
+        console.error('Error al cargar cabaña:', err);
+        setError(err.response?.data?.message || err.message || 'Error al cargar la cabaña');
+        navigate('/cabanas', { state: { error: 'No se pudo cargar la cabaña' } });
       } finally {
         setLoading(false);
       }
     };
+  
     fetchCabana();
-  }, [id]);
+  }, [id, navigate]);
+  
+  // Función auxiliar para procesar imágenes
+  const procesarImagenes = (imagenes) => {
+    if (!imagenes) return [];
+    
+    if (Array.isArray(imagenes)) {
+      return imagenes.map(img => {
+        if (typeof img !== 'string') return `${API_URL}/uploads/default.jpg`;
+        return img.startsWith('http') ? img : `${API_URL}/uploads/${img}`;
+      });
+    }
+    
+    if (typeof imagenes === 'string') {
+      return [imagenes.startsWith('http') ? imagenes : `${API_URL}/uploads/${imagenes}`];
+    }
+    
+    return [];
+  };
 
   const handleReservar = () => {
     if (!selectedDates.start || !selectedDates.end) {

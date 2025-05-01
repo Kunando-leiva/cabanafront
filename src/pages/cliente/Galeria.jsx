@@ -16,17 +16,36 @@ export default function Galeria() {
       try {
         const response = await axios.get(`${API_URL}/api/cabanas`
 );
+       // 1. Validar la estructura de respuesta
+    const rawData = response.data;
+    let cabanasData = [];
+
+    if (Array.isArray(rawData)) {
+      // Caso 1: La API devuelve un array directo
+      cabanasData = rawData;
+    } else if (rawData && Array.isArray(rawData.data)) {
+      // Caso 2: La API devuelve { data: [...] }
+      cabanasData = rawData.data;
+    } else if (rawData && Array.isArray(rawData.result)) {
+      // Caso 3: La API devuelve { result: [...] }
+      cabanasData = rawData.result;
+    } else {
+      throw new Error('Formato de respuesta no soportado');
+    }
         
         // Procesar imágenes con sus cabañas correspondientes
-        const cabanasConImagenes = response.data.map(cabana => ({
-          ...cabana,
-          imagenes: cabana.imagenes?.map(img =>
-            img.startsWith('http://')
-              ? img.replace('http://', 'https://')
-              : img.startsWith('https://')
-                ? img
-                : `${API_URL}/uploads/${img}`
-          ) || []
+        const cabanasConImagenes = cabanasData.map(cabana => ({
+          _id: cabana._id || Math.random().toString(36).substr(2, 9), // ID de respaldo
+          nombre: cabana.nombre || 'Sin nombre',
+          imagenes: Array.isArray(cabana.imagenes) 
+            ? cabana.imagenes.map(img => 
+                img.startsWith('http://') 
+                  ? img.replace('http://', 'https://') 
+                  : img.startsWith('https://')
+                    ? img
+                    : `${API_URL}/uploads/${img}`
+              )
+            : [],
         }));
 
         setCabanas(cabanasConImagenes);

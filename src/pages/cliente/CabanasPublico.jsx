@@ -15,9 +15,27 @@ export default function CabanasPublico() {
     const fetchCabanas = async () => {
       try {
         const response = await axios.get(`${API_URL}/api/cabanas`);
-        setCabanas(response.data);
+        
+        // Maneja tanto { data: [...] } como [...]
+        const data = Array.isArray(response.data) 
+          ? response.data 
+          : response.data?.data || [];
+        
+        if (!Array.isArray(data)) {
+          throw new Error('Formato de respuesta inválido');
+        }
+
+        // Asegura estructura consistente
+        const cabanasValidadas = data.map(cabana => ({
+          ...cabana,
+          imagenes: Array.isArray(cabana.imagenes) ? cabana.imagenes : [],
+          servicios: Array.isArray(cabana.servicios) ? cabana.servicios : [],
+          _id: cabana._id || Math.random().toString(36).substring(2) // Fallback ID
+        }));
+
+        setCabanas(cabanasValidadas);
       } catch (error) {
-        setError('Error al cargar las cabañas. Intenta nuevamente.');
+        setError(error.response?.data?.message || 'Error al cargar las cabañas');
         console.error('Error:', error);
       } finally {
         setLoading(false);
