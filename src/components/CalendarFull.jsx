@@ -2,27 +2,46 @@ import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './CalendarFull.css';
+import axios from 'axios';
+import { Spinner, Alert, Badge } from 'react-bootstrap';
+import { FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
 
-const CalendarFull = ({ cabanaId, onDatesSelected, precioPorNoche }) => {
+const CalendarFull = ({ 
+  cabanaId, 
+  onDatesSelected, 
+  precioPorNoche,
+  showInline = false,
+  showTotal = true
+}) => {
   const [dateRange, setDateRange] = useState([null, null]);
   const [occupiedRanges, setOccupiedRanges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [total, setTotal] = useState(0);
+  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
     const fetchOccupiedDates = async () => {
       try {
-        const response = await fetch(
+        setLoading(true);
+        setError(null);
+        
+        const response = await axios.get(
           `${process.env.REACT_APP_API_URL}/api/reservas/ocupadas${cabanaId ? `?cabanaId=${cabanaId}` : ''}`
         );
         
-        if (!response.ok) throw new Error('Error al obtener fechas ocupadas');
+        // Procesamiento más robusto de fechas ocupadas
+        const fechasOcupadas = response.data?.data || response.data || [];
+        setOccupiedRanges(
+          fechasOcupadas
+            .filter(date => date) // Filtra valores nulos/undefined
+            .map(date => new Date(date))
+            .filter(date => !isNaN(date.getTime())) // Filtra fechas inválidas
+        );
         
-        const fechasOcupadas = await response.json();
-        setOccupiedRanges(fechasOcupadas.map(date => new Date(date)));
       } catch (err) {
-        setError(err.message);
+        console.error('Error al obtener fechas ocupadas:', err);
+        setError(err.response?.data?.message || err.message || 'Error al cargar fechas ocupadas');
       } finally {
         setLoading(false);
       }
@@ -35,49 +54,57 @@ const CalendarFull = ({ cabanaId, onDatesSelected, precioPorNoche }) => {
     if (!start || !end || !precioPorNoche) return 0;
     
     const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir ambos días
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays * precioPorNoche;
   };
 
   const handleDateChange = (newDateRange) => {
     const [start, end] = newDateRange;
+    setError(null);
+    setSuccess(null);
     
-    // Validaciones
     if (start && end) {
+      // Validaciones mejoradas
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
       if (start > end) {
         setError('La fecha de fin debe ser posterior a la de inicio');
         return;
       }
-      
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
       
       if (start < today) {
         setError('No puedes seleccionar fechas pasadas');
         return;
       }
       
-      // Verificar disponibilidad
+      // Verificación de disponibilidad más precisa
       const isOccupied = occupiedRanges.some(occupiedDate => {
-        const selectedStart = start;
-        const selectedEnd = end;
+        const occupiedTime = occupiedDate.getTime();
         return (
-          (selectedStart <= occupiedDate && occupiedDate <= selectedEnd)
+          (start.getTime() <= occupiedTime && occupiedTime <= end.getTime())
         );
       });
       
       if (isOccupied) {
-        setError('Algunas fechas seleccionadas están ocupadas');
+        setError('Las fechas seleccionadas incluyen periodos ocupados');
         return;
       }
       
-      setError(null);
+      // Calcular total y notificar
       const calculatedTotal = calcularTotal(start, end);
       setTotal(calculatedTotal);
+      setSuccess('Fechas disponibles para reserva');
       
-      // Notificar al componente padre
       if (onDatesSelected) {
-        onDatesSelected(start, end, calculatedTotal);
+        // Asegurar que las fechas sean inicio/fin de día
+        const startDate = new Date(start);
+        startDate.setHours(0, 0, 0, 0);
+        
+        const endDate = new Date(end);
+        endDate.setHours(23, 59, 59, 999);
+        
+        onDatesSelected(startDate, endDate, calculatedTotal);
       }
     }
     
@@ -88,38 +115,91 @@ const CalendarFull = ({ cabanaId, onDatesSelected, precioPorNoche }) => {
     if (view !== 'month') return false;
     
     return occupiedRanges.some(occupiedDate => {
-      return (
-        date.getFullYear() === occupiedDate.getFullYear() &&
-        date.getMonth() === occupiedDate.getMonth() &&
-        date.getDate() === occupiedDate.getDate()
-      );
+      return date.getTime() === occupiedDate.setHours(0, 0, 0, 0);
     });
   };
 
-  if (loading) return <div className="loading-text">Cargando fechas...</div>;
+  const tileClassName = ({ date, view }) => {
+    if (view !== 'month') return null;
+    
+    const classes = [];
+    const dateTime = date.getTime();
+    
+    // Marcar fechas ocupadas
+    if (occupiedRanges.some(d => d.setHours(0, 0, 0, 0) === dateTime)) {
+      classes.push('occupied-date');
+    }
+    
+    // Marcar rango seleccionado
+    if (dateRange[0] && dateRange[1]) {
+      const startTime = dateRange[0].getTime();
+      const endTime = dateRange[1].getTime();
+      
+      if (dateTime === startTime) classes.push('selected-range-start');
+      if (dateTime === endTime) classes.push('selected-range-end');
+      if (dateTime > startTime && dateTime < endTime) classes.push('selected-range-middle');
+    }
+    
+    return classes.join(' ');
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center my-3">
+        <Spinner animation="border" size="sm" />
+        <p>Cargando calendario...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="calendar-container">
+    <div className={`calendar-container ${showInline ? 'inline-calendar' : ''}`}>
       <Calendar
         onChange={handleDateChange}
         value={dateRange}
         selectRange={true}
         tileDisabled={tileDisabled}
-        tileClassName={({ date, view }) => 
-          view === 'month' && tileDisabled({ date, view }) 
-            ? 'occupied-date' 
-            : null
-        }
+        tileClassName={tileClassName}
         minDate={new Date()}
-        maxDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)}
-        locale="es-ES"
+        maxDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)} // 1 año en el futuro
+        locale="es"
+        prev2Label={null}
+        next2Label={null}
+        navigationLabel={({ date }) => (
+          <span>
+            {date.toLocaleString('es', { month: 'long' })} {date.getFullYear()}
+          </span>
+        )}
       />
       
+      {/* Mensajes de estado */}
+      <div className="calendar-messages mt-3">
+        {error && (
+          <Alert variant="danger" className="d-flex align-items-center py-2">
+            <FaExclamationTriangle className="me-2" />
+            {error}
+          </Alert>
+        )}
+        
+        {success && (
+          <Alert variant="success" className="d-flex align-items-center py-2">
+            <FaCheckCircle className="me-2" />
+            {success}
+          </Alert>
+        )}
+      </div>
       
-      
-      {error && (
-        <div className="error-message">
-          {error}
+      {/* Mostrar total si corresponde */}
+      {showTotal && total > 0 && (
+        <div className="total-container mt-3 p-3 bg-light rounded">
+          <h5 className="text-center">
+            <Badge bg="primary">
+              Total estimado: ${total.toFixed(2)}
+            </Badge>
+          </h5>
+          <p className="text-center text-muted small mt-1">
+            ({Math.ceil(total/precioPorNoche)} noches)
+          </p>
         </div>
       )}
     </div>

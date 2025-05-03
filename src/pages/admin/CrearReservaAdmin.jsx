@@ -13,7 +13,12 @@ const CrearReservaAdmin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-
+  const processCabanasData = (data) => {
+    if (Array.isArray(data)) return data;
+    if (data?.data && Array.isArray(data.data)) return data.data;
+    if (data?.cabanas && Array.isArray(data.cabanas)) return data.cabanas;
+    return [];
+  };
 
   const [formData, setFormData] = useState({
     cabanaId: '',
@@ -56,31 +61,43 @@ const CrearReservaAdmin = () => {
     const fetchCabanas = async () => {
       try {
         setLoading(true);
+        setError('');
         const response = await fetch(`${API_URL}/api/cabanas`, {
-
           headers: { 
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
-
+    
         if (response.status === 401) {
           logout();
           throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
         }
-
+    
         if (!response.ok) {
           throw new Error('No se pudieron cargar las cabañas. Intenta nuevamente.');
         }
-
+    
         const data = await response.json();
-        setCabanas(data);
+        console.log('Datos recibidos de cabañas:', data); // Para debug
+        
+        const processedCabanas = processCabanasData(data);
+        console.log('Cabañas procesadas:', processedCabanas); // Para debug
+        
+        if (!Array.isArray(processedCabanas)) {
+          throw new Error('Formato de datos inesperado');
+        }
+    
+        setCabanas(processedCabanas);
       } catch (err) {
+        console.error('Error al cargar cabañas:', err);
         setError(err.message);
+        setCabanas([]); // Asegurar que siempre sea un array
       } finally {
         setLoading(false);
       }
     };
+    
 
     if (isAuthenticated && isAdmin() && token) {
       fetchCabanas();
@@ -305,18 +322,21 @@ const CrearReservaAdmin = () => {
               <Form.Group className="mb-3">
                 <Form.Label>Cabaña <span className="text-danger">*</span></Form.Label>
                 <Form.Select
-                  value={formData.cabanaId}
-                  onChange={(e) => setFormData({...formData, cabanaId: e.target.value})}
-                  required
-                  disabled={loading || cabanas.length === 0}
-                >
-                  <option value="">{cabanas.length === 0 ? 'Cargando cabañas...' : 'Seleccionar cabaña...'}</option>
-                  {cabanas.map((cabana) => (
-                    <option key={cabana._id} value={cabana._id}>
-                      {cabana.nombre} (${cabana.precio.toFixed(2)}/noche)
-                    </option>
-                  ))}
-                </Form.Select>
+  value={formData.cabanaId}
+  onChange={(e) => setFormData({...formData, cabanaId: e.target.value})}
+  required
+  disabled={loading || cabanas.length === 0}
+>
+  <option value="">
+    {loading ? 'Cargando cabañas...' : 
+     cabanas.length === 0 ? 'No hay cabañas disponibles' : 'Seleccionar cabaña...'}
+  </option>
+  {Array.isArray(cabanas) && cabanas.map((cabana) => (
+    <option key={cabana._id} value={cabana._id}>
+      {cabana.nombre} (${cabana.precio?.toFixed(2) || '0.00'}/noche)
+    </option>
+  ))}
+</Form.Select>
               </Form.Group>
             </Col>
             

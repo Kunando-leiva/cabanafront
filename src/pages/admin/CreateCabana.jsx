@@ -35,7 +35,6 @@ const SERVICIOS = [
   { nombre: 'Heladera', icono: <BiFridge className="me-2" /> },
   { nombre: 'Microondas', icono: <BiMicrophone className="me-2" /> },
   { nombre: 'Pava eléctrica', icono: <GiElectric className="me-2" /> },
-  { nombre: 'Televisión', icono: <FaTv className="me-2" /> },
   { nombre: 'Sofá', icono: <FaCouch className="me-2" /> },
   { nombre: 'Toallas', icono: <FaTshirt className="me-2" /> },
   { nombre: 'Vajilla', icono: <FaGlassWhiskey className="me-2" /> },
@@ -89,48 +88,31 @@ const CreateCabana = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const controller = new AbortController();
-    
+  
     if (!formData.nombre || !formData.descripcion || !formData.precio || !formData.capacidad) {
       setError('Todos los campos marcados con * son obligatorios');
       return;
     }
-
+  
     if (isNaN(formData.precio) || isNaN(formData.capacidad)) {
       setError('Precio y capacidad deben ser números válidos');
       return;
     }
-
+  
+    const cabanaData = {
+      nombre: formData.nombre,
+      descripcion: formData.descripcion,
+      precio: Number(formData.precio),
+      capacidad: Number(formData.capacidad),
+      servicios: formData.servicios,
+      imagenes: formData.imagenes.map(img =>
+        img.startsWith('http') ? img.split('/uploads/')[1] : img
+      )
+    };
+  
     try {
       setLoading(true);
-      await axios.post(`${API_URL}/api/cabanas`, cabanaData, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      // Esperar un ciclo de renderizado antes de redirigir
-      setTimeout(() => {
-        navigate('/admin/cabanas', { 
-          state: { success: 'Cabaña creada exitosamente' }
-        });
-      }, 100);
-      
-    } catch (error) {
-      // Manejo de errores
-    } finally {
-      setLoading(false);
-    }
-
-    try {
-      const cabanaData = {
-        nombre: formData.nombre,
-        descripcion: formData.descripcion,
-        precio: Number(formData.precio),
-        capacidad: Number(formData.capacidad),
-        servicios: formData.servicios,
-        imagenes: formData.imagenes.map(img => 
-          img.startsWith('http') ? img.split('/uploads/')[1] : img
-        )
-      };
-
+  
       const response = await fetch(`${API_URL}/api/cabanas`, {
         method: 'POST',
         headers: {
@@ -140,25 +122,25 @@ const CreateCabana = () => {
         body: JSON.stringify(cabanaData),
         signal: controller.signal
       });
-
+  
       if (response.status === 401) {
         logout();
         throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
       }
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Error al crear la cabaña');
       }
-
+  
       const result = await response.json();
       console.log('Cabaña creada:', result);
-      
-      navigate('/admin/cabanas', { 
+  
+      navigate('/admin/cabanas', {
         state: { success: 'Cabaña creada exitosamente' },
         replace: true
       });
-
+  
     } catch (error) {
       if (error.name !== 'AbortError' && isMounted.current) {
         console.error('Error al crear cabaña:', error);
@@ -170,6 +152,7 @@ const CreateCabana = () => {
       }
     }
   };
+  
 
   const handleImageUpload = async (e) => {
     if (!e.target.files?.length) return;

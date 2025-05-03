@@ -347,29 +347,40 @@ export default function CabanaDetalle() {
         setError('');
         
         const response = await axios.get(`${API_URL}/api/cabanas/${id}`);
-        console.log('Respuesta completa:', response); // Para debug
-        console.log('Respuesta del backend:', response.data); // Para debug
-        
-        if (!response.data || !response.data._id) {
-          throw new Error('La cabaña no existe o la respuesta es inválida');
+        console.log('Datos recibidos:', response.data); // Debug detallado
+  
+        // Validación robusta de la respuesta
+        if (!response.data?.success || !response.data.data?._id) {
+          throw new Error('La estructura de la respuesta es inválida');
         }
   
-        const cabanaData = {
-          _id: response.data._id,
-          nombre: response.data.nombre || 'Nombre no disponible',
-          precio: response.data.precio ? Number(response.data.precio) : 0,
-          capacidad: response.data.capacidad ? Number(response.data.capacidad) : 1,
+        const cabanaData = response.data.data; // Accedemos a los datos reales
+  
+        // Procesamiento seguro de los datos
+        const processedData = {
+          _id: cabanaData._id,
+          nombre: cabanaData.nombre || 'Nombre no disponible',
+          precio: cabanaData.precio ? Number(cabanaData.precio) : 0,
+          capacidad: cabanaData.capacidad ? Number(cabanaData.capacidad) : 1,
           descripcion: cabanaData.descripcion || cabanaData.description || '',
-          servicios: Array.isArray(response.data.servicios) ? response.data.servicios : [],
-          imagenes: procesarImagenes(response.data.imagenes)
+          servicios: Array.isArray(cabanaData.servicios) ? cabanaData.servicios : [],
+          imagenes: procesarImagenes(cabanaData.imagenes || cabanaData.image || [])
         };
   
-        setCabana(cabanaData);
+        setCabana(processedData);
         
       } catch (err) {
-        console.error('Error al cargar cabaña:', err);
+        console.error('Error completo:', err); // Debug mejorado
         setError(err.response?.data?.message || err.message || 'Error al cargar la cabaña');
-        navigate('/cabanas', { state: { error: 'No se pudo cargar la cabaña' } });
+        
+        // Redirección con retraso para mostrar el error
+        setTimeout(() => {
+          navigate('/cabanas', { 
+            state: { 
+              error: 'No se pudo cargar la cabaña solicitada' 
+            } 
+          });
+        }, 3000);
       } finally {
         setLoading(false);
       }

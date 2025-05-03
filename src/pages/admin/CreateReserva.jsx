@@ -7,17 +7,21 @@ import { useNavigate } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import CalendarioDisponibilidad from '../../components/admin/CalendarioDisponibilidad';
 import 'react-datepicker/dist/react-datepicker.css';
-import { API_URL } from '../../../config'; // Asegúrate de que la ruta sea correcta
+import { API_URL } from '../../../config';
+import { Spinner, Alert } from 'react-bootstrap';
 
 export default function CreateReserva() {
   const { token } = useAuth();
   const navigate = useNavigate();
   const [usuarios, setUsuarios] = useState([]);
   const [cabanas, setCabanas] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [reservas, setReservas] = useState([]);
+  const [loading, setLoading] = useState({
+    initial: true,
+    form: false
+  });
   const [error, setError] = useState('');
 
-  // Form data
   const [formData, setFormData] = useState({
     usuarioId: '',
     cabanaId: '',
@@ -26,22 +30,44 @@ export default function CreateReserva() {
     precioTotal: 0,
   });
 
-  // Fetch usuarios y cabañas al cargar
+  // Función para procesar datos de la API
+  const processApiData = (data) => {
+    if (Array.isArray(data)) return data;
+    if (data?.data && Array.isArray(data.data)) return data.data;
+    return [];
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(prev => ({ ...prev, initial: true }));
+        setError('');
+
         const [usuariosRes, cabanasRes, reservasRes] = await Promise.all([
-          axios.get(`${API_URL}/api/usuarios`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`${API_URL}/api/cabanas`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`${API_URL}/api/reservas`, { headers: { Authorization: `Bearer ${token}` } })
+          axios.get(`${API_URL}/api/usuarios`, { 
+            headers: { Authorization: `Bearer ${token}` } 
+          }),
+          axios.get(`${API_URL}/api/cabanas`, { 
+            headers: { Authorization: `Bearer ${token}` } 
+          }),
+          axios.get(`${API_URL}/api/reservas`, { 
+            headers: { Authorization: `Bearer ${token}` } 
+          })
         ]);
-        setUsuarios(usuariosRes.data);
-        setCabanas(cabanasRes.data);
-        setReservas(reservasRes.data);
+
+        // Procesamiento seguro de los datos
+        setUsuarios(processApiData(usuariosRes.data));
+        setCabanas(processApiData(cabanasRes.data));
+        setReservas(processApiData(reservasRes.data));
+
       } catch (err) {
-        setError('Error al cargar datos iniciales');
+        console.error('Error fetching data:', err);
+        setError(err.response?.data?.message || 'Error al cargar datos iniciales');
+      } finally {
+        setLoading(prev => ({ ...prev, initial: false }));
       }
     };
+
     fetchData();
   }, [token]);
 
@@ -97,6 +123,16 @@ export default function CreateReserva() {
       setLoading(false);
     }
   };
+  if (loading.initial) {
+    return (
+      <AdminLayout>
+        <div className="text-center my-5">
+          <Spinner animation="border" />
+          <p>Cargando datos iniciales...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -117,12 +153,16 @@ export default function CreateReserva() {
                   onChange={(e) => setFormData({ ...formData, usuarioId: e.target.value })}
                   required
                 >
-                  <option value="">Seleccionar usuario...</option>
-                  {usuarios.map((user) => (
-                    <option key={user._id} value={user._id}>
-                      {user.nombre} ({user.email})
-                    </option>
-                  ))}
+                   <option value="">Seleccionar usuario...</option>
+                  {usuarios.length > 0 ? (
+                    usuarios.map((user) => (
+                      <option key={user._id} value={user._id}>
+                        {user.nombre} ({user.email})
+                      </option>
+                    ))
+                  ) : (
+                    <option disabled>No hay usuarios disponibles</option>
+                  )}
                 </select>
               </div>
 
@@ -133,15 +173,20 @@ export default function CreateReserva() {
     value={formData.cabanaId}
     onChange={(e) => setFormData({ ...formData, cabanaId: e.target.value })}
     required
+    disabled={loading.form}
   >
     <option value="">Seleccionar cabaña...</option>
-    {cabanas.map((cabana) => (
-      <option key={cabana._id} value={cabana._id}>
-        {cabana.nombre} (${cabana.precio}/noche)
-      </option>
-    ))}
-  </select>
-</div>
+                  {Array.isArray(cabanas) && cabanas.length > 0 ? (
+                    cabanas.map((cabana) => (
+                      <option key={cabana._id} value={cabana._id}>
+                        {cabana.nombre} (${cabana.precio}/noche)
+                      </option>
+                    ))
+                  ) : (
+                    <option disabled>No hay cabañas disponibles</option>
+                  )}
+                </select>
+              </div>
 
 {/* Calendario de Disponibilidad */}
 {formData.cabanaId && (

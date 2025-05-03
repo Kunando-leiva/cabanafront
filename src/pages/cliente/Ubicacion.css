@@ -3,9 +3,7 @@
   }
   
   .info-card {
-    border: none;
-    transition: all 0.3s ease;
-    height: 100%;
+    will-change: transform, box-shadow;
   }
   
   .info-card:hover {
@@ -18,9 +16,7 @@
   }
   
   .btn-primary {
-    padding: 8px 24px;
-    font-weight: 500;
-    transition: all 0.3s ease;
+    will-change: transform, box-shadow;
   }
   
   .btn-primary:hover {
