@@ -1,94 +1,155 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { useAuth } from '../../context/AuthContext';
 import { API_URL } from '../../config';
+import Spinner from 'react-bootstrap/Spinner';
 
 export default function Cabanas() {
   const [cabanas, setCabanas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState(null);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const navigate = useNavigate();
   const { token } = useAuth();
-  const [isPending, startTransition] = useTransition();
+
+  // Configuración de Axios con interceptores
+  const api = axios.create({
+    baseURL: API_URL,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  // Interceptor para añadir el token a las peticiones
+  api.interceptors.request.use(config => {
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  }, error => {
+    return Promise.reject(error);
+  });
+
+  // Función para obtener la URL correcta de la imagen
+  const getImageUrl = (imageId) => {
+    // Si es un objeto con fileId
+    if (imageId?.fileId) {
+      return `${API_URL}/api/images/${imageId.fileId}`;
+    }
+    // Si es un string (ID directo)
+    if (typeof imageId === 'string') {
+      return `${API_URL}/api/images/${imageId}`;
+    }
+    // Si ya tiene URL
+    if (imageId?.url) {
+      return imageId.url.startsWith('http') ? imageId.url : `${API_URL}${imageId.url}`;
+    }
+    // Default
+    return `${process.env.PUBLIC_URL}/placeholder-cabana.jpg`;
+  };
 
   useEffect(() => {
-    let isMounted = true;
-    const controller = new AbortController();
-
-    const fetchCabanas = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/cabanas`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-          signal: controller.signal,
+        setLoading(true);
+        
+        const response = await api.get('/api/cabanas', {
+          params: { populate: 'images' }
         });
-    
-        // Verifica ambas posibles estructuras de respuesta
-        const cabanasData = Array.isArray(response.data) 
-          ? response.data 
-          : response.data.data || [];
-    
-        if (!Array.isArray(cabanasData)) {
-          throw new Error('Formato de respuesta inválido: se esperaba un array');
+
+        if (response.data.success) {
+          const processedCabanas = response.data.data.map(cabana => ({
+            ...cabana,
+            // Asegurar que images sea siempre un array de objetos con url
+            images: (cabana.images || []).map(img => ({
+              ...img,
+              url: getImageUrl(img)
+            }))
+          }));
+
+          setCabanas(processedCabanas);
         }
-    
-        if (isMounted) {
-          setCabanas(cabanasData);
-        }
-      } catch (error) {
-        if (isMounted && error.name !== 'CanceledError') {
-          console.error('Error al cargar cabañas:', error);
-          // Opcional: establecer un estado de error para mostrar al usuario
-        }
+      } catch (err) {
+        console.error('Error al cargar datos:', err);
+        setError(err.response?.data?.error || 'Error al cargar los datos');
       } finally {
-        if (isMounted) setLoading(false);
+        setLoading(false);
       }
     };
 
-    fetchCabanas();
-
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
+    fetchData();
   }, [token]);
 
-  const eliminarCabana = async (id) => {
-    if (!window.confirm('¿Confirmas eliminar esta cabaña?')) return;
+
+  const handleDelete = async (cabanaId) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar esta cabaña?')) return;
     
     try {
-      setDeletingId(id);
+      const response = await api.delete(`/api/cabanas/${cabanaId}`);
       
-      // Optimistic update: eliminamos primero del estado local
-      setCabanas(prevCabanas => {
-        const newCabanas = prevCabanas.filter(cabana => cabana._id !== id);
-        return newCabanas;
-      });
-  
-      // Luego hacemos la llamada a la API
-      await axios.delete(`${API_URL}/api/cabanas/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-  
-    } catch (error) {
-      console.error('Error al eliminar cabaña:', error);
-      // Si hay error, revertimos el cambio
-      if (error.response && error.response.status !== 404) {
-        const response = await axios.get(`${API_URL}/api/cabanas`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        setCabanas(response.data);
+      if (response.data.success) {
+        setCabanas(prev => prev.filter(cabana => cabana._id !== cabanaId));
+        setSuccessMessage(response.data.message || 'Cabaña eliminada correctamente');
+        setTimeout(() => setSuccessMessage(null), 3000);
       }
-    } finally {
-      setDeletingId(null);
+    } catch (err) {
+      console.error('Error al eliminar cabaña:', err);
+      setError(err.response?.data?.error || 
+              err.response?.data?.message || 
+              'Error al eliminar la cabaña');
     }
   };
-  
+
+  // Función mejorada para manejar errores de imagen
+  const handleImageError = (e) => {
+    e.target.onerror = null;
+    e.target.src = `${process.env.PUBLIC_URL}/placeholder-cabana.jpg`;
+    e.target.style.objectFit = 'contain';
+    e.target.className = 'img-thumbnail img-error';
+  };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Cargando...</span>
+          </div>
+          <p>Cargando cabañas...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
       <div className="container-fluid mt-4">
+        {/* Mostrar mensajes de error */}
+        {error && (
+          <div className="alert alert-danger alert-dismissible fade show">
+            {error}
+            <button 
+              type="button" 
+              className="btn-close" 
+              onClick={() => setError(null)}
+            />
+          </div>
+        )}
+        
+        {/* Mostrar mensajes de éxito */}
+        {successMessage && (
+          <div className="alert alert-success alert-dismissible fade show">
+            {successMessage}
+            <button 
+              type="button" 
+              className="btn-close" 
+              onClick={() => setSuccessMessage(null)}
+            />
+          </div>
+        )}
+
         <div className="card shadow">
           <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h2 className="mb-0">Administrar Cabañas</h2>
@@ -103,14 +164,12 @@ export default function Cabanas() {
 
           <div className="card-body">
             {loading ? (
-              <div className="text-center py-4">
-                <div className="spinner-border text-primary" role="status">
-                  <span className="visually-hidden">Cargando...</span>
-                </div>
-                <p className="mt-2">Cargando lista de cabañas...</p>
+              <div className="text-center py-5">
+                <Spinner animation="border" />
+                <p>Cargando...</p>
               </div>
             ) : cabanas.length === 0 ? (
-              <div className="alert alert-info text-center">
+              <div className="alert alert-info">
                 No hay cabañas registradas.
               </div>
             ) : (
@@ -118,71 +177,51 @@ export default function Cabanas() {
                 <table className="table table-striped table-hover">
                   <thead className="table-dark">
                     <tr>
-                      <th>Imagen</th>
+                      <th style={{ width: '120px' }}>Imagen</th>
                       <th>Nombre</th>
+                      <th>Descripción</th>
                       <th>Capacidad</th>
                       <th>Precio</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {cabanas.map((cabana) => (
+                    {cabanas.map(cabana => (
                       <tr key={cabana._id}>
                         <td>
-                          {cabana.imagenes?.length > 0 ? (
-                            <img
-                            src={
-                              cabana.imagenes?.[0]?.startsWith('http')
-                                ? cabana.imagenes[0]
-                                : `${API_URL}/uploads/${cabana.imagenes?.[0] || 'default.jpg'}`
-                            }
-                              alt={`Cabaña ${cabana.nombre}`}
-                              className="img-thumbnail"
-                              style={{
-                                width: '100px',
-                                height: '70px',
-                                objectFit: 'cover',
-                                backgroundColor: '#f8f9fa',
-                              }}
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = '/placeholder-cabana.jpg';
-                              }}
-                            />
+                          {cabana.images?.length > 0 ? (
+                            <div className="cabana-image-container">
+                              <img
+                                src={cabana.images[0].url}
+                                alt={`Cabaña ${cabana.nombre}`}
+                                className="img-thumbnail cabana-image"
+                                onError={handleImageError}
+                              />
+                            </div>
                           ) : (
-                            <div className="text-muted">Sin imagen</div>
+                            <div className="no-image-placeholder">
+                              <span>Sin imagen</span>
+                            </div>
                           )}
                         </td>
-                        <td className="align-middle">{cabana.nombre}</td>
-                        <td className="align-middle">{cabana.capacidad} personas</td>
-                        <td className="align-middle">${cabana.precio} por noche</td>
-                        <td className="align-middle d-flex gap-2">
+                        <td>{cabana.nombre}</td>
+                        <td className="text-truncate" style={{maxWidth: '200px'}}>
+                          {cabana.descripcion}
+                        </td>
+                        <td>{cabana.capacidad} personas</td>
+                        <td>${cabana.precio?.toLocaleString('es-AR')} por noche</td>
+                        <td>
                           <Link
                             to={`/admin/cabanas/editar/${cabana._id}`}
-                            className="btn btn-sm btn-primary"
+                            className="btn btn-sm btn-primary me-2"
                           >
-                            <i className="fas fa-edit me-1"></i>
-                            Editar
+                            <i className="fas fa-edit"></i> Editar
                           </Link>
                           <button
                             className="btn btn-sm btn-danger"
-                            onClick={() => eliminarCabana(cabana._id)}
-                            disabled={deletingId === cabana._id}
+                            onClick={() => handleDelete(cabana._id)}
                           >
-                            {deletingId === cabana._id ? (
-                              <>
-                                <span
-                                  className="spinner-border spinner-border-sm me-1"
-                                  role="status"
-                                ></span>
-                                Eliminando...
-                              </>
-                            ) : (
-                              <>
-                                <i className="fas fa-trash me-1"></i>
-                                Eliminar
-                              </>
-                            )}
+                            <i className="fas fa-trash"></i> Eliminar
                           </button>
                         </td>
                       </tr>

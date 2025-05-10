@@ -1,14 +1,23 @@
-// src/pages/admin/CreateReserva.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../../context/AuthContext';
 import { AdminLayout } from '../../../components/admin/AdminLayout';
 import { useNavigate } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
-import CalendarioDisponibilidad from '../../components/admin/CalendarioDisponibilidad';
 import 'react-datepicker/dist/react-datepicker.css';
 import { API_URL } from '../../../config';
 import { Spinner, Alert } from 'react-bootstrap';
+
+// Función auxiliar para generar rango de fechas (fuera del componente)
+function getDatesInRange(startDate, endDate) {
+  const dates = [];
+  let currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    dates.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  return dates;
+}
 
 export default function CreateReserva() {
   const { token } = useAuth();
@@ -30,13 +39,18 @@ export default function CreateReserva() {
     precioTotal: 0,
   });
 
-  // Función para procesar datos de la API
-  const processApiData = (data) => {
-    if (Array.isArray(data)) return data;
-    if (data?.data && Array.isArray(data.data)) return data.data;
-    return [];
-  };
+  // Calcula fechas ocupadas para la cabaña seleccionada
+  const fechasOcupadas = useMemo(() => {
+    if (!formData.cabanaId) return [];
+    return reservas
+      .filter(reserva => reserva.cabanaId === formData.cabanaId)
+      .flatMap(reserva => getDatesInRange(
+        new Date(reserva.fechaInicio), 
+        new Date(reserva.fechaFin)
+      ));
+  }, [formData.cabanaId, reservas]);
 
+  // Carga inicial de datos
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -55,14 +69,12 @@ export default function CreateReserva() {
           })
         ]);
 
-        // Procesamiento seguro de los datos
-        setUsuarios(processApiData(usuariosRes.data));
-        setCabanas(processApiData(cabanasRes.data));
-        setReservas(processApiData(reservasRes.data));
+        setUsuarios(usuariosRes.data?.data || []);
+        setCabanas(cabanasRes.data?.data || []);
+        setReservas(reservasRes.data?.data || []);
 
       } catch (err) {
-        console.error('Error fetching data:', err);
-        setError(err.response?.data?.message || 'Error al cargar datos iniciales');
+        setError(err.response?.data?.message || 'Error al cargar datos');
       } finally {
         setLoading(prev => ({ ...prev, initial: false }));
       }
@@ -71,40 +83,25 @@ export default function CreateReserva() {
     fetchData();
   }, [token]);
 
-   // Función para eliminar reserva
-   const handleEliminarReserva = async (reservaId) => {
-    if (window.confirm('¿Estás seguro de eliminar esta reserva?')) {
-      try {
-        setLoading(true);
-        await axios.delete(`${API_URL}/api/reservas/admin/${reservaId}`, {
-          headers: {
-          headers: { Authorization: `Bearer ${token}` }
-        }});
-        // Actualizar lista de reservas después de eliminar
-        setReservas(reservas.filter(reserva => reserva._id !== reservaId));
-        setError('');
-      } catch (err) {
-        setError(err.response?.data?.error || 'Error al eliminar reserva');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  // Calcular precio al cambiar fechas o cabaña
+  // Calcula precio total al cambiar fechas o cabaña
   useEffect(() => {
     if (formData.cabanaId && formData.fechaInicio && formData.fechaFin) {
       const cabana = cabanas.find(c => c._id === formData.cabanaId);
       if (cabana) {
-        const diffDays = (formData.fechaFin - formData.fechaInicio) / (1000 * 60 * 60 * 24);
+        const diffDays = Math.ceil(
+          (formData.fechaFin - formData.fechaInicio) / (1000 * 60 * 60 * 24)
+        );
         setFormData(prev => ({ ...prev, precioTotal: diffDays * cabana.precio }));
       }
     }
-  }, [formData.fechaInicio, formData.fechaFin, formData.cabanaId]);
+  }, [formData.fechaInicio, formData.fechaFin, formData.cabanaId, cabanas]);
 
+  // Maneja el envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setLoading(prev => ({ ...prev, form: true }));
+    setError('');
+
     try {
       await axios.post(
         `${API_URL}/api/reservas/admin/crear`,
@@ -118,11 +115,21 @@ export default function CreateReserva() {
       );
       navigate('/admin/reservas');
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al crear reserva');
+      const errorMessage = err.response?.data?.error || 
+                           err.message || 
+                           'Error al crear reserva. Verifica las fechas seleccionadas.';
+      
+      setError(errorMessage);
+
+      // Ocultar alerta después de 5 segundos
+      setTimeout(() => {
+        setError('');
+      }, 5000);
     } finally {
-      setLoading(false);
+      setLoading(prev => ({ ...prev, form: false }));
     }
   };
+
   if (loading.initial) {
     return (
       <AdminLayout>
@@ -142,7 +149,14 @@ export default function CreateReserva() {
             <h2>Crear Reserva Manual</h2>
           </div>
           <div className="card-body">
-            {error && <div className="alert alert-danger">{error}</div>}
+            {/* Alertas de error */}
+            {error && (
+              <Alert variant="danger" className="mb-4">
+                <Alert.Heading>Error en la reserva</Alert.Heading>
+                <p>{error}</p>
+              </Alert>
+            )}
+
             <form onSubmit={handleSubmit}>
               {/* Selección de Usuario */}
               <div className="mb-3">
@@ -152,48 +166,16 @@ export default function CreateReserva() {
                   value={formData.usuarioId}
                   onChange={(e) => setFormData({ ...formData, usuarioId: e.target.value })}
                   required
+                  disabled={loading.form}
                 >
-                   <option value="">Seleccionar usuario...</option>
-                  {usuarios.length > 0 ? (
-                    usuarios.map((user) => (
-                      <option key={user._id} value={user._id}>
-                        {user.nombre} ({user.email})
-                      </option>
-                    ))
-                  ) : (
-                    <option disabled>No hay usuarios disponibles</option>
-                  )}
+                  <option value="">Seleccionar usuario...</option>
+                  {usuarios.map((user) => (
+                    <option key={user._id} value={user._id}>
+                      {user.nombre} ({user.email})
+                    </option>
+                  ))}
                 </select>
               </div>
-
-              <div className="mb-3">
-  <label className="form-label">Cabaña</label>
-  <select
-    className="form-select"
-    value={formData.cabanaId}
-    onChange={(e) => setFormData({ ...formData, cabanaId: e.target.value })}
-    required
-    disabled={loading.form}
-  >
-    <option value="">Seleccionar cabaña...</option>
-                  {Array.isArray(cabanas) && cabanas.length > 0 ? (
-                    cabanas.map((cabana) => (
-                      <option key={cabana._id} value={cabana._id}>
-                        {cabana.nombre} (${cabana.precio}/noche)
-                      </option>
-                    ))
-                  ) : (
-                    <option disabled>No hay cabañas disponibles</option>
-                  )}
-                </select>
-              </div>
-
-{/* Calendario de Disponibilidad */}
-{formData.cabanaId && (
-  <CalendarioDisponibilidad cabanaId={formData.cabanaId} />
-)}
-
-
 
               {/* Selección de Cabaña */}
               <div className="mb-3">
@@ -203,6 +185,7 @@ export default function CreateReserva() {
                   value={formData.cabanaId}
                   onChange={(e) => setFormData({ ...formData, cabanaId: e.target.value })}
                   required
+                  disabled={loading.form}
                 >
                   <option value="">Seleccionar cabaña...</option>
                   {cabanas.map((cabana) => (
@@ -213,20 +196,21 @@ export default function CreateReserva() {
                 </select>
               </div>
 
-              {/* Selector de Fechas */}
+              {/* Selectores de Fecha */}
               <div className="row mb-3">
                 <div className="col-md-6">
                   <label className="form-label">Fecha Inicio</label>
                   <DatePicker
                     selected={formData.fechaInicio}
                     onChange={(date) => setFormData({ ...formData, fechaInicio: date })}
-                    excludeDates={fechasOcupadas.map(f => new Date(f))}
                     selectsStart
                     startDate={formData.fechaInicio}
                     endDate={formData.fechaFin}
                     minDate={new Date()}
+                    excludeDates={fechasOcupadas}
                     className="form-control"
                     required
+                    disabled={loading.form}
                   />
                 </div>
                 <div className="col-md-6">
@@ -238,13 +222,15 @@ export default function CreateReserva() {
                     startDate={formData.fechaInicio}
                     endDate={formData.fechaFin}
                     minDate={formData.fechaInicio || new Date()}
+                    excludeDates={fechasOcupadas}
                     className="form-control"
                     required
+                    disabled={loading.form}
                   />
                 </div>
               </div>
 
-              {/* Precio Calculado */}
+              {/* Precio Total */}
               <div className="mb-3">
                 <label className="form-label">Precio Total</label>
                 <input
@@ -255,8 +241,20 @@ export default function CreateReserva() {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? 'Creando...' : 'Crear Reserva'}
+              {/* Botón de Envío */}
+              <button 
+                type="submit" 
+                className="btn btn-primary"
+                disabled={loading.form}
+              >
+                {loading.form ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Procesando...
+                  </>
+                ) : (
+                  'Crear Reserva'
+                )}
               </button>
             </form>
           </div>

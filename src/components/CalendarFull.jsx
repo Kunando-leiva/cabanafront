@@ -111,6 +111,8 @@ const CalendarFull = ({
     setDateRange(newDateRange);
   };
 
+  
+
   const tileDisabled = ({ date, view }) => {
     if (view !== 'month') return false;
     

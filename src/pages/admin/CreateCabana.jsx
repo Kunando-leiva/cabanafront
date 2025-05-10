@@ -11,7 +11,8 @@ import {
 import { BiFridge, BiMicrophone } from 'react-icons/bi';
 import { GiElectric } from 'react-icons/gi';
 import { API_URL } from '../../config';
-import ErrorBoundary from '../../components/ErrorBoundary'; // Asegúrate de crear este componente
+import ErrorBoundary from '../../components/ErrorBoundary';
+import axios from 'axios';
 
 const SERVICIOS = [
   { nombre: 'Wifi', icono: <FaWifi className="me-2" style={{ color: '#3498db', fontSize: '1.2rem' }} /> },
@@ -54,10 +55,11 @@ const CreateCabana = () => {
     descripcion: '',
     precio: '',
     capacidad: '',
-    imagenes: [],
     servicios: []
   });
   
+  const [uploadedImages, setUploadedImages] = useState([]); // Array de objetos {fileId, url}
+  const [previewImages, setPreviewImages] = useState([]); // URLs para previsualización
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -87,7 +89,6 @@ const CreateCabana = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const controller = new AbortController();
   
     if (!formData.nombre || !formData.descripcion || !formData.precio || !formData.capacidad) {
       setError('Todos los campos marcados con * son obligatorios');
@@ -105,134 +106,138 @@ const CreateCabana = () => {
       precio: Number(formData.precio),
       capacidad: Number(formData.capacidad),
       servicios: formData.servicios,
-      imagenes: formData.imagenes.map(img =>
-        img.startsWith('http') ? img.split('/uploads/')[1] : img
-      )
+      images: uploadedImages.map(img => ({ fileId: img.fileId })) // Enviamos solo los fileIds
     };
   
     try {
       setLoading(true);
-  
-      const response = await fetch(`${API_URL}/api/cabanas`, {
-        method: 'POST',
+      const response = await axios.post(`${API_URL}/api/cabanas`, cabanaData, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(cabanaData),
-        signal: controller.signal
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
   
-      if (response.status === 401) {
-        logout();
-        throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
-      }
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al crear la cabaña');
-      }
-  
-      const result = await response.json();
-      console.log('Cabaña creada:', result);
-  
+      console.log('Cabaña creada:', response.data);
       navigate('/admin/cabanas', {
         state: { success: 'Cabaña creada exitosamente' },
         replace: true
       });
   
     } catch (error) {
-      if (error.name !== 'AbortError' && isMounted.current) {
+      if (error.response?.status === 401) {
+        logout();
+        setError('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+      } else {
         console.error('Error al crear cabaña:', error);
-        setError(error.message || 'Ocurrió un error al guardar la cabaña');
+        setError(error.response?.data?.error || 'Ocurrió un error al guardar la cabaña');
+        
+        // Opcional: Eliminar imágenes subidas si falla la creación
+        if (uploadedImages.length > 0) {
+          await Promise.all(
+            uploadedImages.map(img => 
+              axios.delete(`${API_URL}/api/images/${img.fileId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              }).catch(e => console.error('Error al eliminar imagen:', e))
+            )
+          );
+          setUploadedImages([]);
+          setPreviewImages([]);
+        }
       }
     } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
-  
 
   const handleImageUpload = async (e) => {
     if (!e.target.files?.length) return;
-    
-    const controller = new AbortController();
+  
     setUploadingImages(true);
     setError('');
-
+  
     try {
-      // Validación previa de todos los archivos
       const files = Array.from(e.target.files);
-      files.forEach(file => {
-        if (!file.type.startsWith('image/')) {
-          throw new Error(`El archivo ${file.name} no es una imagen válida (JPEG, JPG, PNG, GIF)`);
-        }
-        if (file.size > 5 * 1024 * 1024) {
-          throw new Error(`El archivo ${file.name} excede el límite de 5MB`);
-        }
-      });
-
-      const uploadPromises = files.map(async (file) => {
-        const formData = new FormData();
-        formData.append('image', file);
-
-        const response = await fetch(`${API_URL}/api/upload`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData,
-          signal: controller.signal
-        });
-
-        // Mejor manejo de errores HTTP
-        if (!response.ok) {
-          let errorData;
-          try {
-            errorData = await response.json();
-          } catch {
-            errorData = { error: 'Error desconocido al subir imagen' };
-          }
-          
-          // Manejo específico de errores 401 (no autorizado)
-          if (response.status === 401) {
-            logout();
-            throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
-          }
-          
-          throw new Error(errorData.error || `Error ${response.status} al subir imagen`);
-        }
-
-        return response.json();
-      });
-
-      const results = await Promise.all(uploadPromises);
-      if (!isMounted.current) return;
-
-      setFormData(prev => ({
-        ...prev,
-        imagenes: [...prev.imagenes, ...results.map(result => result.url)]
-      }));
-
-    } catch (error) {
-      if (error.name !== 'AbortError' && isMounted.current) {
-        console.error('Error en handleImageUpload:', error);
-        
-        // Mensajes de error más descriptivos
-        let errorMessage = error.message;
-        if (error.message.includes('Failed to fetch')) {
-          errorMessage = 'Error de conexión con el servidor. Verifica tu conexión a internet.';
-        } else if (error.message.includes('NetworkError')) {
-          errorMessage = 'Error de red. Intenta nuevamente.';
-        }
-        
-        setError(errorMessage);
+      const invalidFiles = files.filter(file =>
+        !file.type.startsWith('image/') || file.size > 5 * 1024 * 1024
+      );
+  
+      if (invalidFiles.length > 0) {
+        throw new Error(
+          `Archivos no válidos: ${invalidFiles.map(f => f.name).join(', ')}\n` +
+          'Formatos aceptados: JPEG, JPG, PNG, GIF (Máx. 5MB)'
+        );
       }
+  
+      const uploadPromises = files.map(async (file) => {
+        try {
+          const formData = new FormData();
+          formData.append('image', file);
+  
+          const response = await axios.post(`${API_URL}/api/images/upload`, formData, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+  
+          return {
+            fileId: response.data.image.fileId || response.data.image._id,
+            url: URL.createObjectURL(file),
+            originalName: file.name
+          };
+        } catch (uploadError) {
+          if (uploadError.response?.data?.error?.includes('E11000 duplicate key error')) {
+            // Preguntar al usuario si quiere reemplazar la imagen
+            const shouldReplace = window.confirm(
+              `Ya existe una imagen con el nombre "${file.name}". ¿Deseas reemplazarla?`
+            );
+            
+            if (shouldReplace) {
+              // Primero eliminar la imagen existente
+              await axios.delete(`${API_URL}/api/images/by-name/${encodeURIComponent(file.name)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              
+              // Volver a intentar la subida
+              const retryResponse = await axios.post(`${API_URL}/api/images/upload`, formData, {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'multipart/form-data'
+                }
+              });
+              
+              return {
+                fileId: retryResponse.data.image.fileId || retryResponse.data.image._id,
+                url: URL.createObjectURL(file),
+                originalName: file.name
+              };
+            } else {
+              return null; // Saltar esta imagen
+            }
+          }
+          throw uploadError;
+        }
+      });
+  
+      const results = (await Promise.all(uploadPromises)).filter(Boolean);
+      
+      if (!isMounted.current) return;
+  
+      setUploadedImages(prev => [...prev, ...results]);
+      setPreviewImages(prev => [...prev, ...results.map(r => ({ url: r.url, id: r.fileId }))]);
+  
+    } catch (error) {
+      console.error('Error en handleImageUpload:', error);
+      setError(
+        error.message.includes('Network Error')
+          ? 'Error de conexión con el servidor'
+          : error.response?.data?.error || error.message
+      );
     } finally {
       if (isMounted.current) {
         setUploadingImages(false);
-        e.target.value = ''; // Limpia el input para permitir reselección
+        e.target.value = '';
       }
     }
   };
@@ -242,15 +247,28 @@ const CreateCabana = () => {
     setShowDeleteModal(true);
   };
 
-  const removeImage = () => {
-    if (!isMounted.current) return;
+  const removeImage = async () => {
+    if (imageToDelete === null) return;
     
-    setShowDeleteModal(false);
-    setFormData(prev => ({
-      ...prev,
-      imagenes: prev.imagenes.filter((_, i) => i !== imageToDelete)
-    }));
-    setImageToDelete(null);
+    try {
+      const imageToRemove = uploadedImages[imageToDelete];
+      
+      // Eliminar del backend
+      await axios.delete(`${API_URL}/api/images/${imageToRemove.fileId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      // Actualizar estados
+      setUploadedImages(prev => prev.filter((_, i) => i !== imageToDelete));
+      setPreviewImages(prev => prev.filter((_, i) => i !== imageToDelete));
+      
+    } catch (error) {
+      console.error('Error al eliminar imagen:', error);
+      setError('No se pudo eliminar la imagen. Inténtalo de nuevo.');
+    } finally {
+      setShowDeleteModal(false);
+      setImageToDelete(null);
+    }
   };
 
   return (
@@ -351,64 +369,60 @@ const CreateCabana = () => {
             </Col>
 
             <Col md={12}>
-              <Form.Group className="mb-3">
-                <Form.Label><FaImage className="me-2" /> Imágenes</Form.Label>
-                <Form.Control 
-                  type="file" 
-                  multiple 
-                  accept="image/*" 
-                  onChange={handleImageUpload} 
-                  className="mb-3"
-                  disabled={uploadingImages}
-                />
+            <Form.Group className="mb-3">
+              <Form.Label><FaImage className="me-2" /> Imágenes</Form.Label>
+              <Form.Control 
+                type="file" 
+                multiple 
+                accept="image/jpeg, image/png, image/webp" 
+                onChange={handleImageUpload} 
+                className="mb-3"
+                disabled={uploadingImages}
+              />
                 
-                {uploadingImages && (
-                  <div className="mb-3">
-                    <Spinner animation="border" size="sm" className="me-2" />
-                    Subiendo imágenes...
-                  </div>
-                )}
+              {uploadingImages && (
+                <div className="mb-3">
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Subiendo imágenes...
+                </div>
+              )}
 
                 <Row>
-                  {formData.imagenes.map((img, index) => {
-                    const uniqueKey = `${index}-${img.split('/').pop().split('.')[0]}`;
-                    
-                    return (
-                      <Col key={uniqueKey} xs={6} md={4} lg={3} className="mb-3">
-                        <Card className="h-100">
-                          <div style={{ height: '150px', overflow: 'hidden' }}>
-                            <img
-                              src={img.startsWith('http') ? img : `${API_URL}/uploads/${img}`}
-                              alt={`Imagen ${index + 1}`}
-                              style={{ 
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover'
-                              }}
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = '/placeholder-image.jpg';
-                                e.target.style.objectFit = 'contain';
-                              }}
-                            />
-                          </div>
-                          <Card.Body className="p-2 text-center">
-                            <Button 
-                              variant="danger" 
-                              size="sm"
-                              onClick={() => confirmRemoveImage(index)}
-                              disabled={uploadingImages}
-                            >
-                              Eliminar
-                            </Button>
-                          </Card.Body>
-                        </Card>
-                      </Col>
-                    );
-                  })}
-                </Row>
-              </Form.Group>
-            </Col>
+                {previewImages.map((img, index) => (
+                  <Col key={`img-${img.id}`} xs={6} md={4} lg={3} className="mb-3">
+                    <Card className="h-100">
+                      <div style={{ height: '150px', overflow: 'hidden' }}>
+                        <img
+                          src={img.url}
+                          alt={`Imagen ${index + 1}`}
+                          style={{ 
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = '/placeholder-image.jpg';
+                            e.target.style.objectFit = 'contain';
+                          }}
+                        />
+                        </div>
+                        <Card.Body className="p-2 text-center">
+                        <Button 
+                          variant="danger" 
+                          size="sm"
+                          onClick={() => confirmRemoveImage(index)}
+                          disabled={uploadingImages}
+                        >
+                            Eliminar
+                        </Button>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            </Form.Group>
+          </Col>
           </Row>
 
           <div className="text-end">

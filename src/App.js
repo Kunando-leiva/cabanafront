@@ -43,6 +43,7 @@ import Nosotros from './pages/cliente/Nosotros';
 import Ubicacion from './pages/cliente/Ubicacion';
 import Galeria from './pages/cliente/Galeria';
 import {Register} from './pages/admin/Register'; // Asegúrate de crear este componente
+import ImageUploader from './components/ImageUploader';
 
 function App() {
   return (
@@ -83,6 +84,7 @@ function App() {
           <Route path="usuarios" element={<Usuarios />} />
           <Route path="/admin/reservas/crear" element={<CrearReservaAdmin />} />
           <Route path="/admin/reservas/editar/:id" element={<EditarReservaAdmin />} />
+          <Route path="/admin/cargaimage" element={<ImageUploader />} />
         </Route>
 
         {/* 404 */}
