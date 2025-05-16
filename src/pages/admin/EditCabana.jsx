@@ -317,7 +317,7 @@ export default function EditCabana() {
                 {cabanaData.imagenes.map((img, index) => (
                   <Col key={`img-${index}`} xs={6} md={3} className="mb-3">
                     <Image 
-                      src={img.startsWith('http') ? img : `${API_URL}/uploads/${img}`}
+                      src={img.startsWith('https') ? img : `${API_URL}/uploads/${img}`}
                       thumbnail
                       fluid
                       className="w-100"

@@ -393,7 +393,7 @@ export default function CabanaDetalle() {
         // Formatear URLs de imágenes
         const formatImageUrl = (img) => {
           if (!img?.url) return `${API_URL}/default-cabana.jpg`;
-          return img.url.startsWith('http') ? img.url : `${API_URL}${img.url.startsWith('/') ? '' : '/'}${img.url}`;
+          return img.url.startsWith('https') ? img.url : `${API_URL}${img.url.startsWith('/') ? '' : '/'}${img.url}`;
         };
 
         setCabana({
