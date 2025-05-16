@@ -1,17 +1,21 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Container, Form, Row, Col, Card, Button, Alert, Spinner, Modal, InputGroup } from 'react-bootstrap';
 import { 
-  FaWifi, FaSwimmingPool, FaSnowflake, FaUtensils, FaParking, FaTv,
-  FaDollarSign, FaUserFriends, FaHome, FaImage, FaBroom, FaCoffee, FaDog, 
-  FaBed, FaShower, FaUmbrellaBeach, FaTemperatureHigh, FaKey, FaCouch,
-  FaTshirt, FaGlassWhiskey, FaArchive, FaCamera, FaFan, FaImages
+  Container, Form, Row, Col, Card, Button, 
+  Alert, Spinner, InputGroup 
+} from 'react-bootstrap';
+import { 
+  FaWifi, FaSwimmingPool, FaSnowflake, FaUtensils, 
+  FaParking, FaTv, FaDollarSign, FaUserFriends, 
+  FaHome, FaImage, FaBroom, FaCoffee, FaDog, 
+  FaBed, FaShower, FaUmbrellaBeach, FaTemperatureHigh, 
+  FaKey, FaCouch, FaTshirt, FaGlassWhiskey, 
+  FaArchive, FaCamera, FaFan, FaImages 
 } from 'react-icons/fa';
 import { BiFridge, BiMicrophone } from 'react-icons/bi';
 import { GiElectric } from 'react-icons/gi';
 import { API_URL } from '../../config';
-import ErrorBoundary from '../../components/ErrorBoundary';
 import axios from 'axios';
 
 const SERVICIOS = [
@@ -29,7 +33,7 @@ const SERVICIOS = [
   { nombre: 'Balcón', icono: <FaUmbrellaBeach className="me-2" /> },
   { nombre: 'Calefacción', icono: <FaTemperatureHigh className="me-2" /> },
   { nombre: 'Cocina equipada', icono: <FaUtensils className="me-2" /> },
-  { nombre: 'reposeras', icono: <FaUmbrellaBeach className="me-2" /> },
+  { nombre: 'Reposeras', icono: <FaUmbrellaBeach className="me-2" /> },
   { nombre: 'Ducha', icono: <FaShower className="me-2" /> },
   { nombre: 'Secadora', icono: <GiElectric className="me-2" /> },
   { nombre: 'Cama doble', icono: <FaBed className="me-2" /> },
@@ -46,9 +50,9 @@ const SERVICIOS = [
 ];
 
 const CreateCabana = () => {
-  const { token, isAuthenticated, logout } = useAuth();
+  const { token, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-  const isMounted = useRef(true);
+  const fileInputRef = useRef(null);
   
   const [formData, setFormData] = useState({
     nombre: '',
@@ -58,24 +62,33 @@ const CreateCabana = () => {
     servicios: []
   });
   
-  const [uploadedImages, setUploadedImages] = useState([]); // Array de objetos {fileId, url}
-  const [previewImages, setPreviewImages] = useState([]); // URLs para previsualización
+  const [images, setImages] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [uploadingImages, setUploadingImages] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [imageToDelete, setImageToDelete] = useState(null);
 
+  // Verificar autenticación y rol al cargar
+  useEffect(() => {
+    if (!isAuthenticated || user?.rol !== 'admin') {
+      navigate('/login', { state: { from: '/admin/cabanas/crear' } });
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  // Limpieza de URLs al desmontar
   useEffect(() => {
     return () => {
-      isMounted.current = false;
+      images.forEach(img => {
+        if (img.previewUrl) URL.revokeObjectURL(img.previewUrl);
+      });
     };
-  }, []);
+  }, [images]);
 
-  if (!isAuthenticated) {
-    navigate('/login', { state: { from: '/admin/cabanas/crear' } });
-    return null;
-  }
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleServicioChange = (e) => {
     const { value, checked } = e.target;
@@ -89,311 +102,225 @@ const CreateCabana = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+    setLoading(true);
+    setError('');
+
+    // Validación básica
     if (!formData.nombre || !formData.descripcion || !formData.precio || !formData.capacidad) {
-      setError('Todos los campos marcados con * son obligatorios');
+      setError('Todos los campos obligatorios deben estar completos');
+      setLoading(false);
       return;
     }
-  
-    if (isNaN(formData.precio) || isNaN(formData.capacidad)) {
-      setError('Precio y capacidad deben ser números válidos');
-      return;
-    }
-  
-    const cabanaData = {
-      nombre: formData.nombre,
-      descripcion: formData.descripcion,
-      precio: Number(formData.precio),
-      capacidad: Number(formData.capacidad),
-      servicios: formData.servicios,
-      images: uploadedImages.map(img => ({ fileId: img.fileId })) // Enviamos solo los fileIds
-    };
-  
+
     try {
-      setLoading(true);
-      const response = await axios.post(`${API_URL}/api/cabanas`, cabanaData, {
+      const formDataToSend = new FormData();
+      
+      // Agregar campos del formulario
+      formDataToSend.append('nombre', formData.nombre);
+      formDataToSend.append('descripcion', formData.descripcion);
+      formDataToSend.append('precio', formData.precio);
+      formDataToSend.append('capacidad', formData.capacidad);
+      formDataToSend.append('servicios', JSON.stringify(formData.servicios));
+
+      // Agregar imágenes
+      images.forEach(img => {
+        if (img.file) {
+          formDataToSend.append('images', img.file);
+        }
+      });
+
+      const response = await axios.post(`${API_URL}/api/cabanas`, formDataToSend, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'multipart/form-data'
         }
       });
-  
-      console.log('Cabaña creada:', response.data);
-      navigate('/admin/cabanas', {
-        state: { success: 'Cabaña creada exitosamente' },
-        replace: true
-      });
-  
-    } catch (error) {
-      if (error.response?.status === 401) {
-        logout();
-        setError('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+
+      if (response.data.success) {
+        navigate('/admin/cabanas', {
+          state: { 
+            success: '¡Cabaña creada exitosamente!',
+            cabanaId: response.data.data._id
+          }
+        });
       } else {
-        console.error('Error al crear cabaña:', error);
-        setError(error.response?.data?.error || 'Ocurrió un error al guardar la cabaña');
-        
-        // Opcional: Eliminar imágenes subidas si falla la creación
-        if (uploadedImages.length > 0) {
-          await Promise.all(
-            uploadedImages.map(img => 
-              axios.delete(`${API_URL}/api/images/${img.fileId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-              }).catch(e => console.error('Error al eliminar imagen:', e))
-            )
-          );
-          setUploadedImages([]);
-          setPreviewImages([]);
-        }
+        throw new Error(response.data.error || 'Error al crear cabaña');
       }
+    } catch (error) {
+      console.error('Error al crear cabaña:', error);
+      setError(error.response?.data?.error || error.message || 'Error al procesar la solicitud');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     if (!e.target.files?.length) return;
-  
-    setUploadingImages(true);
-    setError('');
-  
-    try {
-      const files = Array.from(e.target.files);
-      const invalidFiles = files.filter(file =>
-        !file.type.startsWith('image/') || file.size > 5 * 1024 * 1024
+
+    const newFiles = Array.from(e.target.files)
+      .filter(file => 
+        file.type.startsWith('image/') && 
+        file.size <= 10 * 1024 * 1024
       );
-  
-      if (invalidFiles.length > 0) {
-        throw new Error(
-          `Archivos no válidos: ${invalidFiles.map(f => f.name).join(', ')}\n` +
-          'Formatos aceptados: JPEG, JPG, PNG, GIF (Máx. 5MB)'
-        );
-      }
-  
-      const uploadPromises = files.map(async (file) => {
-        try {
-          const formData = new FormData();
-          formData.append('image', file);
-  
-          const response = await axios.post(`${API_URL}/api/images/upload`, formData, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-  
-          return {
-            fileId: response.data.image.fileId || response.data.image._id,
-            url: URL.createObjectURL(file),
-            originalName: file.name
-          };
-        } catch (uploadError) {
-          if (uploadError.response?.data?.error?.includes('E11000 duplicate key error')) {
-            // Preguntar al usuario si quiere reemplazar la imagen
-            const shouldReplace = window.confirm(
-              `Ya existe una imagen con el nombre "${file.name}". ¿Deseas reemplazarla?`
-            );
-            
-            if (shouldReplace) {
-              // Primero eliminar la imagen existente
-              await axios.delete(`${API_URL}/api/images/by-name/${encodeURIComponent(file.name)}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-              });
-              
-              // Volver a intentar la subida
-              const retryResponse = await axios.post(`${API_URL}/api/images/upload`, formData, {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'multipart/form-data'
-                }
-              });
-              
-              return {
-                fileId: retryResponse.data.image.fileId || retryResponse.data.image._id,
-                url: URL.createObjectURL(file),
-                originalName: file.name
-              };
-            } else {
-              return null; // Saltar esta imagen
-            }
-          }
-          throw uploadError;
-        }
-      });
-  
-      const results = (await Promise.all(uploadPromises)).filter(Boolean);
-      
-      if (!isMounted.current) return;
-  
-      setUploadedImages(prev => [...prev, ...results]);
-      setPreviewImages(prev => [...prev, ...results.map(r => ({ url: r.url, id: r.fileId }))]);
-  
-    } catch (error) {
-      console.error('Error en handleImageUpload:', error);
-      setError(
-        error.message.includes('Network Error')
-          ? 'Error de conexión con el servidor'
-          : error.response?.data?.error || error.message
-      );
-    } finally {
-      if (isMounted.current) {
-        setUploadingImages(false);
-        e.target.value = '';
-      }
+
+    if (newFiles.length !== e.target.files.length) {
+      setError('Algunos archivos no son válidos (solo imágenes hasta 10MB)');
     }
+
+    const newImages = newFiles.map(file => ({
+      file,
+      previewUrl: URL.createObjectURL(file)
+    }));
+
+    setImages(prev => [...prev, ...newImages].slice(0, 5));
+    e.target.value = '';
   };
 
-  const confirmRemoveImage = (index) => {
-    setImageToDelete(index);
-    setShowDeleteModal(true);
+  const removeImage = (index) => {
+    const newImages = [...images];
+    URL.revokeObjectURL(newImages[index].previewUrl);
+    newImages.splice(index, 1);
+    setImages(newImages);
   };
 
-  const removeImage = async () => {
-    if (imageToDelete === null) return;
-    
-    try {
-      const imageToRemove = uploadedImages[imageToDelete];
-      
-      // Eliminar del backend
-      await axios.delete(`${API_URL}/api/images/${imageToRemove.fileId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      // Actualizar estados
-      setUploadedImages(prev => prev.filter((_, i) => i !== imageToDelete));
-      setPreviewImages(prev => prev.filter((_, i) => i !== imageToDelete));
-      
-    } catch (error) {
-      console.error('Error al eliminar imagen:', error);
-      setError('No se pudo eliminar la imagen. Inténtalo de nuevo.');
-    } finally {
-      setShowDeleteModal(false);
-      setImageToDelete(null);
-    }
+  const triggerFileInput = () => {
+    fileInputRef.current.click();
   };
 
   return (
-    <ErrorBoundary>
-      <Container className="mt-4">
-        <h2 className="text-center mb-4">Crear Nueva Cabaña</h2>
-        
-        {error && (
-          <Alert variant="danger" onClose={() => setError('')} dismissible>
-            <Alert.Heading>Error</Alert.Heading>
-            <p>{error}</p>
-          </Alert>
-        )}
+    <Container className="mt-4">
+      <h2 className="text-center mb-4">Crear Nueva Cabaña</h2>
+      
+      {error && (
+        <Alert variant="danger" onClose={() => setError('')} dismissible>
+          <Alert.Heading>Error</Alert.Heading>
+          <p>{error}</p>
+        </Alert>
+      )}
 
-        <Form onSubmit={handleSubmit}>
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label><FaHome className="me-2" /> Nombre *</Form.Label>
-                <Form.Control 
-                  type="text"
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                  required
-                  placeholder="Nombre de la cabaña"
-                  maxLength="100"
-                />
-              </Form.Group>
-            </Col>
+      <Form onSubmit={handleSubmit}>
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label><FaHome className="me-2" /> Nombre *</Form.Label>
+              <Form.Control
+                type="text"
+                name="nombre"
+                value={formData.nombre}
+                onChange={handleChange}
+                required
+                placeholder="Nombre de la cabaña"
+                maxLength="100"
+              />
+            </Form.Group>
+          </Col>
 
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label><FaUserFriends className="me-2" /> Capacidad *</Form.Label>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label><FaUserFriends className="me-2" /> Capacidad *</Form.Label>
+              <Form.Control
+                type="number"
+                name="capacidad"
+                min="1"
+                max="20"
+                value={formData.capacidad}
+                onChange={handleChange}
+                required
+                placeholder="Número de personas"
+              />
+            </Form.Group>
+          </Col>
+
+          <Col md={12}>
+            <Form.Group className="mb-3">
+              <Form.Label>Descripción *</Form.Label>
+              <Form.Control
+                as="textarea"
+                name="descripcion"
+                rows={4}
+                value={formData.descripcion}
+                onChange={handleChange}
+                required
+                placeholder="Describe la cabaña, sus comodidades y atractivos"
+                maxLength="500"
+              />
+              <Form.Text muted>{formData.descripcion.length}/500 caracteres</Form.Text>
+            </Form.Group>
+          </Col>
+
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label><FaDollarSign className="me-2" /> Precio por noche *</Form.Label>
+              <InputGroup>
+                <InputGroup.Text><FaDollarSign /></InputGroup.Text>
                 <Form.Control
                   type="number"
-                  min="1"
-                  max="20"
-                  value={formData.capacidad}
-                  onChange={(e) => setFormData({...formData, capacidad: e.target.value})}
+                  name="precio"
+                  min="0"
+                  step="0.01"
+                  value={formData.precio}
+                  onChange={handleChange}
                   required
-                  placeholder="Número de personas"
+                  placeholder="0.00"
                 />
-              </Form.Group>
-            </Col>
+              </InputGroup>
+            </Form.Group>
+          </Col>
 
-            <Col md={12}>
-              <Form.Group className="mb-3">
-                <Form.Label>Descripción *</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={4}
-                  value={formData.descripcion}
-                  onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
-                  required
-                  placeholder="Describe la cabaña, sus comodidades y atractivos"
-                  maxLength="500"
-                />
-                <Form.Text muted>{formData.descripcion.length}/500 caracteres</Form.Text>
-              </Form.Group>
-            </Col>
-
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label><FaDollarSign className="me-2" /> Precio por noche *</Form.Label>
-                <InputGroup>
-                  <InputGroup.Text><FaDollarSign /></InputGroup.Text>
-                  <Form.Control
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.precio}
-                    onChange={(e) => setFormData({...formData, precio: e.target.value})}
-                    required
-                    placeholder="0.00"
-                  />
-                </InputGroup>
-              </Form.Group>
-            </Col>
-
-            <Col md={12}>
-              <Form.Group className="mb-3">
-                <Form.Label>Servicios</Form.Label>
-                <Row>
-                  {SERVICIOS.map((servicio) => (
-                    <Col key={`servicio-${servicio.nombre}`} xs={6} md={4} lg={3}>
-                      <Form.Check
-                        type="checkbox"
-                        id={`servicio-${servicio.nombre}`}
-                        label={<>{servicio.icono} {servicio.nombre}</>}
-                        value={servicio.nombre}
-                        checked={formData.servicios.includes(servicio.nombre)}
-                        onChange={handleServicioChange}
-                      />
-                    </Col>
-                  ))}
-                </Row>
-              </Form.Group>
-            </Col>
-
-            <Col md={12}>
+          <Col md={12}>
             <Form.Group className="mb-3">
-              <Form.Label><FaImage className="me-2" /> Imágenes</Form.Label>
-              <Form.Control 
-                type="file" 
-                multiple 
-                accept="image/jpeg, image/png, image/webp" 
-                onChange={handleImageUpload} 
-                className="mb-3"
-                disabled={uploadingImages}
-              />
-                
-              {uploadingImages && (
-                <div className="mb-3">
-                  <Spinner animation="border" size="sm" className="me-2" />
-                  Subiendo imágenes...
-                </div>
-              )}
+              <Form.Label>Servicios</Form.Label>
+              <Row>
+                {SERVICIOS.map((servicio) => (
+                  <Col key={`servicio-${servicio.nombre}`} xs={6} md={4} lg={3}>
+                    <Form.Check
+                      type="checkbox"
+                      id={`servicio-${servicio.nombre}`}
+                      label={<>{servicio.icono} {servicio.nombre}</>}
+                      value={servicio.nombre}
+                      checked={formData.servicios.includes(servicio.nombre)}
+                      onChange={handleServicioChange}
+                    />
+                  </Col>
+                ))}
+              </Row>
+            </Form.Group>
+          </Col>
 
-                <Row>
-                {previewImages.map((img, index) => (
-                  <Col key={`img-${img.id}`} xs={6} md={4} lg={3} className="mb-3">
+          <Col md={12}>
+            <Form.Group className="mb-3">
+              <Form.Label><FaImage className="me-2" /> Imágenes (Máx. 5)</Form.Label>
+              
+              <div className="d-flex align-items-center mb-3">
+                <Button 
+                  variant="outline-primary" 
+                  onClick={triggerFileInput}
+                  disabled={images.length >= 5 || loading}
+                >
+                  <FaImage className="me-2" />
+                  {images.length >= 5 ? 'Límite alcanzado' : 'Seleccionar imágenes'}
+                </Button>
+                <Form.Control 
+                  type="file" 
+                  multiple 
+                  accept="image/*" 
+                  onChange={handleImageUpload} 
+                  className="d-none"
+                  ref={fileInputRef}
+                  disabled={images.length >= 5 || loading}
+                />
+                <span className="ms-3 text-muted">
+                  {images.length} / 5 imágenes seleccionadas
+                </span>
+              </div>
+              
+              <Row>
+                {images.map((img, index) => (
+                  <Col key={`img-${index}`} xs={6} md={4} lg={3} className="mb-3">
                     <Card className="h-100">
                       <div style={{ height: '150px', overflow: 'hidden' }}>
                         <img
-                          src={img.url}
+                          src={img.previewUrl}
                           alt={`Imagen ${index + 1}`}
                           style={{ 
                             width: '100%',
@@ -406,15 +333,17 @@ const CreateCabana = () => {
                             e.target.style.objectFit = 'contain';
                           }}
                         />
-                        </div>
-                        <Card.Body className="p-2 text-center">
+                      </div>
+                      <Card.Body className="p-2 text-center">
+                        <small className="d-block text-truncate">{img.file?.name}</small>
                         <Button 
                           variant="danger" 
                           size="sm"
-                          onClick={() => confirmRemoveImage(index)}
-                          disabled={uploadingImages}
+                          onClick={() => removeImage(index)}
+                          disabled={loading}
+                          className="mt-2"
                         >
-                            Eliminar
+                          Eliminar
                         </Button>
                       </Card.Body>
                     </Card>
@@ -423,48 +352,40 @@ const CreateCabana = () => {
               </Row>
             </Form.Group>
           </Col>
-          </Row>
+        </Row>
 
-          <div className="text-end">
-            <Button 
-              variant="primary" 
-              type="submit" 
-              disabled={loading || uploadingImages}
-              className="px-4 py-2"
-            >
-              {loading ? (
-                <>
-                  <Spinner
-                    as="span"
-                    animation="border"
-                    size="sm"
-                    role="status"
-                    aria-hidden="true"
-                    className="me-2"
-                  />
-                  Guardando...
-                </>
-              ) : 'Guardar Cabaña'}
-            </Button>
-          </div>
-        </Form>
-
-        <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
-          <Modal.Header closeButton>
-            <Modal.Title>Confirmar eliminación</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>¿Estás seguro que deseas eliminar esta imagen?</Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-              Cancelar
-            </Button>
-            <Button variant="danger" onClick={removeImage}>
-              Eliminar
-            </Button>
-          </Modal.Footer>
-        </Modal>
-      </Container>
-    </ErrorBoundary>
+        <div className="d-flex justify-content-between mt-4">
+          <Button 
+            variant="outline-secondary" 
+            onClick={() => navigate('/admin/cabanas')}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          
+          <Button 
+            variant="primary" 
+            type="submit" 
+            disabled={loading}
+            className="px-4"
+          >
+            {loading ? (
+              <>
+                <Spinner
+                  as="span"
+                  animation="border"
+                  size="sm"
+                  role="status"
+                  aria-hidden="true"
+                  className="me-2"
+                />
+                Guardando...
+              </>
+            ) : 'Guardar Cabaña'}
+          </Button>
+        </div>
+      </Form>
+    </Container>
   );
 };
 

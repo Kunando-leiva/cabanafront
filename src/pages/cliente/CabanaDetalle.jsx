@@ -306,18 +306,32 @@
 
 
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  Container, Row, Col, Card, Button, Alert, Badge, Carousel 
+  Container, Row, Col, Card, Button, Alert, Badge, Carousel, Spinner
 } from 'react-bootstrap';
 import { 
-  FaArrowLeft, FaCalendarAlt, FaUsers, FaMoneyBillWave, 
-  FaWifi, FaSwimmingPool, FaSnowflake, FaParking, FaTv, FaHome
+  FaArrowLeft, FaCalendarAlt, FaUsers, FaMoneyBillWave,
+  FaWifi, FaSwimmingPool, FaSnowflake, FaParking, FaTv,
+  FaUtensils, FaBed, FaShower, FaUmbrellaBeach, FaTemperatureHigh
 } from 'react-icons/fa';
 import axios from 'axios';
 import CalendarFull from '../../components/CalendarFull';
-import { API_URL } from '../../config'; // Asegúrate de que la ruta sea correcta
+import { API_URL } from '../../config';
+
+const SERVICIOS = [
+  { nombre: 'Wifi', icono: <FaWifi /> },
+  { nombre: 'Piscina', icono: <FaSwimmingPool /> },
+  { nombre: 'Aire acondicionado', icono: <FaSnowflake /> },
+  { nombre: 'Cocina', icono: <FaUtensils /> },
+  { nombre: 'Estacionamiento', icono: <FaParking /> },
+  { nombre: 'TV', icono: <FaTv /> },
+  { nombre: 'Ropa de cama', icono: <FaBed /> },
+  { nombre: 'Artículos de aseo', icono: <FaShower /> },
+  { nombre: 'Balcón o terraza', icono: <FaUmbrellaBeach /> },
+  { nombre: 'Calefacción', icono: <FaTemperatureHigh /> }
+];
 
 export default function CabanaDetalle() {
   const { id } = useParams();
@@ -328,90 +342,98 @@ export default function CabanaDetalle() {
   const [selectedDates, setSelectedDates] = useState({ start: null, end: null });
   const [activeImgIndex, setActiveImgIndex] = useState(0);
 
+  // Función para calcular noches entre fechas
   const calcularNoches = (start, end) => {
     if (!start || !end || start >= end) return 0;
     const diffTime = new Date(end) - new Date(start);
-    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  // Función para calcular precio total
   const calcularPrecioTotal = () => {
     const noches = calcularNoches(selectedDates.start, selectedDates.end);
-    if (!cabana?.precio || noches <= 0) return '0.00';
+    if (!cabana?.precio || noches <= 0) return 0;
     return (noches * cabana.precio).toFixed(2);
   };
 
+  // Cargar datos de la cabaña
   useEffect(() => {
     const fetchCabana = async () => {
       try {
         setLoading(true);
         setError('');
         
-        const response = await axios.get(`${API_URL}/api/cabanas/${id}`);
-        console.log('Datos recibidos:', response.data); // Debug detallado
-  
-        // Validación robusta de la respuesta
-        if (!response.data?.success || !response.data.data?._id) {
-          throw new Error('La estructura de la respuesta es inválida');
+        // Validar ID primero
+        if (!id || !/^[0-9a-fA-F]{24}$/.test(id)) {
+          throw new Error('ID de cabaña no válido');
         }
-  
-        const cabanaData = response.data.data; // Accedemos a los datos reales
-  
-        // Procesamiento seguro de los datos
-        const processedData = {
-          _id: cabanaData._id,
-          nombre: cabanaData.nombre || 'Nombre no disponible',
-          precio: cabanaData.precio ? Number(cabanaData.precio) : 0,
-          capacidad: cabanaData.capacidad ? Number(cabanaData.capacidad) : 1,
-          descripcion: cabanaData.descripcion || cabanaData.description || '',
-          servicios: Array.isArray(cabanaData.servicios) ? cabanaData.servicios : [],
-          imagenes: procesarImagenes(cabanaData.imagenes || cabanaData.image || [])
+
+        // 1. Obtener datos principales
+        const cabanaResponse = await axios.get(`${API_URL}/api/cabanas/${id}`);
+        
+        if (!cabanaResponse.data?.success) {
+          throw new Error(cabanaResponse.data?.error || 'Error al obtener cabaña');
+        }
+
+        const cabanaData = cabanaResponse.data.data;
+
+        // 2. Obtener imágenes si no vinieron en la respuesta
+        let imagenes = cabanaData.images || [];
+        if (imagenes.length === 0) {
+          try {
+            const imagesResponse = await axios.get(`${API_URL}/api/cabanas/${id}/images`);
+            if (imagesResponse.data?.success) {
+              imagenes = imagesResponse.data.data;
+            }
+          } catch (imgError) {
+            console.warn('Error obteniendo imágenes adicionales:', imgError.message);
+          }
+        }
+
+        // Formatear URLs de imágenes
+        const formatImageUrl = (img) => {
+          if (!img?.url) return `${API_URL}/default-cabana.jpg`;
+          return img.url.startsWith('http') ? img.url : `${API_URL}${img.url.startsWith('/') ? '' : '/'}${img.url}`;
         };
-  
-        setCabana(processedData);
-        
+
+        setCabana({
+          ...cabanaData,
+          imagenes: imagenes.length > 0 
+            ? imagenes.map(img => ({
+                ...img,
+                url: formatImageUrl(img)
+              }))
+            : [{ url: `${API_URL}/default-cabana.jpg`, filename: 'default.jpg', isDefault: true }],
+          imagenPrincipal: formatImageUrl(cabanaData.imagenPrincipal || imagenes[0])
+        });
+
       } catch (err) {
-        console.error('Error completo:', err); // Debug mejorado
-        setError(err.response?.data?.message || err.message || 'Error al cargar la cabaña');
-        
-        // Redirección con retraso para mostrar el error
-        setTimeout(() => {
-          navigate('/cabanas', { 
-            state: { 
-              error: 'No se pudo cargar la cabaña solicitada' 
-            } 
-          });
-        }, 3000);
+        console.error('Error al cargar cabaña:', {
+          message: err.message,
+          response: err.response?.data,
+          config: err.config
+        });
+        setError(err.response?.data?.error || err.message || 'Error al cargar la cabaña');
       } finally {
         setLoading(false);
       }
     };
-  
-    fetchCabana();
-  }, [id, navigate]);
-  
-  // Función auxiliar para procesar imágenes
-  const procesarImagenes = (imagenes) => {
-    if (!imagenes) return [];
-    
-    if (Array.isArray(imagenes)) {
-      return imagenes.map(img => {
-        if (typeof img !== 'string') return `${API_URL}/uploads/default.jpg`;
-        return img.startsWith('http') ? img : `${API_URL}/uploads/${img}`;
-      });
-    }
-    
-    if (typeof imagenes === 'string') {
-      return [imagenes.startsWith('http') ? imagenes : `${API_URL}/uploads/${imagenes}`];
-    }
-    
-    return [];
-  };
 
+    fetchCabana();
+  }, [id]);
+
+  // Manejar reserva
   const handleReservar = () => {
     if (!selectedDates.start || !selectedDates.end) {
       setError('Selecciona un rango de fechas válido');
       return;
     }
+    
+    if (new Date(selectedDates.start) < new Date()) {
+      setError('No puedes reservar fechas pasadas');
+      return;
+    }
+
     navigate(`/reservar/${id}`, {
       state: {
         cabanaId: id,
@@ -419,31 +441,42 @@ export default function CabanaDetalle() {
         fechaInicio: selectedDates.start,
         fechaFin: selectedDates.end,
         precioTotal: calcularPrecioTotal(),
-        imagenPrincipal: cabana.imagenes?.[0] || ''
+        imagenPrincipal: cabana.imagenPrincipal
       }
     });
   };
 
+  // Estados de carga
   if (loading) return (
     <div className="text-center my-5">
-      <div className="spinner-border text-primary" role="status">
-        <span className="visually-hidden">Cargando...</span>
-      </div>
+      <Spinner animation="border" variant="primary" />
       <p className="mt-2">Cargando información de la cabaña...</p>
     </div>
   );
 
+  // Manejo de errores
   if (error || !cabana) return (
-    <Alert variant="danger" className="text-center my-5">
-      {error || 'La cabaña no existe'}
-      <Button 
-        variant="primary" 
-        onClick={() => navigate('/cabanas')} 
-        className="mt-3"
-      >
-        <FaHome className="me-2" /> Ver cabañas disponibles
-      </Button>
-    </Alert>
+    <Container className="my-5">
+      <Alert variant="danger" className="text-center">
+        <Alert.Heading>Error al cargar la cabaña</Alert.Heading>
+        <p>{error}</p>
+        <div className="mt-3">
+          <Button 
+            variant="primary" 
+            onClick={() => navigate('/cabanas')}
+            className="me-2"
+          >
+            Ver cabañas disponibles
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => window.location.reload()}
+          >
+            Reintentar
+          </Button>
+        </div>
+      </Alert>
+    </Container>
   );
 
   const noches = calcularNoches(selectedDates.start, selectedDates.end);
@@ -451,79 +484,70 @@ export default function CabanaDetalle() {
 
   return (
     <Container className="my-4">
-      <Button variant="outline-primary" onClick={() => navigate(-1)} className="mb-4">
+      <Button 
+        variant="outline-primary" 
+        onClick={() => navigate(-1)} 
+        className="mb-4"
+      >
         <FaArrowLeft className="me-2" /> Volver
       </Button>
 
       <Row className="g-4">
-        {/* Sección de Imágenes - Mejorado */}
+        {/* Sección de imágenes */}
         <Col lg={6}>
           <Card className="shadow-sm">
-            {cabana.imagenes?.length > 0 ? (
-              <>
-                <Carousel activeIndex={activeImgIndex} onSelect={setActiveImgIndex}>
-                  {cabana.imagenes.map((img, index) => (
-                    <Carousel.Item key={`carousel-${index}`}>
-                      <div className="ratio ratio-16x9">
-                        <img
-                          src={img}
-                          alt={`Cabaña ${cabana.nombre} - Imagen ${index + 1}`}
-                          className="img-fluid"
-                          style={{ objectFit: 'cover' }}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = '/placeholder-cabana.jpg';
-                          }}
-                        />
-                      </div>
-                    </Carousel.Item>
-                  ))}
-                </Carousel>
-                
-                {cabana.imagenes.length > 1 && (
-                  <div className="p-3">
-                    <Row>
-                      {cabana.imagenes.map((img, index) => (
-                        <Col xs={3} key={`thumb-${index}`}>
-                          <img
-                            src={img}
-                            alt={`Miniatura ${index + 1}`}
-                            className={`img-thumbnail cursor-pointer ${activeImgIndex === index ? 'border-primary' : ''}`}
-                            onClick={() => setActiveImgIndex(index)}
-                            style={{ 
-                              height: '80px', 
-                              objectFit: 'cover',
-                              borderWidth: activeImgIndex === index ? '3px' : '1px'
-                            }}
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = '/placeholder-thumb.jpg';
-                            }}
-                          />
-                        </Col>
-                      ))}
-                    </Row>
+            <Carousel 
+              activeIndex={activeImgIndex} 
+              onSelect={setActiveImgIndex}
+              interval={null}
+              indicators={cabana.imagenes.length > 1}
+            >
+              {cabana.imagenes.map((img, index) => (
+                <Carousel.Item key={index}>
+                  <div className="ratio ratio-16x9">
+                    <img
+                      src={img.url}
+                      alt={`${cabana.nombre} - Imagen ${index + 1}`}
+                      className="img-fluid rounded-top"
+                      style={{ objectFit: 'cover' }}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = `${API_URL}/default-cabana.jpg`;
+                      }}
+                    />
                   </div>
-                )}
-              </>
-            ) : (
-              <div className="text-center p-5 bg-light">
-                <img
-                  src="/placeholder-cabana.jpg"
-                  alt="Imagen no disponible"
-                  className="img-fluid"
-                  style={{ maxHeight: '400px' }}
-                />
-                <p className="text-muted mt-2">Esta cabaña no tiene imágenes</p>
-              </div>
+                </Carousel.Item>
+              ))}
+            </Carousel>
+
+            {cabana.imagenes.length > 1 && (
+              <Card.Footer className="p-3 bg-light">
+                <Row className="g-2">
+                  {cabana.imagenes.map((img, index) => (
+                    <Col xs={3} key={`thumb-${index}`}>
+                      <img
+                        src={img.url}
+                        alt={`Miniatura ${index + 1}`}
+                        className={`img-thumbnail cursor-pointer ${activeImgIndex === index ? 'border-primary border-2' : 'opacity-75'}`}
+                        onClick={() => setActiveImgIndex(index)}
+                        style={{ height: '80px', objectFit: 'cover', width: '100%' }}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = `${API_URL}/default-cabana-thumb.jpg`;
+                        }}
+                      />
+                    </Col>
+                  ))}
+                </Row>
+              </Card.Footer>
             )}
           </Card>
         </Col>
 
-        {/* Sección de Detalles */}
+        {/* Sección de detalles */}
         <Col lg={6}>
           <Card className="shadow-sm h-100">
-            <Card.Body>
+            <Card.Body className="d-flex flex-column">
               <Card.Title as="h1" className="mb-3">{cabana.nombre}</Card.Title>
               <Card.Text className="text-muted mb-4">{cabana.descripcion}</Card.Text>
 
@@ -542,7 +566,9 @@ export default function CabanaDetalle() {
                     <FaMoneyBillWave className="text-success me-3 fs-4" />
                     <div>
                       <small className="text-muted">Precio por noche</small>
-                      <div className="fs-5"><strong>${cabana.precio.toLocaleString()}</strong></div>
+                      <div className="fs-5">
+                        <strong>${cabana.precio?.toLocaleString('es-AR') || '0'}</strong>
+                      </div>
                     </div>
                   </div>
                 </Col>
@@ -555,11 +581,21 @@ export default function CabanaDetalle() {
                     Servicios incluidos
                   </h5>
                   <div className="d-flex flex-wrap gap-2">
-                    {cabana.servicios.map((servicio, i) => (
-                      <Badge key={`servicio-${i}`} pill bg="light" text="dark" className="border">
-                        {servicio}
-                      </Badge>
-                    ))}
+                    {cabana.servicios.map((servicio, i) => {
+                      const servicioInfo = SERVICIOS.find(s => s.nombre === servicio) || { nombre: servicio };
+                      return (
+                        <Badge 
+                          key={`servicio-${i}`} 
+                          pill 
+                          bg="light" 
+                          text="dark" 
+                          className="border d-flex align-items-center"
+                        >
+                          {servicioInfo.icono && React.cloneElement(servicioInfo.icono, { className: 'me-1' })}
+                          {servicioInfo.nombre}
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -597,15 +633,17 @@ export default function CabanaDetalle() {
                 )}
               </div>
 
-              <Button
-                variant="primary"
-                size="lg"
-                className="w-100 py-3 fw-bold"
-                onClick={handleReservar}
-                disabled={!selectedDates.start || !selectedDates.end}
-              >
-                Reservar ahora
-              </Button>
+              <div className="mt-auto">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-100 py-3 fw-bold"
+                  onClick={handleReservar}
+                  disabled={!selectedDates.start || !selectedDates.end}
+                >
+                  Reservar ahora
+                </Button>
+              </div>
             </Card.Body>
           </Card>
         </Col>

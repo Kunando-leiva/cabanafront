@@ -132,34 +132,75 @@ export default function HomePublico() {
   });
   const navigate = useNavigate();
 
-  // Obtener cabañas destacadas
+  // 1. Añade esta función para manejar las URLs de imágenes
+  const getImageUrl = (imageData) => {
+    // Si no hay datos de imagen, retorna la imagen por defecto
+    if (!imageData) return `${API_URL}/default-cabana.jpg`;
+    
+    // Si es string y ya es una URL completa
+    if (typeof imageData === 'string' && imageData.startsWith('http')) {
+      return imageData;
+    }
+    
+    // Si es string pero no es URL completa
+    if (typeof imageData === 'string') {
+      return `${API_URL}${imageData.startsWith('/') ? '' : '/'}${imageData}`;
+    }
+    
+    // Si es objeto con propiedad url
+    if (imageData.url) {
+      return imageData.url.startsWith('http') 
+        ? imageData.url 
+        : `${API_URL}${imageData.url.startsWith('/') ? '' : '/'}${imageData.url}`;
+    }
+    
+    // Si es objeto con _id o fileId
+    if (imageData._id || imageData.fileId) {
+      return `${API_URL}/api/images/${imageData._id || imageData.fileId}`;
+    }
+    
+    // Caso por defecto
+    return `${API_URL}/default-cabana.jpg`;
+  };
+
+  // 2. Modifica el useEffect para cargar cabañas
   useEffect(() => {
     const fetchCabanas = async () => {
       try {
         const response = await axios.get(`${API_URL}/api/cabanas?destacadas=true`);
+        console.log('Respuesta API:', response.data); // Para depuración
         
-        // Validación profunda
         const data = response.data?.data || response.data;
         
         if (!Array.isArray(data)) {
-          throw new Error('La respuesta no contiene un array de cabañas');
+          throw new Error('Formato de respuesta inválido');
         }
-  
-        setCabanas(data);
+
+        // Procesar las cabañas para asegurar URLs válidas
+        const processedCabanas = data.map(cabana => ({
+          ...cabana,
+          imagenPrincipal: getImageUrl(cabana.imagenPrincipal || cabana.imagenes?.[0]),
+          imagenes: (cabana.imagenes || []).map(img => ({
+            ...img,
+            url: getImageUrl(img)
+          }))
+        }));
+
+        setCabanas(processedCabanas);
         setError(null);
       } catch (err) {
         console.error('Error al cargar cabañas:', err);
         setError(err.message);
-        setCabanas([]); // Asegura que sea array vacío
+        setCabanas([]);
       } finally {
         setLoading(false);
       }
     };
   
     fetchCabanas();
-  }, [API_URL]);
+  }, []);
 
-  // Manejar búsqueda de disponibilidad
+  // 3. Modifica la función de búsqueda de disponibilidad
   const handleSearchAvailability = async () => {
     if (!dateRange.start || !dateRange.end) {
       setSearchStatus({
@@ -171,124 +212,145 @@ export default function HomePublico() {
     }
   
     try {
-      setSearchStatus({
-        loading: true,
-        error: null,
-        searched: true
-      });
+      setSearchStatus({ loading: true, error: null, searched: true });
   
-      // Formatea fechas
       const fechaInicio = dateRange.start.toISOString().split('T')[0];
       const fechaFin = dateRange.end.toISOString().split('T')[0];
   
-      // Usa URLSearchParams para codificación segura
       const params = new URLSearchParams({ fechaInicio, fechaFin });
-  
       const response = await axios.get(
         `${API_URL}/api/cabanas/disponibilidad?${params.toString()}`
       );
+
+      // Procesar las cabañas disponibles
+      const processedCabanas = (response.data?.data || []).map(cabana => ({
+        ...cabana,
+        imagenPrincipal: getImageUrl(cabana.imagenPrincipal || cabana.imagenes?.[0])
+      }));
   
-      setAvailableCabanas(response.data?.data || []);
+      setAvailableCabanas(processedCabanas);
       setSearchStatus(prev => ({ ...prev, loading: false }));
       
     } catch (error) {
-      console.error('Error detallado:', {
-        url: error.config?.url,
-        params: error.config?.params,
-        response: error.response?.data
-      });
-  
+      console.error('Error en búsqueda:', error);
       setSearchStatus({
         loading: false,
-        error: error.response?.data?.message || 
-              'No hay disponibilidad para las fechas seleccionadas',
+        error: error.response?.data?.message || 'Error al buscar disponibilidad',
         searched: true
       });
       setAvailableCabanas([]);
     }
   };
 
-  // Utilidades
-  const calcularNoches = (start, end) => {
-    if (!start || !end || start >= end) return 0;
-    return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+  // 4. Componente CabanaCard actualizado
+  const CabanaCard = ({ cabana, dateRange }) => {
+    const noches = dateRange ? Math.ceil((dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24)) : 0;
+    const precioTotal = (noches * cabana.precio).toFixed(2);
+
+    return (
+      <Col>
+        <Card className="h-100 shadow-sm">
+          <div className="ratio ratio-16x9">
+            <img
+              src={cabana.imagenPrincipal}
+              alt={cabana.nombre}
+              className="card-img-top"
+              style={{ objectFit: 'cover' }}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = `${API_URL}/default-cabana.jpg`;
+              }}
+            />
+          </div>
+          <Card.Body className="d-flex flex-column">
+            <Card.Title>{cabana.nombre}</Card.Title>
+            <Card.Text className="text-muted">
+              <small>
+                <FaStar className="text-warning" /> {cabana.capacidad} personas · ${cabana.precio}/noche
+              </small>
+            </Card.Text>
+            {dateRange && (
+              <div className="mt-auto">
+                <div className="d-flex justify-content-between mb-3">
+                  <span>Total {noches} noches:</span>
+                  <strong>${precioTotal}</strong>
+                </div>
+                <Button 
+                  variant="primary" 
+                  className="w-100 mb-2"
+                  onClick={() => navigate(`/reservar/${cabana._id}`, {
+                    state: {
+                      cabanaId: cabana._id,
+                      cabanaNombre: cabana.nombre,
+                      fechaInicio: dateRange.start,
+                      fechaFin: dateRange.end,
+                      precioTotal,
+                      imagenPrincipal: cabana.imagenPrincipal
+                    }
+                  })}
+                >
+                  Reservar ahora
+                </Button>
+              </div>
+            )}
+            <Button 
+              as={Link}
+              to={`/cabanas/${cabana._id}`}
+              variant={dateRange ? "outline-primary" : "primary"}
+              className="w-100"
+            >
+              Ver detalles
+            </Button>
+          </Card.Body>
+        </Card>
+      </Col>
+    );
   };
 
-  const formatDate = (date) => {
-    return date?.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    }) || '';
-  };
-
-  // Renderizado condicional de resultados
-  const renderSearchResults = () => {
-    if (searchStatus.loading) {
+  // 5. Componente FeaturedCabanas actualizado
+  const FeaturedCabanas = () => {
+    if (loading) {
       return (
-        <div className="text-center my-5">
+        <div className="text-center py-5">
           <Spinner animation="border" />
-          <p className="mt-2">Buscando cabañas disponibles...</p>
+          <p className="mt-2">Cargando cabañas destacadas...</p>
         </div>
       );
     }
 
-    if (searchStatus.error) {
+    if (error) {
       return (
-        <Alert variant="danger" className="text-center my-4">
-          {searchStatus.error}
+        <Alert variant="danger" className="text-center my-5">
+          Error al cargar cabañas: {error}
         </Alert>
       );
     }
 
-    if (searchStatus.searched && availableCabanas.length === 0) {
-      return (
-        <section className="py-5">
-          <Container>
-            <Alert variant="warning" className="text-center">
-              No hay cabañas disponibles para las fechas seleccionadas.
-            </Alert>
-            <div className="text-center mt-3">
-              <Button 
-                variant="outline-primary" 
-                onClick={() => {
-                  setAvailableCabanas([]);
-                  setSearchStatus({ ...searchStatus, searched: false });
-                }}
-              >
-                Intentar con otras fechas
-              </Button>
-            </div>
-          </Container>
-        </section>
-      );
-    }
-
-    if (availableCabanas.length > 0) {
-      return (
-        <section className="py-5">
-          <Container>
-            <h2 className="text-center mb-5">
-              Cabañas disponibles del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
-            </h2>
+    return (
+      <section className="py-5">
+        <Container>
+          <h2 className="text-center mb-5">Nuestras Cabañas Destacadas</h2>
+          {cabanas.length > 0 ? (
             <Row xs={1} md={3} className="g-4">
-              {availableCabanas.map(cabana => (
+              {cabanas.map(cabana => (
                 <CabanaCard 
-                  key={cabana._id}
-                  cabana={cabana}
-                  dateRange={dateRange}
-                  navigate={navigate}
+                  key={cabana._id} 
+                  cabana={cabana} 
+                  dateRange={null} 
                 />
               ))}
             </Row>
-          </Container>
-        </section>
-      );
-    }
-
-    return null;
+          ) : (
+            <Alert variant="info" className="text-center">
+              No hay cabañas disponibles en este momento
+            </Alert>
+          )}
+        </Container>
+      </section>
+    );
   };
 
+  // ... [resto del código permanece igual]
   return (
     <div className="home-publico">
       <PublicNavbar />
@@ -326,23 +388,23 @@ export default function HomePublico() {
           
           <Row className="justify-content-center">
             <Col md={4} className="text-center">
-            <Button 
-  variant="primary" 
-  onClick={handleSearchAvailability}
-  disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
->
-  {searchStatus.loading ? (
-    <>
-      <Spinner animation="border" size="sm" className="me-2" />
-      Buscando...
-    </>
-  ) : (
-    <>
-      <FaSearch className="me-2" />
-      Buscar disponibilidad
-    </>
-  )}
-</Button>
+              <Button 
+                variant="primary" 
+                onClick={handleSearchAvailability}
+                disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
+              >
+                {searchStatus.loading ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Buscando...
+                  </>
+                ) : (
+                  <>
+                    <FaSearch className="me-2" />
+                    Buscar disponibilidad
+                  </>
+                )}
+              </Button>
             </Col>
           </Row>
           
@@ -360,169 +422,82 @@ export default function HomePublico() {
       </section>
 
       {/* Resultados de búsqueda */}
-      {renderSearchResults()}
+      {searchStatus.searched && (
+        <section className="py-5">
+          <Container>
+            {searchStatus.loading ? (
+              <div className="text-center">
+                <Spinner animation="border" />
+                <p className="mt-2">Buscando cabañas disponibles...</p>
+              </div>
+            ) : searchStatus.error ? (
+              <Alert variant="danger" className="text-center">
+                {searchStatus.error}
+              </Alert>
+            ) : availableCabanas.length > 0 ? (
+              <>
+                <h2 className="text-center mb-5">
+                  Cabañas disponibles del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
+                </h2>
+                <Row xs={1} md={3} className="g-4">
+                  {availableCabanas.map(cabana => (
+                    <CabanaCard 
+                      key={cabana._id}
+                      cabana={cabana}
+                      dateRange={dateRange}
+                    />
+                  ))}
+                </Row>
+              </>
+            ) : (
+              <Alert variant="warning" className="text-center">
+                No hay cabañas disponibles para las fechas seleccionadas.
+              </Alert>
+            )}
+          </Container>
+        </section>
+      )}
 
       {/* Cabañas Destacadas */}
-      <FeaturedCabanas 
-        cabanas={cabanas} 
-        loading={loading} 
-        API_URL={API_URL}
-      />
+      <FeaturedCabanas />
 
       {/* Servicios/Beneficios */}
-      <ServicesSection />
+      <section className="py-5 bg-light">
+        <Container>
+          <h2 className="text-center mb-5">¿Por qué elegirnos?</h2>
+          <Row className="g-4">
+            <Col md={4} className="text-center">
+              <FaSwimmingPool size={40} className="mb-3 text-primary" />
+              <h4>Piscinas Privadas</h4>
+              <p>Disfruta de piscinas exclusivas en cada cabaña.</p>
+            </Col>
+            <Col md={4} className="text-center">
+              <FaWifi size={40} className="mb-3 text-primary" />
+              <h4>Wifi de Alta Velocidad</h4>
+              <p>Conectividad incluso en medio de la naturaleza.</p>
+            </Col>
+            <Col md={4} className="text-center">
+              <FaSnowflake size={40} className="mb-3 text-primary" />
+              <h4>Aire Acondicionado</h4>
+              <p>Comodidad en todas las estaciones del año.</p>
+            </Col>
+          </Row>
+        </Container>
+      </section>
     </div>
   );
 }
 
-// Componente para mostrar tarjeta de cabaña
-const CabanaCard = ({ cabana, dateRange, navigate }) => {
-  const noches = Math.ceil((dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24));
-  const precioTotal = (noches * cabana.precio).toFixed(2);
+// Funciones auxiliares
+function formatDate(date) {
+  return date?.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }) || '';
+}
 
-  return (
-    <Col>
-      <Card className="h-100 shadow-sm">
-        <Card.Img 
-          variant="top" 
-          src={getCabanaImage(cabana.imagenes?.[0])}
-          style={{ height: '200px', objectFit: 'cover' }}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = '/placeholder-cabana.jpg';
-          }}
-        />
-        <Card.Body className="d-flex flex-column">
-          <Card.Title>{cabana.nombre}</Card.Title>
-          <Card.Text className="text-muted">
-            <small>
-              <FaStar className="text-warning" /> {cabana.capacidad} personas · ${cabana.precio}/noche
-            </small>
-          </Card.Text>
-          <div className="mt-auto">
-            <div className="d-flex justify-content-between mb-3">
-              <span>Total {noches} noches:</span>
-              <strong>${precioTotal}</strong>
-            </div>
-            <Button 
-              variant="primary" 
-              className="w-100 mb-2"
-              onClick={() => navigate(`/reservar/${cabana._id}`, {
-                state: {
-                  cabanaId: cabana._id,
-                  cabanaNombre: cabana.nombre,
-                  fechaInicio: dateRange.start,
-                  fechaFin: dateRange.end,
-                  precioTotal,
-                  imagenPrincipal: cabana.imagenes?.[0] || ''
-                }
-              })}
-            >
-              Reservar ahora
-            </Button>
-            <Button 
-              as={Link}
-              to={`/cabanas/${cabana._id}`}
-              variant="outline-primary"
-              className="w-100"
-            >
-              Ver detalles
-            </Button>
-          </div>
-        </Card.Body>
-      </Card>
-    </Col>
-  );
-};
-
-const FeaturedCabanas = ({ cabanas = [], loading, API_URL }) => (
-  <section className="py-5">
-    <Container>
-      <h2 className="text-center mb-5">Nuestras Cabañas Destacadas</h2>
-      {loading ? (
-        <div className="text-center">
-          <Spinner animation="border" role="status">
-            <span className="visually-hidden">Cargando...</span>
-          </Spinner>
-        </div>
-      ) : (
-        <Row xs={1} md={3} className="g-4">
-          {Array.isArray(cabanas) && cabanas.length > 0 ? (
-            cabanas.map((cabana) => (
-              <Col key={cabana._id || Math.random().toString()}>
-                <Card className="h-100 shadow-sm">
-                  <Card.Img 
-                    variant="top" 
-                    src={getCabanaImage(cabana.imagenes?.[0], API_URL)}
-                    style={{ height: '200px', objectFit: 'cover' }}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = '/placeholder-cabana.jpg';
-                    }}
-                  />
-                  <Card.Body className="d-flex flex-column">
-                    <Card.Title>{cabana.nombre || 'Cabaña sin nombre'}</Card.Title>
-                    <Card.Text>
-                      <small className="text-muted">
-                        <FaStar className="text-warning" /> 
-                        {cabana.capacidad || 1} personas · ${(cabana.precio || 0).toLocaleString()}/noche
-                      </small>
-                    </Card.Text>
-                    <Button 
-                      as={Link}
-                      to={`/cabanas/${cabana._id}`}
-                      variant="outline-primary"
-                      className="mt-auto"
-                    >
-                      Ver Detalles
-                    </Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))
-          ) : (
-            <Col className="text-center py-4">
-              <Alert variant="info">
-                No hay cabañas disponibles en este momento
-              </Alert>
-            </Col>
-          )}
-        </Row>
-      )}
-    </Container>
-  </section>
-);
-
-// Componente para sección de servicios
-const ServicesSection = () => (
-  <section className="py-5 bg-light">
-    <Container>
-      <h2 className="text-center mb-5">¿Por qué elegirnos?</h2>
-      <Row className="g-4">
-        <Col md={4} className="text-center">
-          <FaSwimmingPool size={40} className="mb-3 text-primary" />
-          <h4>Piscinas Privadas</h4>
-          <p>Disfruta de piscinas exclusivas en cada cabaña.</p>
-        </Col>
-        <Col md={4} className="text-center">
-          <FaWifi size={40} className="mb-3 text-primary" />
-          <h4>Wifi de Alta Velocidad</h4>
-          <p>Conectividad incluso en medio de la naturaleza.</p>
-        </Col>
-        <Col md={4} className="text-center">
-          <FaSnowflake size={40} className="mb-3 text-primary" />
-          <h4>Aire Acondicionado</h4>
-          <p>Comodidad en todas las estaciones del año.</p>
-        </Col>
-      </Row>
-    </Container>
-  </section>
-);
-
-// Helper para obtener imagen de cabaña
-// Función helper mejorada
-const getCabanaImage = (img, API_URL) => {
-  if (!img) return '/placeholder-cabana.jpg';
-  if (img.startsWith('http')) return img;
-  return `${API_URL}/uploads/${img}`;
-};
+function calcularNoches(start, end) {
+  if (!start || !end || start >= end) return 0;
+  return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+}

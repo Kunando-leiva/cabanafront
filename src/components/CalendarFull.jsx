@@ -108,7 +108,7 @@ const CalendarFull = ({
       }
     }
     
-    setDateRange(newDateRange);
+  setDateRange([...newDateRange]);
   };
 
   
