@@ -28,38 +28,34 @@ export default function Gallery() {
           }
         });
         
-        // Adaptación a la estructura de respuesta del backend
-        const responseData = response.data;
-        let imagesData = [];
-        let total = 0;
-
-        if (responseData.data && Array.isArray(responseData.data)) {
-          imagesData = responseData.data;
-          total = responseData.pagination?.total || imagesData.length;
-        } else if (Array.isArray(responseData)) {
-          imagesData = responseData;
-          total = responseData.length;
+        // Verificar estructura de respuesta
+        if (!response.data.success) {
+          throw new Error(response.data.error || 'Respuesta inesperada del servidor');
         }
 
-        // Mapeo de datos para asegurar consistencia
-        const formattedImages = imagesData.map(img => ({
-          id: img._id || img.id,
-          fileId: img.fileId || img._id,
-          url: img.fullUrl || img.url || `${API_URL}/api/images/${img.fileId || img._id}`,
+        // Procesar imágenes
+        const processedImages = response.data.data.map(img => ({
+          id: img._id,
+          fileId: img.fileId,
+          // Usar fullUrl si está disponible, sino construir la URL
+          url: img.fullUrl || `${API_URL}${img.url}`,
           filename: img.filename,
-          cabanaName: img.relatedCabana?.name || 'Cabaña sin nombre',
+          cabanaName: img.relatedCabana?.name || 'Cabaña',
+          uploadedByName: img.uploadedBy?.name || 'Usuario',
           createdAt: img.createdAt,
-          uploadedBy: img.uploadedBy?.name || 'Usuario desconocido',
-          isPublic: img.isPublic !== undefined ? img.isPublic : true
+          isPublic: img.isPublic
         }));
 
-        setImages(formattedImages);
-        setPagination(prev => ({ ...prev, total }));
+        setImages(processedImages);
+        setPagination(prev => ({
+          ...prev,
+          total: response.data.pagination?.total || 0
+        }));
         setError(null);
       } catch (err) {
-        console.error('Error fetching images:', {
+        console.error('Error al cargar imágenes:', {
           error: err,
-          response: err.response
+          response: err.response?.data
         });
         setError(err.response?.data?.error || err.message || 'Error al cargar la galería');
       } finally {
@@ -72,6 +68,16 @@ export default function Gallery() {
 
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  // Verificar acceso a imágenes
+  const checkImageAccess = (url) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = url;
+    });
   };
 
   const renderContent = () => {
@@ -145,7 +151,7 @@ export default function Gallery() {
                     {image.cabanaName}
                   </Card.Title>
                   <small className="text-muted text-center">
-                    Subido por: {image.uploadedBy}<br />
+                    Subido por: {image.uploadedByName}<br />
                     {new Date(image.createdAt).toLocaleDateString()}
                   </small>
                 </Card.Body>
@@ -212,7 +218,6 @@ export default function Gallery() {
         
         {renderContent()}
 
-        {/* Modal para vista ampliada */}
         <Modal
           show={!!selectedImage}
           onHide={() => setSelectedImage(null)}
@@ -237,7 +242,7 @@ export default function Gallery() {
           <Modal.Footer className="d-flex justify-content-between">
             <div>
               <small className="text-muted d-block">
-                Subido por: {selectedImage?.uploadedBy}
+                Subido por: {selectedImage?.uploadedByName}
               </small>
               <small className="text-muted">
                 Fecha: {selectedImage && new Date(selectedImage.createdAt).toLocaleDateString()}
