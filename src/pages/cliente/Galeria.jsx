@@ -115,35 +115,40 @@ export default function Gallery() {
 
     return (
       <>
-        <Row xs={1} sm={2} md={3} lg={4} className="g-4">
-          {images.map((image) => (
-            <Col key={image.id}>
-              <Card className="h-100 shadow-sm gallery-card">
-                <div 
-                  className="ratio ratio-16x9 card-img-top"
-                  onClick={() => setSelectedImage(image)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <img
-                    src={image.url}
-                    alt={image.cabanaName}
-                    className="img-fluid"
-                    style={{ objectFit: 'cover' }}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = `${API_URL}/default-image.jpg`;
-                    }}
-                  />
-                </div>
-                <Card.Body className="d-flex flex-column">
-                  <Card.Title className="text-center mb-auto">
-                    {image.cabanaName}
-                  </Card.Title>
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+        <Row xs={2} sm={3} md={4} className="g-2"> {/* Reduje el gutter (g-2) para más espacio */}
+  {images.map((image) => (
+    <Col key={image.id} className="p-1"> {/* Padding reducido */}
+      <div 
+        className="gallery-image-wrapper"
+        onClick={() => setSelectedImage(image)}
+        style={{ 
+          cursor: 'pointer',
+          height: '100%',
+          position: 'relative'
+        }}
+      >
+        <img
+          src={image.url}
+          alt={image.cabanaName}
+          className="img-fluid w-100"
+          style={{ 
+            objectFit: 'cover',
+            height: '200px', // Altura fija para uniformidad
+            width: '100%',
+            borderRadius: '8px',
+            transition: 'transform 0.3s ease'
+          }}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = `${API_URL}/default-image.jpg`;
+          }}
+          onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+          onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        />
+      </div>
+    </Col>
+  ))}
+</Row>
 
         {pagination.total > pagination.limit && (
           <div className="d-flex justify-content-center mt-4">
