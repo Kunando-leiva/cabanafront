@@ -7,6 +7,10 @@ import { API_URL } from '../../config';
 import { Form, Button, Alert, Spinner, Card, Row, Col, Image } from 'react-bootstrap';
 import { FaTrash, FaSave, FaTimes } from 'react-icons/fa';
 import { Modal } from 'antd';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+
+
 
 export default function EditCabana() {
   const { id } = useParams();

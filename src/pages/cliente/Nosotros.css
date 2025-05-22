@@ -1,0 +1,39 @@
+.nosotros-page {
+  background-color: #fff;
+  color: #333;
+}
+
+.nosotros-image-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.nosotros-image-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 80%, rgba(0,0,0,0.05));
+}
+
+/* Efecto hover para la imagen */
+.nosotros-image-container img {
+  transition: transform 0.5s ease;
+}
+
+.nosotros-image-container:hover img {
+  transform: scale(1.03);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .nosotros-page {
+    padding-top: 30px;
+  }
+  
+  .nosotros-image-container {
+    margin-top: 40px;
+  }
+}

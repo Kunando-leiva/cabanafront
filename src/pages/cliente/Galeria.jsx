@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Spinner, Alert, Modal, Button } from 'react-bootstrap';
+import { Container, Row, Col, Spinner, Alert, Modal, Button } from 'react-bootstrap';
 import axios from 'axios';
 import { API_URL } from '../../config';
 import Navbar from '../../components/PublicNavbar';
+import './Galeria.css'; // Archivo para estilos adicionales
 
 export default function Gallery() {
   const [images, setImages] = useState([]);
@@ -25,7 +26,7 @@ export default function Gallery() {
           params: {
             limit: pagination.limit,
             offset: (pagination.page - 1) * pagination.limit,
-            populate: 'relatedCabana' // Solicitar población de la cabaña relacionada
+            populate: 'relatedCabana'
           }
         });
         
@@ -33,16 +34,10 @@ export default function Gallery() {
           throw new Error(response.data.error || 'Respuesta inesperada del servidor');
         }
 
-        // Procesar imágenes con el nombre correcto de la cabaña
         const processedImages = response.data.data.map(img => ({
           id: img._id,
-          fileId: img.fileId,
           url: img.fullUrl || `${API_URL}${img.url}`,
-          filename: img.filename,
-          cabanaName: img.relatedCabana?.nombre || 'Sin nombre', // Usamos 'nombre' en español
-          uploadedByName: img.uploadedBy?.name || 'Usuario',
-          createdAt: img.createdAt,
-          isPublic: img.isPublic
+          cabanaName: img.relatedCabana?.nombre || 'Sin nombre',
         }));
 
         setImages(processedImages);
@@ -52,10 +47,7 @@ export default function Gallery() {
         }));
         setError(null);
       } catch (err) {
-        console.error('Error al cargar imágenes:', {
-          error: err,
-          response: err.response?.data
-        });
+        console.error('Error al cargar imágenes:', err);
         setError(err.response?.data?.error || err.message || 'Error al cargar la galería');
       } finally {
         setLoading(false);
@@ -72,9 +64,9 @@ export default function Gallery() {
   const renderContent = () => {
     if (loading && images.length === 0) {
       return (
-        <div className="text-center my-5">
-          <Spinner animation="border" />
-          <p className="mt-2">Cargando imágenes...</p>
+        <div className="text-center my-5 py-5">
+          <Spinner animation="border" role="status" style={{ color: '#333' }} />
+          <p className="mt-3" style={{ fontWeight: 300 }}>Cargando imágenes...</p>
         </div>
       );
     }
@@ -82,15 +74,24 @@ export default function Gallery() {
     if (error) {
       return (
         <Container className="my-5">
-          <Alert variant="danger">
-            <Alert.Heading>Error</Alert.Heading>
-            <p>{error}</p>
+          <Alert variant="light" className="border">
+            <p className="mb-3" style={{ fontWeight: 300 }}>{error}</p>
             <div className="d-flex gap-2">
-              <Button onClick={() => window.location.reload()} variant="primary">
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline-dark"
+                className="rounded-0 px-3"
+                style={{ fontWeight: 300, letterSpacing: '1px' }}
+              >
                 Reintentar
               </Button>
-              <Button onClick={() => navigate(-1)} variant="outline-secondary">
-                Volver atrás
+              <Button 
+                onClick={() => navigate(-1)} 
+                variant="outline-secondary"
+                className="rounded-0 px-3"
+                style={{ fontWeight: 300, letterSpacing: '1px' }}
+              >
+                Volver
               </Button>
             </div>
           </Alert>
@@ -101,13 +102,16 @@ export default function Gallery() {
     if (images.length === 0) {
       return (
         <Container className="my-5">
-          <Alert variant="info">
-            No hay imágenes disponibles
-            <div className="mt-3">
-              <Button onClick={() => navigate(-1)} variant="outline-primary">
-                Volver atrás
-              </Button>
-            </div>
+          <Alert variant="light" className="border text-center">
+            <p style={{ fontWeight: 300 }}>No hay imágenes disponibles</p>
+            <Button 
+              onClick={() => navigate(-1)} 
+              variant="outline-dark"
+              className="rounded-0 px-3 mt-2"
+              style={{ fontWeight: 300, letterSpacing: '1px' }}
+            >
+              Volver
+            </Button>
           </Alert>
         </Container>
       );
@@ -115,59 +119,47 @@ export default function Gallery() {
 
     return (
       <>
-        <Row xs={2} sm={3} md={4} className="g-2"> {/* Reduje el gutter (g-2) para más espacio */}
-  {images.map((image) => (
-    <Col key={image.id} className="p-1"> {/* Padding reducido */}
-      <div 
-        className="gallery-image-wrapper"
-        onClick={() => setSelectedImage(image)}
-        style={{ 
-          cursor: 'pointer',
-          height: '100%',
-          position: 'relative'
-        }}
-      >
-        <img
-          src={image.url}
-          alt={image.cabanaName}
-          className="img-fluid w-100"
-          style={{ 
-            objectFit: 'cover',
-            height: '200px', // Altura fija para uniformidad
-            width: '100%',
-            borderRadius: '8px',
-            transition: 'transform 0.3s ease'
-          }}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = `${API_URL}/default-image.jpg`;
-          }}
-          onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-          onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-        />
-      </div>
-    </Col>
-  ))}
-</Row>
+        <Row xs={2} sm={3} md={4} className="g-3">
+          {images.map((image) => (
+            <Col key={image.id} className="mb-4">
+              <div 
+                className="gallery-item"
+                onClick={() => setSelectedImage(image)}
+              >
+                <img
+                  src={image.url}
+                  alt={image.cabanaName}
+                  className="img-fluid w-100"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = `${API_URL}/default-image.jpg`;
+                  }}
+                />
+              </div>
+            </Col>
+          ))}
+        </Row>
 
         {pagination.total > pagination.limit && (
-          <div className="d-flex justify-content-center mt-4">
+          <div className="d-flex justify-content-center mt-5">
             <nav>
               <ul className="pagination">
                 <li className={`page-item ${pagination.page === 1 ? 'disabled' : ''}`}>
                   <button 
-                    className="page-link" 
+                    className="page-link rounded-0" 
                     onClick={() => handlePageChange(pagination.page - 1)}
+                    style={{ fontWeight: 300 }}
                   >
-                    Anterior
+                    &larr; Anterior
                   </button>
                 </li>
                 
                 {[...Array(Math.ceil(pagination.total / pagination.limit)).keys()].map(num => (
                   <li key={num + 1} className={`page-item ${pagination.page === num + 1 ? 'active' : ''}`}>
                     <button 
-                      className="page-link" 
+                      className="page-link rounded-0" 
                       onClick={() => handlePageChange(num + 1)}
+                      style={{ fontWeight: 300 }}
                     >
                       {num + 1}
                     </button>
@@ -176,10 +168,11 @@ export default function Gallery() {
                 
                 <li className={`page-item ${pagination.page * pagination.limit >= pagination.total ? 'disabled' : ''}`}>
                   <button 
-                    className="page-link" 
+                    className="page-link rounded-0" 
                     onClick={() => handlePageChange(pagination.page + 1)}
+                    style={{ fontWeight: 300 }}
                   >
-                    Siguiente
+                    Siguiente &rarr;
                   </button>
                 </li>
               </ul>
@@ -191,51 +184,59 @@ export default function Gallery() {
   };
 
   return (
-    <>
+    <div className="gallery-page">
       <Navbar />
-      <Container className="my-5 gallery-container">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2 className="mb-0">Galería de Cabañas</h2>
+      
+      <Container className="py-5">
+        <div className="d-flex justify-content-between align-items-center mb-5">
+          <h1 className="mb-0 fw-light" style={{ letterSpacing: '1px' }}>
+            Galería
+          </h1>
           <Button 
             onClick={() => navigate(-1)} 
-            variant="outline-secondary"
-            className="d-flex align-items-center"
+            variant="outline-dark"
+            className="rounded-0 px-3"
+            style={{ fontWeight: 300, letterSpacing: '1px' }}
           >
-            <i className="bi bi-arrow-left me-2"></i>
             Volver
           </Button>
         </div>
         
         {renderContent()}
 
+        {/* Modal para imagen seleccionada */}
         <Modal
           show={!!selectedImage}
           onHide={() => setSelectedImage(null)}
-          size="lg"
           centered
+          size="xl"
+          className="gallery-modal"
         >
-          <Modal.Header closeButton>
-            <Modal.Title>{selectedImage?.cabanaName}</Modal.Title>
+          <Modal.Header closeButton className="border-0">
+            <Modal.Title style={{ fontWeight: 300 }}>
+              {selectedImage?.cabanaName}
+            </Modal.Title>
           </Modal.Header>
-          <Modal.Body className="text-center p-0">
+          <Modal.Body className="p-0">
             <img
               src={selectedImage?.url}
               alt={`Cabaña ${selectedImage?.cabanaName}`}
-              className="img-fluid"
-              style={{ maxHeight: '70vh', width: '100%', objectFit: 'contain' }}
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = `${API_URL}/default-image.jpg`;
-              }}
+              className="img-fluid w-100"
+              style={{ maxHeight: '70vh', objectFit: 'contain' }}
             />
           </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setSelectedImage(null)}>
+          <Modal.Footer className="border-0">
+            <Button 
+              variant="outline-dark" 
+              onClick={() => setSelectedImage(null)}
+              className="rounded-0 px-3"
+              style={{ fontWeight: 300, letterSpacing: '1px' }}
+            >
               Cerrar
             </Button>
           </Modal.Footer>
         </Modal>
       </Container>
-    </>
+    </div>
   );
 }
