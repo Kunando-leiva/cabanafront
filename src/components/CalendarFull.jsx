@@ -5,6 +5,7 @@ import './CalendarFull.css';
 import axios from 'axios';
 import { Spinner, Alert, Badge } from 'react-bootstrap';
 import { FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
+import { API_URL } from '../config';
 
 const CalendarFull = ({ 
   cabanaId, 
@@ -22,30 +23,27 @@ const CalendarFull = ({
 
   useEffect(() => {
     const fetchOccupiedDates = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/api/reservas/ocupadas${cabanaId ? `?cabanaId=${cabanaId}` : ''}`
-        );
-        
-        // Procesamiento más robusto de fechas ocupadas
-        const fechasOcupadas = response.data?.data || response.data || [];
-        setOccupiedRanges(
-          fechasOcupadas
-            .filter(date => date) // Filtra valores nulos/undefined
-            .map(date => new Date(date))
-            .filter(date => !isNaN(date.getTime())) // Filtra fechas inválidas
-        );
-        
-      } catch (err) {
-        console.error('Error al obtener fechas ocupadas:', err);
-        setError(err.response?.data?.message || err.message || 'Error al cargar fechas ocupadas');
-      } finally {
-        setLoading(false);
-      }
-    };
+  try {
+    setLoading(true);
+    
+    const response = await axios.get(
+      `${API_URL}/api/reservas/ocupadas${cabanaId ? `?cabanaId=${cabanaId}` : ''}`
+    );
+
+    if (response.data.success) {
+      setOccupiedRanges(
+        response.data.data
+          .map(dateStr => new Date(dateStr))
+          .filter(date => !isNaN(date.getTime()))
+      );
+    }
+  } catch (err) {
+    console.error('Error al obtener fechas ocupadas:', err);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
     fetchOccupiedDates();
   }, [cabanaId]);

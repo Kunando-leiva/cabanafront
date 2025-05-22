@@ -110,14 +110,16 @@
 //     </div>
 //   );
 // }
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Button, Container, Row, Col, Card, Spinner, Alert } from 'react-bootstrap';
+import { Button, Container, Row, Col, Card, Alert } from 'react-bootstrap';
 import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar, FaCalendarAlt, FaSearch } from 'react-icons/fa';
 import PublicNavbar from '../../components/PublicNavbar';
 import CalendarFull from '../../components/CalendarFull';
 import { API_URL } from '../../config';
+import './HomePublico.css';
+
 
 export default function HomePublico() {
   const [cabanas, setCabanas] = useState([]);
@@ -131,76 +133,79 @@ export default function HomePublico() {
     searched: false
   });
   const navigate = useNavigate();
+  const isMounted = useRef(true);
 
-  // 1. Añade esta función para manejar las URLs de imágenes
+  // Limpieza al desmontar
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   const getImageUrl = (imageData) => {
-    // Si no hay datos de imagen, retorna la imagen por defecto
     if (!imageData) return `${API_URL}/default-cabana.jpg`;
     
-    // Si es string y ya es una URL completa
     if (typeof imageData === 'string' && imageData.startsWith('http')) {
       return imageData;
     }
     
-    // Si es string pero no es URL completa
     if (typeof imageData === 'string') {
       return `${API_URL}${imageData.startsWith('/') ? '' : '/'}${imageData}`;
     }
     
-    // Si es objeto con propiedad url
     if (imageData.url) {
       return imageData.url.startsWith('http') 
         ? imageData.url 
         : `${API_URL}${imageData.url.startsWith('/') ? '' : '/'}${imageData.url}`;
     }
     
-    // Si es objeto con _id o fileId
     if (imageData._id || imageData.fileId) {
       return `${API_URL}/api/images/${imageData._id || imageData.fileId}`;
     }
     
-    // Caso por defecto
     return `${API_URL}/default-cabana.jpg`;
   };
 
-  // 2. Modifica el useEffect para cargar cabañas
   useEffect(() => {
     const fetchCabanas = async () => {
       try {
         const response = await axios.get(`${API_URL}/api/cabanas?destacadas=true`);
-        console.log('Respuesta API:', response.data); // Para depuración
         
-        const data = response.data?.data || response.data;
-        
-        if (!Array.isArray(data)) {
-          throw new Error('Formato de respuesta inválido');
+        if (isMounted.current) {
+          const data = response.data?.data || response.data;
+          
+          if (!Array.isArray(data)) {
+            throw new Error('Formato de respuesta inválido');
+          }
+
+          const processedCabanas = data.map(cabana => ({
+            ...cabana,
+            imagenPrincipal: getImageUrl(cabana.imagenPrincipal || cabana.imagenes?.[0]),
+            imagenes: (cabana.imagenes || []).map(img => ({
+              ...img,
+              url: getImageUrl(img)
+            }))
+          }));
+
+          setCabanas(processedCabanas);
+          setError(null);
         }
-
-        // Procesar las cabañas para asegurar URLs válidas
-        const processedCabanas = data.map(cabana => ({
-          ...cabana,
-          imagenPrincipal: getImageUrl(cabana.imagenPrincipal || cabana.imagenes?.[0]),
-          imagenes: (cabana.imagenes || []).map(img => ({
-            ...img,
-            url: getImageUrl(img)
-          }))
-        }));
-
-        setCabanas(processedCabanas);
-        setError(null);
       } catch (err) {
-        console.error('Error al cargar cabañas:', err);
-        setError(err.message);
-        setCabanas([]);
+        if (isMounted.current) {
+          console.error('Error al cargar cabañas:', err);
+          setError(err.message);
+          setCabanas([]);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted.current) {
+          setLoading(false);
+        }
       }
     };
   
     fetchCabanas();
   }, []);
 
-  // 3. Modifica la función de búsqueda de disponibilidad
   const handleSearchAvailability = async () => {
     if (!dateRange.start || !dateRange.end) {
       setSearchStatus({
@@ -210,39 +215,71 @@ export default function HomePublico() {
       });
       return;
     }
-  
+
     try {
       setSearchStatus({ loading: true, error: null, searched: true });
-  
-      const fechaInicio = dateRange.start.toISOString().split('T')[0];
-      const fechaFin = dateRange.end.toISOString().split('T')[0];
-  
-      const params = new URLSearchParams({ fechaInicio, fechaFin });
-      const response = await axios.get(
-        `${API_URL}/api/cabanas/disponibilidad?${params.toString()}`
-      );
 
-      // Procesar las cabañas disponibles
-      const processedCabanas = (response.data?.data || []).map(cabana => ({
-        ...cabana,
-        imagenPrincipal: getImageUrl(cabana.imagenPrincipal || cabana.imagenes?.[0])
-      }));
-  
-      setAvailableCabanas(processedCabanas);
-      setSearchStatus(prev => ({ ...prev, loading: false }));
-      
-    } catch (error) {
-      console.error('Error en búsqueda:', error);
-      setSearchStatus({
-        loading: false,
-        error: error.response?.data?.message || 'Error al buscar disponibilidad',
-        searched: true
+      const formatDateForAPI = (date) => {
+        const isoString = date.toISOString();
+        return isoString.split('T')[0];
+      };
+
+      const fechaInicio = formatDateForAPI(dateRange.start);
+      const fechaFin = formatDateForAPI(dateRange.end);
+
+      const response = await axios.get(`${API_URL}/api/cabanas/disponibles`, {
+        params: {
+          fechaInicio,
+          fechaFin
+        },
+        paramsSerializer: params => {
+          return Object.entries(params)
+            .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+            .join('&');
+        }
       });
-      setAvailableCabanas([]);
+
+      if (isMounted.current) {
+        if (!response.data || !response.data.success) {
+          throw new Error(response.data?.error || 'Respuesta inesperada del servidor');
+        }
+
+        const processedCabanas = (response.data.data || []).map(cabana => ({
+          ...cabana,
+          imagenPrincipal: cabana.imagenPrincipal || `${API_URL}/default-cabana.jpg`
+        }));
+
+        setAvailableCabanas(processedCabanas);
+        setSearchStatus(prev => ({ ...prev, loading: false }));
+      }
+
+    } catch (error) {
+      if (isMounted.current) {
+        console.error('Error en búsqueda:', {
+          error: error.response?.data || error.message,
+          config: error.config
+        });
+
+        let errorMessage = 'Error al buscar disponibilidad';
+        
+        if (error.response) {
+          errorMessage = error.response.data?.error || 
+                        error.response.data?.message || 
+                        'Error en el servidor';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        setSearchStatus({
+          loading: false,
+          error: errorMessage,
+          searched: true
+        });
+        setAvailableCabanas([]);
+      }
     }
   };
 
-  // 4. Componente CabanaCard actualizado
   const CabanaCard = ({ cabana, dateRange }) => {
     const noches = dateRange ? Math.ceil((dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24)) : 0;
     const precioTotal = (noches * cabana.precio).toFixed(2);
@@ -307,13 +344,11 @@ export default function HomePublico() {
     );
   };
 
-  // 5. Componente FeaturedCabanas actualizado
   const FeaturedCabanas = () => {
     if (loading) {
       return (
         <div className="text-center py-5">
-          <Spinner animation="border" />
-          <p className="mt-2">Cargando cabañas destacadas...</p>
+          <p>Cargando cabañas destacadas...</p>
         </div>
       );
     }
@@ -350,12 +385,10 @@ export default function HomePublico() {
     );
   };
 
-  // ... [resto del código permanece igual]
   return (
     <div className="home-publico">
       <PublicNavbar />
 
-      {/* Hero Section */}
       <section className="hero-section bg-dark text-white text-center py-5 position-relative">
         <Container className="position-relative z-index-1">
           <h1 className="display-4 fw-bold mb-4">Complejo Los Alerces</h1>
@@ -366,7 +399,6 @@ export default function HomePublico() {
         </Container>
       </section>
 
-      {/* Sección de Búsqueda */}
       <section className="py-4 bg-light">
         <Container>
           <h3 className="text-center mb-4">
@@ -378,8 +410,10 @@ export default function HomePublico() {
             <Col lg={8}>
               <CalendarFull 
                 onDatesSelected={(start, end) => {
-                  setDateRange({ start, end });
-                  setSearchStatus({ ...searchStatus, error: null });
+                  if (isMounted.current) {
+                    setDateRange({ start, end });
+                    setSearchStatus(prev => ({ ...prev, error: null }));
+                  }
                 }}
                 showInline={true}
               />
@@ -394,10 +428,7 @@ export default function HomePublico() {
                 disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
               >
                 {searchStatus.loading ? (
-                  <>
-                    <Spinner animation="border" size="sm" className="me-2" />
-                    Buscando...
-                  </>
+                  "Buscando..."
                 ) : (
                   <>
                     <FaSearch className="me-2" />
@@ -421,14 +452,12 @@ export default function HomePublico() {
         </Container>
       </section>
 
-      {/* Resultados de búsqueda */}
       {searchStatus.searched && (
         <section className="py-5">
           <Container>
             {searchStatus.loading ? (
               <div className="text-center">
-                <Spinner animation="border" />
-                <p className="mt-2">Buscando cabañas disponibles...</p>
+                <p>Buscando cabañas disponibles...</p>
               </div>
             ) : searchStatus.error ? (
               <Alert variant="danger" className="text-center">
@@ -458,10 +487,8 @@ export default function HomePublico() {
         </section>
       )}
 
-      {/* Cabañas Destacadas */}
       <FeaturedCabanas />
 
-      {/* Servicios/Beneficios */}
       <section className="py-5 bg-light">
         <Container>
           <h2 className="text-center mb-5">¿Por qué elegirnos?</h2>
@@ -488,7 +515,6 @@ export default function HomePublico() {
   );
 }
 
-// Funciones auxiliares
 function formatDate(date) {
   return date?.toLocaleDateString('es-ES', {
     day: '2-digit',
@@ -499,5 +525,17 @@ function formatDate(date) {
 
 function calcularNoches(start, end) {
   if (!start || !end || start >= end) return 0;
-  return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+  
+  // 1. Normalizar fechas (ignorar horas/minutos/segundos)
+  const startDate = new Date(start);
+  startDate.setHours(0, 0, 0, 0);
+  
+  const endDate = new Date(end);
+  endDate.setHours(0, 0, 0, 0);
+
+  // 2. Calcular diferencia en milisegundos
+  const diffMs = endDate - startDate;
+  
+  // 3. Convertir a días (usando Math.floor)
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24)); 
 }

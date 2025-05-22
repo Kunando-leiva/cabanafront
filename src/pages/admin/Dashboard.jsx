@@ -1,9 +1,19 @@
 import { useAuth } from '../../context/AuthContext';
 import AdminNav from '../../components/admin/AdminNav';
 import { Outlet } from 'react-router-dom';
+import { FaHome, FaBed, FaCalendarAlt, FaImages, FaSignOutAlt } from 'react-icons/fa';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    // 1. Elimina los datos de autenticación
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    
+    // 2. Redirige al login y recarga para limpiar estados
+    window.location.href = '/login';
+  };
 
   return (
     <div className="bg-gray-100 text-center min-h-screen flex flex-col">
@@ -27,6 +37,16 @@ export default function Dashboard() {
         </h2>
       </div>
         <AdminNav />
+        <div className="hidden sm:ml-6 sm:flex sm:items-center">
+                    <button
+                      onClick={handleLogout}
+                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200"
+                    >
+                      <FaSignOutAlt className="mr-2" />
+                      Cerrar sesión
+                    </button>
+                  </div>
     </div>
+    
   );
 }

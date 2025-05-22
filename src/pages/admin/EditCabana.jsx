@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { API_URL } from '../../config';
 import { Form, Button, Alert, Spinner, Card, Row, Col, Image } from 'react-bootstrap';
 import { FaTrash, FaSave, FaTimes } from 'react-icons/fa';
+import { Modal } from 'antd';
 
 export default function EditCabana() {
   const { id } = useParams();
@@ -14,6 +15,7 @@ export default function EditCabana() {
   const [loading, setLoading] = useState({ initial: true, saving: false });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
 
   // Estado inicial con todos los campos necesarios
   const [cabanaData, setCabanaData] = useState({
@@ -51,21 +53,40 @@ export default function EditCabana() {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        // 1. Verifica la estructura real de la respuesta
-        console.log('Estructura completa:', response);
-        console.log('Datos de cabaña:', response.data.data); // ¡Los datos están aquí!
+        console.log('Respuesta del backend:', response.data);
 
-        // 2. Extrae los datos correctamente (response.data.data)
-        const cabana = response.data.data; // Punto clave
+        if (!response.data.success || !response.data.data) {
+          throw new Error('Estructura de respuesta inválida');
+        }
 
-        // 3. Asigna los campos al estado (ajustando nombres si es necesario)
+        const cabana = response.data.data;
+
+        // Procesar imágenes para asegurar URLs completas
+        const imagenesProcesadas = (cabana.images || cabana.imagenes || []).map(img => {
+          // Si es string (ID), crear objeto con URL completa
+          if (typeof img === 'string') {
+            return {
+              _id: img,
+              url: `${API_URL}/api/images/${img}`
+            };
+          }
+          // Si es objeto pero no tiene URL completa
+          if (img && !img.url.startsWith('http')) {
+            return {
+              ...img,
+              url: `${API_URL}${img.url.startsWith('/') ? '' : '/'}${img.url}`
+            };
+          }
+          return img;
+        });
+
         setCabanaData({
           nombre: cabana.nombre || '',
           descripcion: cabana.descripcion || '', 
           capacidad: cabana.capacidad || 2,
           precio: cabana.precio || 0,
           servicios: cabana.servicios || [],
-          imagenes: cabana.imagenes || [],
+          imagenes: imagenesProcesadas,
           isFeatured: cabana.isFeatured || false,
           disponibilidad: cabana.disponibilidad !== false,
           reglas: cabana.reglas || '',
@@ -75,16 +96,14 @@ export default function EditCabana() {
 
       } catch (error) {
         console.error('Error al cargar cabaña:', error);
-        setError(error.response?.data?.message || 'Error al cargar datos');
-        navigate('/admin/cabanas');
+        setError(error.response?.data?.message || error.message || 'Error al cargar datos');
       } finally {
         setLoading({ initial: false, saving: false });
       }
     };
 
     fetchCabana();
-}, [id, token, navigate]);
-
+  }, [id, token]);
 
   // Manejar cambios en los inputs
   const handleChange = (e) => {
@@ -106,6 +125,85 @@ export default function EditCabana() {
     });
   };
 
+  // Manejar eliminación de imagen
+  const handleDeleteImage = async (imageData, index) => {
+  try {
+    setLoading({ ...loading, saving: true });
+    setError('');
+    
+    // Obtener el ID correcto (usar fileId si existe, sino el id de la URL)
+    const fileId = imageData.fileId || 
+                  imageData.url.split('/').pop() || 
+                  imageData._id || 
+                  imageData.id;
+
+    if (!fileId) {
+      throw new Error('No se pudo identificar la imagen a eliminar');
+    }
+
+    console.log('IDs de imagen:', {
+      docId: imageData._id || imageData.id,  // ID del documento
+      fileId: imageData.fileId,              // ID en GridFS
+      urlId: imageData.url.split('/').pop()  // ID en la URL
+    });
+
+    Modal.confirm({
+      title: '¿Eliminar esta imagen?',
+      content: 'Esta acción no se puede deshacer.',
+      okText: 'Eliminar',
+      okType: 'danger',
+      cancelText: 'Cancelar',
+      onOk: async () => {
+        try {
+          // Eliminar visualmente primero
+          setCabanaData(prev => ({
+            ...prev,
+            imagenes: prev.imagenes.filter((_, i) => i !== index)
+          }));
+
+          // Enviar AMBOS IDs al backend
+          const response = await axios.delete(
+            `${API_URL}/api/images`,
+            {
+              data: {
+                docId: imageData._id || imageData.id,
+                fileId: imageData.fileId || imageData.url.split('/').pop()
+              },
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          if (!response.data.success) {
+            throw new Error(response.data.message || 'Error al eliminar imagen');
+          }
+
+          setSuccess('Imagen eliminada correctamente');
+        } catch (error) {
+          console.error('Detalles del error:', {
+            error: error.message,
+            response: error.response?.data,
+            config: error.config
+          });
+          setError('Error al eliminar: ' + (error.response?.data?.error || error.message));
+          setCabanaData(prev => ({ ...prev })); // Revertir cambios
+        } finally {
+          setLoading({ ...loading, saving: false });
+        }
+      },
+      onCancel: () => {
+        setLoading({ ...loading, saving: false });
+      }
+    });
+  } catch (error) {
+    console.error('Error en el flujo de eliminación:', error);
+    setError(error.message);
+    setLoading({ ...loading, saving: false });
+  }
+};
+
   // Enviar formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -114,9 +212,24 @@ export default function EditCabana() {
       setError('');
       setSuccess('');
 
+      // Preparar datos para enviar (convertir imágenes a IDs)
+      const dataToSend = {
+        nombre: cabanaData.nombre,
+        descripcion: cabanaData.descripcion,
+        capacidad: cabanaData.capacidad,
+        precio: cabanaData.precio,
+        servicios: cabanaData.servicios,
+        images: cabanaData.imagenes.map(img => img._id),
+        isFeatured: cabanaData.isFeatured,
+        disponibilidad: cabanaData.disponibilidad,
+        reglas: cabanaData.reglas,
+        dimensiones: cabanaData.dimensiones,
+        habitaciones: cabanaData.habitaciones
+      };
+
       const response = await axios.put(
         `${API_URL}/api/cabanas/${id}`,
-        cabanaData,
+        dataToSend,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -236,7 +349,6 @@ export default function EditCabana() {
                     />
                   </Form.Group>
                 </Col>
-                
               </Row>
 
               <h4 className="mb-4 mt-4 border-bottom pb-2">Detalles</h4>
@@ -257,7 +369,6 @@ export default function EditCabana() {
                   </Form.Group>
                 </Col>
               
-                
                 <Col md={3}>
                   <Form.Group className="mb-3">
                     <Form.Label>Precio por noche ($) *</Form.Label>
@@ -268,6 +379,21 @@ export default function EditCabana() {
                       onChange={handleChange}
                       min="0"
                       step="0.01"
+                      required
+                      disabled={loading.saving}
+                    />
+                  </Form.Group>
+                </Col>
+                
+                <Col md={3}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Habitaciones</Form.Label>
+                    <Form.Control
+                      type="number"
+                      name="habitaciones"
+                      value={cabanaData.habitaciones}
+                      onChange={handleChange}
+                      min="1"
                       required
                       disabled={loading.saving}
                     />
@@ -310,25 +436,28 @@ export default function EditCabana() {
                 ))}
               </Row>
 
+              <h4 className="mb-4 mt-4 border-bottom pb-2">Reglas y Dimensiones</h4>
+              
+
               <h4 className="mb-4 mt-4 border-bottom pb-2">Imágenes</h4>
               
               <Row className="mb-4">
-                {/* Mostrar imágenes existentes */}
                 {cabanaData.imagenes.map((img, index) => (
-                  <Col key={`img-${index}`} xs={6} md={3} className="mb-3">
-                    <Image 
-                      src={img.startsWith('https') ? img : `${API_URL}/uploads/${img}`}
-                      thumbnail
-                      fluid
-                      className="w-100"
-                      style={{ height: '150px', objectFit: 'cover' }}
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = '/placeholder-cabana.jpg';
-                      }}
-                    />
-                  </Col>
-                ))}
+  <Col key={`img-${index}`} xs={6} md={3} className="mb-3">
+    <Image 
+      src={img.url.startsWith('http') ? img.url : `${API_URL}${img.url}`}
+      thumbnail
+      fluid
+      className="w-100"
+      style={{ height: '150px', objectFit: 'cover' }}
+      onError={(e) => {
+        e.target.onerror = null;
+        e.target.src = `${API_URL}/default-cabana.jpg`;
+      }}
+    />
+    
+  </Col>
+))}
               </Row>
 
               <div className="d-flex justify-content-end gap-3 mt-4">

@@ -22,15 +22,15 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
 // Importaciones de páginas
-import {Login} from './pages/admin/Login';
+import Login from './pages/admin/Login';
 import Dashboard from './pages/admin/Dashboard';
 import Cabanas from './pages/admin/Cabanas';
 import CreateCabana from './pages/admin/CreateCabana';
 import EditCabana from './pages/admin/EditCabana';
 import ReservasAdmin from './pages/admin/ReservasAdmin';
 import CrearReservaAdmin from './pages/admin/CrearReservaAdmin';
-import Usuarios from './pages/admin/Usuarios';
 import EditarReservaAdmin from './pages/admin/EditarReservaAdmin';
+import AdminImages from './pages/admin/AdminImages'; // Asegúrate de crear este componente
 
 
 // Páginas públicas
@@ -42,8 +42,7 @@ import ConfirmacionReserva from './pages/cliente/ConfirmacionReserva';
 import Nosotros from './pages/cliente/Nosotros';
 import Ubicacion from './pages/cliente/Ubicacion';
 import Galeria from './pages/cliente/Galeria';
-import {Register} from './pages/admin/Register'; // Asegúrate de crear este componente
-import ImageUploader from './components/ImageUploader';
+import Register from './pages/admin/Register'; // Asegúrate de crear este componente
 
 function App() {
   return (
@@ -81,10 +80,9 @@ function App() {
           <Route path="cabanas/editar/:id" element={<EditCabana />} />
           <Route path="reservas" element={<ReservasAdmin />} />
           <Route path="reservas/crear" element={<CrearReservaAdmin />} />
-          <Route path="usuarios" element={<Usuarios />} />
           <Route path="/admin/reservas/crear" element={<CrearReservaAdmin />} />
           <Route path="/admin/reservas/editar/:id" element={<EditarReservaAdmin />} />
-          <Route path="/admin/cargaimage" element={<ImageUploader />} />
+          <Route path="/admin/imagenes" element={<AdminImages />} />
         </Route>
 
         {/* 404 */}
@@ -93,5 +91,4 @@ function App() {
     </BrowserRouter>
   );
 }
-
 export default App;

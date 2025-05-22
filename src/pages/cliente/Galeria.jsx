@@ -24,23 +24,22 @@ export default function Gallery() {
         const response = await axios.get(`${API_URL}/api/images`, {
           params: {
             limit: pagination.limit,
-            offset: (pagination.page - 1) * pagination.limit
+            offset: (pagination.page - 1) * pagination.limit,
+            populate: 'relatedCabana' // Solicitar población de la cabaña relacionada
           }
         });
         
-        // Verificar estructura de respuesta
         if (!response.data.success) {
           throw new Error(response.data.error || 'Respuesta inesperada del servidor');
         }
 
-        // Procesar imágenes
+        // Procesar imágenes con el nombre correcto de la cabaña
         const processedImages = response.data.data.map(img => ({
           id: img._id,
           fileId: img.fileId,
-          // Usar fullUrl si está disponible, sino construir la URL
           url: img.fullUrl || `${API_URL}${img.url}`,
           filename: img.filename,
-          cabanaName: img.relatedCabana?.name || 'Cabaña',
+          cabanaName: img.relatedCabana?.nombre || 'Sin nombre', // Usamos 'nombre' en español
           uploadedByName: img.uploadedBy?.name || 'Usuario',
           createdAt: img.createdAt,
           isPublic: img.isPublic
@@ -68,16 +67,6 @@ export default function Gallery() {
 
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, page: newPage }));
-  };
-
-  // Verificar acceso a imágenes
-  const checkImageAccess = (url) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve(true);
-      img.onerror = () => resolve(false);
-      img.src = url;
-    });
   };
 
   const renderContent = () => {
@@ -150,10 +139,6 @@ export default function Gallery() {
                   <Card.Title className="text-center mb-auto">
                     {image.cabanaName}
                   </Card.Title>
-                  <small className="text-muted text-center">
-                    Subido por: {image.uploadedByName}<br />
-                    {new Date(image.createdAt).toLocaleDateString()}
-                  </small>
                 </Card.Body>
               </Card>
             </Col>
@@ -239,15 +224,7 @@ export default function Gallery() {
               }}
             />
           </Modal.Body>
-          <Modal.Footer className="d-flex justify-content-between">
-            <div>
-              <small className="text-muted d-block">
-                Subido por: {selectedImage?.uploadedByName}
-              </small>
-              <small className="text-muted">
-                Fecha: {selectedImage && new Date(selectedImage.createdAt).toLocaleDateString()}
-              </small>
-            </div>
+          <Modal.Footer>
             <Button variant="secondary" onClick={() => setSelectedImage(null)}>
               Cerrar
             </Button>

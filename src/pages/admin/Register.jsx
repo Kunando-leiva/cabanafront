@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { API_URL } from '../../config';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-export const Register = () => {
+export default function Register(){
   const [formData, setFormData] = useState({
     nombre: '',
     email: '',

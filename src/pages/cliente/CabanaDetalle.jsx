@@ -344,11 +344,21 @@ export default function CabanaDetalle() {
 
   // Función para calcular noches entre fechas
   const calcularNoches = (start, end) => {
-    if (!start || !end || start >= end) return 0;
-    const diffTime = new Date(end) - new Date(start);
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
+  if (!start || !end || start >= end) return 0;
+  
+  // Normaliza las fechas (misma hora para ambas)
+  const startDate = new Date(start);
+  startDate.setHours(0, 0, 0, 0);
+  
+  const endDate = new Date(end);
+  endDate.setHours(0, 0, 0, 0);
 
+  // Diferencia en milisegundos
+  const diffTime = endDate - startDate;
+  
+  // Convierte a días (86400000 ms = 1 día)
+  return Math.floor(diffTime / 86400000); // Usa Math.floor en lugar de Math.ceil
+};
   // Función para calcular precio total
   const calcularPrecioTotal = () => {
     const noches = calcularNoches(selectedDates.start, selectedDates.end);
@@ -458,7 +468,7 @@ export default function CabanaDetalle() {
   if (error || !cabana) return (
     <Container className="my-5">
       <Alert variant="danger" className="text-center">
-        <Alert.Heading>Error al cargar la cabaña</Alert.Heading>
+        <Alert.Heading>ups cabaña ya reservada para esa fecha</Alert.Heading>
         <p>{error}</p>
         <div className="mt-3">
           <Button 

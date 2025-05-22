@@ -101,91 +101,102 @@ const CreateCabana = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    // Validación básica
-    if (!formData.nombre || !formData.descripcion || !formData.precio || !formData.capacidad) {
-      setError('Todos los campos obligatorios deben estar completos');
-      setLoading(false);
-      return;
-    }
+  // Validación básica
+  if (!formData.nombre || !formData.descripcion || !formData.precio || !formData.capacidad) {
+    setError('Todos los campos obligatorios deben estar completos');
+    setLoading(false);
+    return;
+  }
 
-    try {
-      const formDataToSend = new FormData();
-      
-      // Agregar campos del formulario
-      formDataToSend.append('nombre', formData.nombre);
-      formDataToSend.append('descripcion', formData.descripcion);
-      formDataToSend.append('precio', formData.precio);
-      formDataToSend.append('capacidad', formData.capacidad);
-      formDataToSend.append('servicios', JSON.stringify(formData.servicios));
+  try {
+    const formDataToSend = new FormData();
+    
+    // Agregar campos del formulario
+    formDataToSend.append('nombre', formData.nombre);
+    formDataToSend.append('descripcion', formData.descripcion);
+    formDataToSend.append('precio', formData.precio);
+    formDataToSend.append('capacidad', formData.capacidad);
+    formDataToSend.append('servicios', JSON.stringify(formData.servicios));
 
-      // Agregar imágenes
-      images.forEach(img => {
-        if (img.file) {
-          formDataToSend.append('images', img.file);
-        }
-      });
-
-      const response = await axios.post(`${API_URL}/api/cabanas`, formDataToSend, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      if (response.data.success) {
-        navigate('/admin/cabanas', {
-          state: { 
-            success: '¡Cabaña creada exitosamente!',
-            cabanaId: response.data.data._id
-          }
-        });
-      } else {
-        throw new Error(response.data.error || 'Error al crear cabaña');
+    // Agregar imágenes
+    images.forEach(img => {
+      if (img.file) {
+        formDataToSend.append('images', img.file);
       }
-    } catch (error) {
-      console.error('Error al crear cabaña:', error);
-      setError(error.response?.data?.error || error.message || 'Error al procesar la solicitud');
-    } finally {
-      setLoading(false);
+    });
+
+    const response = await axios.post(`${API_URL}/api/cabanas`, formDataToSend, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+
+    if (response.data.success) {
+      navigate('/admin/cabanas', {
+        state: { 
+          success: '¡Cabaña creada exitosamente!',
+          cabanaId: response.data.data._id
+        }
+      });
+    } else {
+      throw new Error(response.data.error || 'Error al crear cabaña');
     }
-  };
+  } catch (error) {
+    console.error('Error al crear cabaña:', error);
+    
+    // Manejar específicamente el error de duplicado
+    if (error.response?.data?.error?.includes('E11000 duplicate key error')) {
+      const duplicateFilename = error.response.data.error.match(/{ filename: "(.+)" }/)?.[1] || 'una imagen';
+      setError(`Ya existe una imagen con el nombre "${duplicateFilename}". Por favor, cambia el nombre del archivo antes de subirlo.`);
+    } else {
+      setError(error.response?.data?.error || error.message || 'Error al procesar la solicitud');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+const triggerFileInput = () => {
+  fileInputRef.current.click();
+};
 
   const handleImageUpload = (e) => {
-    if (!e.target.files?.length) return;
+  if (!e.target.files?.length) return;
 
-    const newFiles = Array.from(e.target.files)
-      .filter(file => 
-        file.type.startsWith('image/') && 
-        file.size <= 10 * 1024 * 1024
-      );
+  const newFiles = Array.from(e.target.files)
+    .filter(file => 
+      file.type.startsWith('image/') && 
+      file.size <= 10 * 1024 * 1024
+    );
 
-    if (newFiles.length !== e.target.files.length) {
-      setError('Algunos archivos no son válidos (solo imágenes hasta 10MB)');
-    }
+  if (newFiles.length !== e.target.files.length) {
+    setError('Algunos archivos no son válidos (solo imágenes hasta 10MB)');
+  }
 
-    const newImages = newFiles.map(file => ({
-      file,
-      previewUrl: URL.createObjectURL(file)
-    }));
+  // Verificar nombres duplicados
+  const duplicateNames = newFiles.some(newFile => 
+    images.some(img => img.file.name === newFile.name)
+  );
 
-    setImages(prev => [...prev, ...newImages].slice(0, 5));
+  if (duplicateNames) {
+    setError('Algunos archivos tienen el mismo nombre que imágenes ya seleccionadas. Por favor, renómbralos antes de subirlos.');
     e.target.value = '';
-  };
+    return;
+  }
 
-  const removeImage = (index) => {
-    const newImages = [...images];
-    URL.revokeObjectURL(newImages[index].previewUrl);
-    newImages.splice(index, 1);
-    setImages(newImages);
-  };
+  const newImages = newFiles.map(file => ({
+    file,
+    previewUrl: URL.createObjectURL(file)
+  }));
 
-  const triggerFileInput = () => {
-    fileInputRef.current.click();
-  };
+  setImages(prev => [...prev, ...newImages].slice(0, 5));
+  e.target.value = '';
+};
 
   return (
     <Container className="mt-4">
@@ -316,39 +327,52 @@ const CreateCabana = () => {
               
               <Row>
                 {images.map((img, index) => (
-                  <Col key={`img-${index}`} xs={6} md={4} lg={3} className="mb-3">
-                    <Card className="h-100">
-                      <div style={{ height: '150px', overflow: 'hidden' }}>
-                        <img
-                          src={img.previewUrl}
-                          alt={`Imagen ${index + 1}`}
-                          style={{ 
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover'
-                          }}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = '/placeholder-image.jpg';
-                            e.target.style.objectFit = 'contain';
-                          }}
-                        />
-                      </div>
-                      <Card.Body className="p-2 text-center">
-                        <small className="d-block text-truncate">{img.file?.name}</small>
-                        <Button 
-                          variant="danger" 
-                          size="sm"
-                          onClick={() => removeImage(index)}
-                          disabled={loading}
-                          className="mt-2"
-                        >
-                          Eliminar
-                        </Button>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                ))}
+  <Col key={`img-${index}`} xs={6} md={4} lg={3} className="mb-3">
+    <Card className="h-100">
+      <div style={{ height: '150px', overflow: 'hidden' }}>
+        <img
+          src={img.previewUrl}
+          alt={`Imagen ${index + 1}`}
+          style={{ 
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          }}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = '/placeholder-image.jpg';
+            e.target.style.objectFit = 'contain';
+          }}
+        />
+      </div>
+      <Card.Body className="p-2 text-center">
+        <Form.Control
+          type="text"
+          value={img.file.name}
+          onChange={(e) => {
+            const newImages = [...images];
+            const newFile = new File([img.file], e.target.value, { type: img.file.type });
+            newImages[index] = {
+              ...newImages[index],
+              file: newFile
+            };
+            setImages(newImages);
+          }}
+          className="mb-2"
+        />
+        <Button 
+          variant="danger" 
+          size="sm"
+          onClick={() => removeImage(index)}
+          disabled={loading}
+          className="mt-2"
+        >
+          Eliminar
+        </Button>
+      </Card.Body>
+    </Card>
+  </Col>
+))}
               </Row>
             </Form.Group>
           </Col>
