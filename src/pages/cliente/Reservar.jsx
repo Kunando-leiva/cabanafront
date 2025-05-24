@@ -115,6 +115,16 @@ export default function Reservar() {
             </div>
             
             <div className="d-flex justify-content-between mb-2">
+              <span><strong>check-in :</strong></span>
+              <span>12:00 PM</span>
+            </div>
+
+             <div className="d-flex justify-content-between mb-2">
+              <span><strong>check-out :</strong></span>
+              <span>10:00 AM</span>
+            </div>
+
+            <div className="d-flex justify-content-between mb-2">
               <span><strong>Noches:</strong></span>
               <span>{reservaData.noches}</span>
             </div>

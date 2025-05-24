@@ -316,20 +316,39 @@ import {
   FaWifi, FaSwimmingPool, FaSnowflake, FaParking, FaTv,
   FaUtensils, FaBed, FaShower, FaUmbrellaBeach, FaTemperatureHigh
 } from 'react-icons/fa';
+import { BiFridge } from 'react-icons/bi';
+import { GiElectric } from 'react-icons/gi';
+import { IoIosBonfire } from "react-icons/io";
 import axios from 'axios';
 import CalendarFull from '../../components/CalendarFull';
 import { API_URL } from '../../config';
 
 const SERVICIOS = [
-  { nombre: 'Wifi', icono: <FaWifi /> },
   { nombre: 'Piscina', icono: <FaSwimmingPool /> },
-  { nombre: 'Aire acondicionado', icono: <FaSnowflake /> },
   { nombre: 'Cocina', icono: <FaUtensils /> },
   { nombre: 'Estacionamiento', icono: <FaParking /> },
-  { nombre: 'TV', icono: <FaTv /> },
   { nombre: 'Ropa de cama', icono: <FaBed /> },
   { nombre: 'Artículos de aseo', icono: <FaShower /> },
   { nombre: 'Balcón o terraza', icono: <FaUmbrellaBeach /> },
+  { nombre: 'Baños', icono: <FaShower /> },
+  { nombre: 'Cama doble', icono: <FaBed /> },
+  { nombre: 'Heladera', icono: <BiFridge /> }, // Alternativa: podrías importar BiFridge de react-icons/bi
+  { nombre: 'Pava eléctrica', icono: <FaTemperatureHigh /> }, // Alternativa: podrías importar GiElectric de react-icons/gi
+  { nombre: 'Toallones', icono: <FaShower /> },
+  { nombre: 'Vasos', icono: <FaUtensils /> },
+  { nombre: 'Platos', icono: <FaUtensils /> },
+  { nombre: 'Cubiertos', icono: <FaUtensils /> },
+  { nombre: 'Wi-Fi', icono: <FaWifi /> },
+  { nombre: 'Ventiladores', icono: <FaTemperatureHigh /> }, // Alternativa: podrías importar FaFan de react-icons/fa
+  { nombre: 'TV', icono: <FaTv /> },
+  { nombre: 'Ollas', icono: <FaUtensils /> },
+  { nombre: 'Fuentes para horno', icono: <FaUtensils /> },
+  { nombre: 'Parrillas', icono: <FaUtensils /> },
+  { nombre: 'Desayuno seco', icono: <FaUtensils /> }, // Alternativa: podrías importar FaCoffee de react-icons/fa
+  { nombre: 'Fogón', icono: <IoIosBonfire /> },
+  { nombre: 'Parque', icono: <FaUmbrellaBeach /> },
+  { nombre: 'Cancha de fútbol', icono: <FaSwimmingPool /> },
+  { nombre: 'Aire acondicionado', icono: <FaSnowflake /> },
   { nombre: 'Calefacción', icono: <FaTemperatureHigh /> }
 ];
 

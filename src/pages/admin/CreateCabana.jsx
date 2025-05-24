@@ -15,38 +15,35 @@ import {
 } from 'react-icons/fa';
 import { BiFridge, BiMicrophone } from 'react-icons/bi';
 import { GiElectric } from 'react-icons/gi';
+import { IoIosBonfire } from "react-icons/io";
 import { API_URL } from '../../config';
 import axios from 'axios';
 
 const SERVICIOS = [
-  { nombre: 'Wifi', icono: <FaWifi className="me-2" style={{ color: '#3498db', fontSize: '1.2rem' }} /> },
-  { nombre: 'Piscina', icono: <FaSwimmingPool className="me-2" /> },
-  { nombre: 'Aire acondicionado', icono: <FaSnowflake className="me-2" /> },
-  { nombre: 'Cocina', icono: <FaUtensils className="me-2" /> },
-  { nombre: 'Estacionamiento', icono: <FaParking className="me-2" /> },
-  { nombre: 'Televisión', icono: <FaTv className="me-2" /> },
-  { nombre: 'Mascotas permitidas', icono: <FaDog className="me-2" /> },
-  { nombre: 'Desayuno incluido', icono: <FaCoffee className="me-2" /> },
-  { nombre: 'Servicio de limpieza', icono: <FaBroom className="me-2" /> },
-  { nombre: 'Ropa de cama', icono: <FaBed className="me-2" /> },
-  { nombre: 'Artículos de aseo', icono: <FaShower className="me-2" /> },
-  { nombre: 'Balcón', icono: <FaUmbrellaBeach className="me-2" /> },
-  { nombre: 'Calefacción', icono: <FaTemperatureHigh className="me-2" /> },
-  { nombre: 'Cocina equipada', icono: <FaUtensils className="me-2" /> },
-  { nombre: 'Reposeras', icono: <FaUmbrellaBeach className="me-2" /> },
-  { nombre: 'Ducha', icono: <FaShower className="me-2" /> },
-  { nombre: 'Secadora', icono: <GiElectric className="me-2" /> },
-  { nombre: 'Cama doble', icono: <FaBed className="me-2" /> },
-  { nombre: 'Heladera', icono: <BiFridge className="me-2" /> },
-  { nombre: 'Microondas', icono: <BiMicrophone className="me-2" /> },
-  { nombre: 'Pava eléctrica', icono: <GiElectric className="me-2" /> },
-  { nombre: 'Sofá', icono: <FaCouch className="me-2" /> },
-  { nombre: 'Toallas', icono: <FaTshirt className="me-2" /> },
-  { nombre: 'Vajilla', icono: <FaGlassWhiskey className="me-2" /> },
-  { nombre: 'Armario', icono: <FaArchive className="me-2" /> },
-  { nombre: 'Seguridad', icono: <FaCamera className="me-2" /> },
-  { nombre: 'Ventiladores', icono: <FaFan className="me-2" /> },
-  { nombre: 'Otros', icono: <FaImages className="me-2" /> }
+  { nombre: 'Piscina', icono: <FaSwimmingPool className="me-2" style={{ color: '#3498db' }} /> },
+  { nombre: 'Cocina', icono: <FaUtensils className="me-2" style={{ color: '#e74c3c' }} /> },
+  { nombre: 'Estacionamiento', icono: <FaParking className="me-2" style={{ color: '#2ecc71' }} /> },
+  { nombre: 'Ropa de cama', icono: <FaBed className="me-2" style={{ color: '#9b59b6' }} /> },
+  { nombre: 'Artículos de aseo', icono: <FaShower className="me-2" style={{ color: '#1abc9c' }} /> },
+  { nombre: 'Balcón o terraza', icono: <FaUmbrellaBeach className="me-2" style={{ color: '#f39c12' }} /> },
+  { nombre: 'Baños', icono: <FaShower className="me-2" style={{ color: '#1abc9c' }} /> },
+  { nombre: 'Cama doble', icono: <FaBed className="me-2" style={{ color: '#9b59b6' }} /> },
+  { nombre: 'Heladera', icono: <BiFridge className="me-2" style={{ color: '#3498db' }} /> },
+  { nombre: 'Pava eléctrica', icono: <GiElectric className="me-2" style={{ color: '#e74c3c' }} /> },
+  { nombre: 'Toallones', icono: <FaTshirt className="me-2" style={{ color: '#3498db' }} /> },
+  { nombre: 'Vasos', icono: <FaGlassWhiskey className="me-2" style={{ color: '#2ecc71' }} /> },
+  { nombre: 'Platos', icono: <FaGlassWhiskey className="me-2" style={{ color: '#f39c12' }} /> },
+  { nombre: 'Cubiertos', icono: <FaUtensils className="me-2" style={{ color: '#e74c3c' }} /> },
+  { nombre: 'Wi-Fi', icono: <FaWifi className="me-2" style={{ color: '#3498db' }} /> },
+  { nombre: 'Ventiladores', icono: <FaFan className="me-2" style={{ color: '#1abc9c' }} /> },
+  { nombre: 'TV', icono: <FaTv className="me-2" style={{ color: '#9b59b6' }} /> },
+  { nombre: 'Ollas', icono: <FaUtensils className="me-2" style={{ color: '#e74c3c' }} /> },
+  { nombre: 'Fuentes para horno', icono: <FaUtensils className="me-2" style={{ color: '#e74c3c' }} /> },
+  { nombre: 'Parrillas', icono: <FaUtensils className="me-2" style={{ color: '#e74c3c' }} /> },
+  { nombre: 'Desayuno seco', icono: <FaCoffee className="me-2" style={{ color: '#f39c12' }} /> },
+  { nombre: 'Fogón', icono: <IoIosBonfire className="me-2" style={{ color: '#e74c3c' }} /> },
+  { nombre: 'Parque', icono: <FaUmbrellaBeach className="me-2" style={{ color: '#2ecc71' }} /> },
+  { nombre: 'Cancha de fútbol', icono: <FaSwimmingPool className="me-2" style={{ color: '#3498db' }} /> },
 ];
 
 const CreateCabana = () => {

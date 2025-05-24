@@ -17,6 +17,10 @@
   min-height: 400px;
 }
 
+.btn-outline-light {
+  
+  background-color: rgb(234, 172,37);
+}
 @media (max-width: 768px) {
   .hero-section {
     min-height: 300px;
@@ -63,7 +67,7 @@
 }
 
 .btn-primary:hover {
-  background-color: #555;
+  background-color: #555555;
   border-color: #555;
 }
 
@@ -119,6 +123,7 @@
 /* Secciones */
 section {
   padding: 80px 0;
+  background: rgb(42, 39, 34);
   
 }
 
@@ -203,12 +208,18 @@ section h2::after {
   }
   
   .hero-section h1 {
-    font-size: 2rem;
+    font-size: 2.5rem;
+  }
+  .hero-section .lead {
+    font-size: 1.25rem;
   }
   
   section {
     padding: 60px 0;
+    
   }
+
+  
   
   section h2 {
     font-size: 1.8rem;

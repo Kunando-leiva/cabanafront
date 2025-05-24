@@ -292,53 +292,63 @@ export default function HomePublico() {
       </section>
 
 
-      <section style={{ backgroundColor: '#1c1c1c', color: 'white', padding: '60px 0', position: 'relative', overflow: 'hidden' }}>
-  <Container fluid> {/* Cambiado a fluid para ocupar todo el ancho */}
+      <section style={{ 
+  
+  color: 'white', 
+  padding: '60px 0',
+  position: 'relative', 
+  overflow: 'hidden' 
+}}>
+  <Container>
     <Row className="align-items-center">
-      {/* Texto - ahora en un Container normal para limitar el ancho */}
-      <Col md={5}>
-        <Container>
+      {/* En móviles: orden inverso (texto primero) */}
+      <Col md={5} className="order-md-1 order-2">
+        <div style={{ padding: '20px' }}>
           <h2 style={{ 
             fontWeight: 300, 
-            fontSize: '2.5rem',
+            fontSize: '2rem', // Reducido para móviles
             letterSpacing: '1px',
             marginBottom: '1.5rem'
           }}>
             Hacer un recorrido
           </h2>
           <p style={{ 
-            fontSize: '1.1rem', 
+            fontSize: '1rem', // Reducido para móviles
             fontWeight: 300, 
-            lineHeight: '1.8',
-            marginBottom: '2rem'
+            lineHeight: '1.6',
+            marginBottom: '1.5rem'
           }}>
             Hacer un recorrido por el complejo es abrir la puerta a un mundo de calma. Conocé nuestras cabañas y dejate envolver por la calidez del entorno.
           </p>
-          <Button 
-            onClick={() => navigate('/galeria')}
-            variant="outline-light"
-            style={{
-              padding: '10px 30px',
-              fontWeight: 300,
-              letterSpacing: '1px',
-              borderRadius: '0',
-              textTransform: 'uppercase'
-            }}
-          >
-            Ver más
-          </Button>
-        </Container>
+          <div className="text-center">
+            <Button 
+              onClick={() => navigate('/galeria')}
+              variant="outline-light"
+              style={{
+                padding: '10px 25px',
+                fontWeight: 300,
+                letterSpacing: '1px',
+                borderRadius: '0',
+                textTransform: 'uppercase',
+                width: '100%',
+                maxWidth: '200px'
+              }}
+            >
+              Ver más
+            </Button>
+          </div>
+        </div>
       </Col>
 
-      {/* Imagen - ahora ocupará más espacio */}
-      <Col md={7} className="p-0"> {/* Eliminamos padding */}
+      {/* Imagen */}
+      <Col md={7} className="order-md-2 order-1 mb-4 mb-md-0">
         <div style={{
-          height: '500px',
+          height: '300px', // Altura reducida para móviles
           width: '100%',
           backgroundImage: `url(${imagenRecorrido})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
+          borderRadius: '8px' // Bordes redondeados
         }} />
       </Col>
     </Row>
@@ -346,57 +356,66 @@ export default function HomePublico() {
 </section>
 
      
-    <section style={{ 
-  backgroundColor: '#1c1c1c', 
+    <section style={{  
   color: 'white', 
-  padding: '60px 0',
-  position: 'relative'
+  padding: '60px 0', // Reducido el padding para móviles
+  position: 'relative',
+  overflow: 'hidden' 
 }}>
-  <Container fluid>
+  <Container>
     <Row className="align-items-center">
-      {/* Imagen expandida */}
-      <Col md={7} className="p-0">
+      {/* Imagen - orden 1 en móviles (primero) */}
+      <Col md={7} className="order-md-2 order-1 mb-4 mb-md-0">
         <div 
           style={{
-            height: '500px',
+            height: '300px', // Altura reducida para móviles
+            width: '100%',
             backgroundImage: `url(${encontrarnos})`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center'
+            backgroundPosition: 'center',
+            borderRadius: '8px' // Bordes redondeados
           }}
           className="img-hover-zoom"
         />
       </Col>
       
-      {/* Contenido de texto */}
-      <Col md={5}>
-        <Container>
+      {/* Contenido de texto - orden 2 en móviles (después de la imagen) */}
+      <Col md={5} className="order-2 order-md-2">
+        <div style={{ padding: '0 15px' }}> {/* Padding lateral para móviles */}
           <h2 style={{ 
             fontWeight: 300,
-            fontSize: '2.5rem',
-            letterSpacing: '1px'
+            fontSize: '2rem', // Tamaño reducido para móviles
+            letterSpacing: '1px',
+            marginBottom: '1.5rem'
           }}>
             Cómo encontrarnos
           </h2>
           <p style={{ 
-            fontSize: '1.1rem',
+            fontSize: '1rem', // Tamaño reducido para móviles
             fontWeight: 300,
-            lineHeight: '1.8'
+            lineHeight: '1.6', // Interlineado ajustado
+            marginBottom: '1.5rem'
           }}>
             Una estadía en nuestro complejo es más que una habitación...
           </p>
-          <Button 
-            onClick={() => navigate('/ubicacion')}
-            variant="outline-light"
-            style={{
-              padding: '10px 30px',
-              fontWeight: 300,
-              letterSpacing: '1px',
-              borderRadius: '0'
-            }}
-          >
-            Ver ubicación
-          </Button>
-        </Container>
+          <div className="text-center"> {/* Centrado en móviles, alineado izquierda en desktop */}
+            <Button 
+              onClick={() => navigate('/ubicacion')}
+              variant="outline-light"
+              style={{
+                padding: '10px 25px',
+                fontWeight: 300,
+                letterSpacing: '1px',
+                borderRadius: '0',
+                textTransform: 'uppercase',
+                width: '100%', // Ancho completo en móviles
+                maxWidth: '200px' // Ancho máximo controlado
+              }}
+            >
+              Ver ubicación
+            </Button>
+          </div>
+        </div>
       </Col>
     </Row>
   </Container>

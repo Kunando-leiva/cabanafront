@@ -38,12 +38,9 @@ export default function EditCabana() {
 
   // Servicios disponibles
   const serviciosDisponibles = [
-    'Wifi',
-    'Piscina',
-    'Aire acondicionado',
-    'Cocina',
-    'Estacionamiento',
-    'TV'
+    'Piscina', 'Cocina', 'Estacionamiento', 'Ropa de cama', 'Artículos de aseo', 'Balcón o terraza', 'Baños',
+            'Cama doble', 'Heladera','Pava eléctrica', 'Toallones', 'Vasos', 'Platos', 'Cubiertos', 'Wi-Fi', 'Ventiladores', 
+            'TV', 'Ollas', 'Fuentes para horno', 'Parrillas', 'Desayuno seco', 'Fogón', 'Parque', 'Cancha de fútbol',
   ];
 
   // Cargar datos de la cabaña al montar el componente

@@ -1,0 +1,36 @@
+.cabanas-publico {
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+/* Efecto hover para las cards */
+.card {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.card:hover .card-img-top {
+  transform: scale(1.05);
+}
+
+/* Badges de servicios */
+.badge {
+  font-weight: 300;
+  padding: 5px 10px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cabanas-publico {
+    padding-top: 30px;
+  }
+  
+  .card {
+    margin-bottom: 20px;
+  }
+}
