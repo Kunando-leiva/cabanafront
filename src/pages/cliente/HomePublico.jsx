@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button, Container, Row, Col, Card, Alert } from 'react-bootstrap';
-import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar, FaCalendarAlt, FaSearch, FaUtensils, FaTree } from 'react-icons/fa';
+import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar, FaCalendarAlt, FaSearch, FaUtensils, FaTree, FaQuestionCircle } from 'react-icons/fa';
 import PublicNavbar from '../../components/PublicNavbar';
 import CalendarFull from '../../components/CalendarFull';
 import { API_URL } from '../../config';
 import './HomePublico.css';
 import imagenRecorrido from '../../assets/images/recorrido.jpeg';
 import encontrarnos from '../../assets/images/frente.jpeg';
+import servicios from '../../assets/images/servicios.jpg';
 
 
 export default function HomePublico() {
@@ -421,58 +422,146 @@ export default function HomePublico() {
   </Container>
 </section>
 
+
+<section style={{ 
+  
+  color: 'white', 
+  padding: '60px 0',
+  position: 'relative', 
+  overflow: 'hidden' 
+}}>
+  <Container>
+    <Row className="align-items-center">
+      {/* En móviles: orden inverso (texto primero) */}
+      <Col md={5} className="order-md-1 order-2">
+        <div style={{ padding: '20px' }}>
+          <h2 style={{ 
+            fontWeight: 300, 
+            fontSize: '2rem', // Reducido para móviles
+            letterSpacing: '1px',
+            marginBottom: '1.5rem'
+          }}>
+            Nuestros Servicios 
+          </h2>
+          <p style={{ 
+            fontSize: '1rem', // Reducido para móviles
+            fontWeight: 300, 
+            lineHeight: '1.6',
+            marginBottom: '1.5rem'
+          }}>
+            Hacer un recorrido por el complejo es abrir la puerta a un mundo de calma. Conocé nuestras cabañas y dejate envolver por la calidez del entorno.
+          </p>
+          <div className="text-center">
+            <Button 
+              onClick={() => navigate('/galeria')}
+              variant="outline-light"
+              style={{
+                padding: '10px 25px',
+                fontWeight: 300,
+                letterSpacing: '1px',
+                borderRadius: '0',
+                textTransform: 'uppercase',
+                width: '100%',
+                maxWidth: '200px'
+              }}
+            >
+              Ver más
+            </Button>
+          </div>
+        </div>
+      </Col>
+
+      {/* Imagen */}
+      <Col md={7} className="order-md-2 order-1 mb-4 mb-md-0">
+        <div style={{
+          height: '300px', // Altura reducida para móviles
+          width: '100%',
+          backgroundImage: `url(${servicios})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          borderRadius: '8px' // Bordes redondeados
+        }} />
+      </Col>
+    </Row>
+  </Container>
+</section>
+
       <section className="py-4 bg-light">
-        <Container>
-          <h3 className="text-center mb-4">
-            <FaCalendarAlt className="me-2" />
-            Consultar disponibilidad
-          </h3>
-          
-          <Row className="justify-content-center mb-3">
-            <Col lg={8}>
-              <CalendarFull 
-                onDatesSelected={(start, end) => {
-                  if (isMounted.current) {
-                    setDateRange({ start, end });
-                    setSearchStatus(prev => ({ ...prev, error: null }));
-                  }
-                }}
-                showInline={true}
-              />
-            </Col>
-          </Row>
-          
-          <Row className="justify-content-center">
-            <Col md={4} className="text-center">
-              <Button 
-                variant="primary" 
-                onClick={handleSearchAvailability}
-                disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
-              >
-                {searchStatus.loading ? (
-                  "Buscando..."
-                ) : (
-                  <>
-                    <FaSearch className="me-2" />
-                    Buscar disponibilidad
-                  </>
-                )}
-              </Button>
-            </Col>
-          </Row>
-          
-          {dateRange.start && dateRange.end && (
-            <Row className="justify-content-center mt-3">
-              <Col md={8}>
-                <Alert variant="info" className="text-center">
-                  Buscando disponibilidad del {formatDate(dateRange.start)} al {formatDate(dateRange.end)} 
-                  ({calcularNoches(dateRange.start, dateRange.end)} noches)
-                </Alert>
-              </Col>
-            </Row>
+  <Container>
+    <h3 className="text-center mb-4">
+      <FaCalendarAlt className="me-2" />
+      Consultar disponibilidad
+    </h3>
+
+    {/* Elemento interactivo con tooltip */}
+    <Row className="justify-content-center mb-3">
+      <Col lg={8} className="text-center">
+        <div className="d-inline-block position-relative">
+          <div 
+            className="btn btn-sm btn-outline-secondary rounded-pill mb-3"
+            data-bs-toggle="tooltip" 
+            data-bs-placement="bottom"
+            data-bs-html="true"
+            title="Instrucciones para seleccionar fechas:
+                   • Primer click: Selecciona fecha de inicio
+                   • Segundo click: Selecciona fecha de fin
+                   • Doble click: Cancela o reinicia selección"
+          >
+            <FaQuestionCircle className="me-1" />
+            Modo de elegir fechas
+          </div>
+        </div>
+      </Col>
+    </Row>
+    
+    <Row className="justify-content-center mb-3">
+      <Col lg={8}>
+        <CalendarFull 
+          onDatesSelected={(start, end) => {
+            if (isMounted.current) {
+              setDateRange({ start, end });
+              setSearchStatus(prev => ({ ...prev, error: null }));
+            }
+          }}
+          showInline={true}
+        />
+      </Col>
+    </Row>
+    
+    <Row className="justify-content-center">
+      <Col md={4} className="text-center">
+        <Button 
+          variant="primary" 
+          onClick={handleSearchAvailability}
+          disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
+        >
+          {searchStatus.loading ? (
+            "Buscando..."
+          ) : (
+            <>
+              <FaSearch className="me-2" />
+              Buscar disponibilidad
+            </>
           )}
-        </Container>
-      </section>
+        </Button>
+      </Col>
+    </Row>
+    
+    {dateRange.start && dateRange.end && (
+      <>
+        {searchStatus.searched && !searchStatus.loading && availableCabanas.length > 0 && (
+          <Row className="justify-content-center mt-2">
+            <Col md={8}>
+              <Alert variant="success" className="text-center">
+                {availableCabanas.length} {availableCabanas.length === 1 ? 'Cabaña disponible' : 'Cabañas disponibles'} del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
+              </Alert>
+            </Col>
+          </Row>
+        )}
+      </>
+    )}
+  </Container>
+</section>
 
       {searchStatus.searched && (
         <section className="py-5">
@@ -488,8 +577,8 @@ export default function HomePublico() {
             ) : availableCabanas.length > 0 ? (
               <>
                 <h2 className="text-center mb-5">
-                  Cabañas disponibles del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
-                </h2>
+  {availableCabanas.length} Cabañas disponibles del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
+</h2>
                 <Row xs={1} md={3} className="g-4">
                   {availableCabanas.map(cabana => (
                     <CabanaCard 
