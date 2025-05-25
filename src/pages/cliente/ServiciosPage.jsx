@@ -27,7 +27,7 @@ const ServiciosPage = () => {
     blanco: '#ecf0f1'
   };
   const SERVICIOS = [
-    { nombre: 'Piscina privada', icono: <FaSwimmingPool />, categoria: 'Exterior', color: COLORES.azul },
+    { nombre: 'Piscina', icono: <FaSwimmingPool />, categoria: 'Exterior', color: COLORES.azul },
     { nombre: 'Cocina equipada', icono: <FaUtensils />, categoria: 'Interior', color: COLORES.rojo },
     { nombre: 'Estacionamiento', icono: <FaParking />, categoria: 'Exterior', color: COLORES.verde },
     { nombre: 'Ropa de cama', icono: <FaBed />, categoria: 'Habitación', color: COLORES.violeta },

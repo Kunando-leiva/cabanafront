@@ -217,6 +217,7 @@ export default function HomePublico() {
                       imagenPrincipal: cabana.imagenPrincipal
                     }
                   })}
+                  
                 >
                   Reservar ahora
                 </Button>
@@ -227,6 +228,13 @@ export default function HomePublico() {
               to={`/cabanas/${cabana._id}`}
               variant={dateRange ? "outline-primary" : "primary"}
               className="w-100"
+              style={{
+                fontWeight: 300,
+                lineHeight: '1.6',
+                marginBottom: '1.5rem',
+                backgroundColor: '#eaac25',
+                borderColor: '#eaac25',
+              }}
             >
               Ver detalles
             </Button>
@@ -583,7 +591,7 @@ export default function HomePublico() {
               </Alert>
             ) : availableCabanas.length > 0 ? (
               <>
-                <h2 className="text-center mb-5">
+                <h2 className="text-center mb-5 text-white">
   {availableCabanas.length} Cabañas disponibles del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
 </h2>
                 <Row xs={1} md={3} className="g-4">
