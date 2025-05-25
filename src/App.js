@@ -43,6 +43,7 @@ import Nosotros from './pages/cliente/Nosotros';
 import Ubicacion from './pages/cliente/Ubicacion';
 import Galeria from './pages/cliente/Galeria';
 import Register from './pages/admin/Register'; // Asegúrate de crear este componente
+import ServiciosPage from './pages/cliente/ServiciosPage';
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function App() {
         <Route path="/nosotros" element={<Nosotros />} />
         <Route path="/ubicacion" element={<Ubicacion />} />
         <Route path="/galeria" element={<Galeria />} />
+        <Route path="/servicios" element={<ServiciosPage />} />
         
         {/* Login */}
         <Route path="/login" element={<Login />} />

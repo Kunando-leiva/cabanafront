@@ -1,5 +1,6 @@
 import { Container, Row, Col, Image } from 'react-bootstrap';
 import PublicNavbar from '../../components/PublicNavbar';
+import Footer from '../../components/admin/Footer';
 import './Nosotros.css'; // Archivo para estilos adicionales
 
 export default function Nosotros() {
@@ -69,6 +70,7 @@ export default function Nosotros() {
           </Col>
         </Row>
       </Container>
+      <Footer />
     </div>
   );
 }

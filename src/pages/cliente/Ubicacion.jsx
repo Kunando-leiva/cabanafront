@@ -1,6 +1,7 @@
 import { Container, Row, Col, Card } from 'react-bootstrap';
 import { FaMapMarkerAlt, FaPhone, FaClock, FaWhatsapp, FaEnvelope, FaStar } from 'react-icons/fa';
 import PublicNavbar from '../../components/PublicNavbar';
+import Footer from '../../components/admin/Footer';
 import './Ubicacion.css';
 
 export default function Ubicacion() {
@@ -120,9 +121,11 @@ export default function Ubicacion() {
                 rel="noopener noreferrer"
                 className="btn btn-outline-dark rounded-0 px-4 py-2"
                 style={{ 
-                  fontWeight: 300,
-                  letterSpacing: '1px',
-                  textTransform: 'uppercase'
+                   fontWeight: 300,
+            lineHeight: '1.6', // Interlineado ajustado
+            marginBottom: '1.5rem',
+            backgroundColor: '#eaac25',
+            borderColor: '#eaac25',
                 }}
               >
                 Abrir en Google Maps
@@ -131,6 +134,7 @@ export default function Ubicacion() {
           </Col>
         </Row>
       </Container>
+      <Footer />
     </div>
   );
 }

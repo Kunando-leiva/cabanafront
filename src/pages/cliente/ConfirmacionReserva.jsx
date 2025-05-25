@@ -40,18 +40,22 @@ export default function ConfirmacionReserva() {
       <Card className="shadow text-center">
         <Card.Body>
           <FaCheckCircle size={48} className="text-success mb-3" />
-          <h2>¡Reserva Confirmada!</h2>
-          <p className="lead">Tu solicitud de reserva ha sido recibida</p>
+          <h2>¡Tu solicitud de reserva esta generada!</h2>
+          <p className="lead">Eleji el metodo por donde te queres comunicar con nosotros para finalizar: </p>
           
-          <Alert variant="info" className="text-start my-4">
+          <Alert variant="info" className="text-start text-center my-4">
             <h5>Detalles:</h5>
             <p><strong>Cabaña:</strong> {state?.cabanaNombre}</p>
             <p><strong>Fechas:</strong> {new Date(state?.fechaInicio).toLocaleDateString()} - {new Date(state?.fechaFin).toLocaleDateString()}</p>
             <p><strong>Total:</strong> ${state?.total?.toLocaleString()}</p>
+            <p><strong>Nombre:</strong> {state?.nombre}</p>
+            <p><strong>Email:</strong> {state?.email}</p>
+            <p><strong>Teléfono:</strong> {state?.telefono}</p>
+            <p><strong>DNI:</strong> {state?.dni}</p>
           </Alert>
 
           <div className="mb-4">
-            <h5>Contacta con nosotros para finalizar:</h5>
+            
             <div className="d-flex justify-content-center gap-3 mt-3">
               <Button 
                 variant="success" 

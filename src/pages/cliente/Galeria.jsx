@@ -5,6 +5,7 @@ import axios from 'axios';
 import { API_URL } from '../../config';
 import Navbar from '../../components/PublicNavbar';
 import './Galeria.css'; // Archivo para estilos adicionales
+import Footer from '../../components/admin/Footer';
 
 export default function Gallery() {
   const [images, setImages] = useState([]);
@@ -86,10 +87,14 @@ export default function Gallery() {
                 Reintentar
               </Button>
               <Button 
-                onClick={() => navigate(-1)} 
+                onClick={() => navigate("/")} 
                 variant="outline-secondary"
                 className="rounded-0 px-3"
-                style={{ fontWeight: 300, letterSpacing: '1px' }}
+                style={{  fontWeight: 300,
+            lineHeight: '1.6', // Interlineado ajustado
+            marginBottom: '1.5rem',
+            backgroundColor: '#eaac25',
+            borderColor: '#eaac25', }}
               >
                 Volver
               </Button>
@@ -108,7 +113,11 @@ export default function Gallery() {
               onClick={() => navigate(-1)} 
               variant="outline-dark"
               className="rounded-0 px-3 mt-2"
-              style={{ fontWeight: 300, letterSpacing: '1px' }}
+              style={{ fontWeight: 300,
+            lineHeight: '1.6', // Interlineado ajustado
+            marginBottom: '1.5rem',
+            backgroundColor: '#eaac25',
+            borderColor: '#eaac25', }}
             >
               Volver
             </Button>
@@ -196,7 +205,11 @@ export default function Gallery() {
             onClick={() => navigate(-1)} 
             variant="outline-dark"
             className="rounded-0 px-3"
-            style={{ fontWeight: 300, letterSpacing: '1px' }}
+            style={{ fontWeight: 300,
+            lineHeight: '1.6', // Interlineado ajustado
+            marginBottom: '1.5rem',
+            backgroundColor: '#eaac25',
+            borderColor: '#eaac25', }}
           >
             Volver
           </Button>
@@ -236,7 +249,9 @@ export default function Gallery() {
             </Button>
           </Modal.Footer>
         </Modal>
-      </Container>
+      </Container>.
+      <Footer />
+
     </div>
   );
 }

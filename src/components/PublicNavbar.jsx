@@ -34,6 +34,9 @@ export default function PublicNavbar() {
             <Nav.Link as={Link} to="/galeria" className="d-flex align-items-center text-uppercase fw-semibold">
               <FaImages className="me-1" /> Imágenes
             </Nav.Link>
+            <Nav.Link as={Link} to="/servicios" className="d-flex align-items-center text-uppercase fw-semibold">
+              <FaImages className="me-1" /> Servicios
+            </Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Container>

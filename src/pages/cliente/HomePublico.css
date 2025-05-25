@@ -8,7 +8,7 @@
 
 
 /* Hero section - estilo Barbosa */
-.hero-section {
+.home-publico-hero {
   background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
                   url('../../assets/images/home.jpeg');
   background-size: 70% auto; /* Ancho al 70%, altura automática */
@@ -19,7 +19,7 @@
 
 .btn-outline-light {
   
-  background-color: rgb(234, 172,37);
+  background-color: #eaac25;
 }
 @media (max-width: 768px) {
   .hero-section {
@@ -32,7 +32,7 @@
   content: "";
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: #00000066;
 }
 
 .hero-section .container {

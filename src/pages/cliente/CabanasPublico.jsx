@@ -13,6 +13,8 @@ import {
 import { BiFridge } from 'react-icons/bi';
 import { GiElectric } from 'react-icons/gi';
 import './CabanasPublico.css'; // Archivo para estilos adicionales
+import Footer from '../../components/admin/Footer';
+
 
 export default function CabanasPublico() {
   const [cabanas, setCabanas] = useState([]);
@@ -121,7 +123,7 @@ export default function CabanasPublico() {
       <PublicNavbar />
       
       <Container className="py-5">
-        <h1 className="text-center mb-5 fw-light" style={{ letterSpacing: '1px' }}>
+        <h1 className="H1-text text-center mb-5 fw-light" style={{ letterSpacing: '1px' }}>
           Nuestras Cabañas
         </h1>
         
@@ -195,12 +197,18 @@ export default function CabanasPublico() {
                     
                     <Link 
                       to={`/cabanas/${cabana._id}`}
-                      className="btn btn-outline-dark rounded-0 mt-auto"
-                      style={{ 
-                        fontWeight: 300,
-                        letterSpacing: '1px',
-                        textTransform: 'uppercase'
-                      }}
+                      className="btn btn-outline-dark rounded-0 d-block mx-auto mt-3"
+                      style={{
+                padding: '10px 25px',
+                fontWeight: 300,
+                letterSpacing: '1px',
+                borderRadius: '0',
+                textTransform: 'uppercase',
+                width: '100%',
+                maxWidth: '200px',
+                backgroundColor: '#eaac25',
+               
+              }}
                     >
                       Ver detalles
                     </Link>
@@ -211,6 +219,8 @@ export default function CabanasPublico() {
           </Row>
         )}
       </Container>
+
+      <Footer />
     </div>
   );
 }

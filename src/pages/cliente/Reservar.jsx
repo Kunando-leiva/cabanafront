@@ -227,10 +227,18 @@ export default function Reservar() {
                 type="submit" 
                 size="lg"
                 disabled={loading || !reservaData.total}
+                style={{fontWeight: 300,
+            lineHeight: '1.6', // Interlineado ajustado
+            marginBottom: '1.5rem',
+            backgroundColor: '#eaac25',
+            borderColor: '#00000666',
+         
+          }
+                }
               >
                 {loading ? (
                   <>
-                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true"  />
                     <span className="ms-2">Procesando...</span>
                   </>
                 ) : (

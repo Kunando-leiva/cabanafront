@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button, Container, Row, Col, Card, Alert } from 'react-bootstrap';
-import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar, FaCalendarAlt, FaSearch, FaUtensils, FaTree, FaQuestionCircle } from 'react-icons/fa';
+import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar, FaCalendarAlt, FaSearch, FaUtensils, FaTree, FaQuestionCircle, FaFacebook, FaInstagram, FaMapMarkerAlt, FaPhone, FaEnvelope, FaHome, FaConciergeBell, FaUsers } from 'react-icons/fa';
 import PublicNavbar from '../../components/PublicNavbar';
 import CalendarFull from '../../components/CalendarFull';
 import { API_URL } from '../../config';
@@ -10,6 +10,7 @@ import './HomePublico.css';
 import imagenRecorrido from '../../assets/images/recorrido.jpeg';
 import encontrarnos from '../../assets/images/frente.jpeg';
 import servicios from '../../assets/images/servicios.jpg';
+import Footer from '../../components/admin/Footer';
 
 
 export default function HomePublico() {
@@ -282,7 +283,7 @@ export default function HomePublico() {
     <div className="home-publico">
       <PublicNavbar />
 
-      <section className="hero-section bg-dark text-white text-center py-5 position-relative">
+      <section className="home-publico-hero bg-dark text-white text-center py-5 position-relative">
         <Container className="position-relative z-index-1">
           <h1 className="display-4 fw-bold mb-4">Complejo Los Alerces</h1>
           <p className="lead mb-4">Libertad - Pontevedra</p>
@@ -311,15 +312,17 @@ export default function HomePublico() {
             letterSpacing: '1px',
             marginBottom: '1.5rem'
           }}>
-            Hacer un recorrido
+            ¿Por qué elegirnos?
           </h2>
           <p style={{ 
             fontSize: '1rem', // Reducido para móviles
             fontWeight: 300, 
             lineHeight: '1.6',
-            marginBottom: '1.5rem'
+            marginBottom: '1.5rem',
+            textAlign: 'justify' // Justificado para mejor lectura
           }}>
-            Hacer un recorrido por el complejo es abrir la puerta a un mundo de calma. Conocé nuestras cabañas y dejate envolver por la calidez del entorno.
+            Somos un grupo familiar que busca brindarte una experiencia única, para que te relajes y desconectes de la rutina.
+             Sin nada que envidiarle a ningún otro hospedaje, contamos con los mejores servicios de Buenos Aires y del país, pero en Libertad, Merlo.
           </p>
           <div className="text-center">
             <Button 
@@ -335,7 +338,7 @@ export default function HomePublico() {
                 maxWidth: '200px'
               }}
             >
-              Ver más
+              Ver fotos
             </Button>
           </div>
         </div>
@@ -389,15 +392,17 @@ export default function HomePublico() {
             letterSpacing: '1px',
             marginBottom: '1.5rem'
           }}>
-            Cómo encontrarnos
+            ¿Listo para desconectar?
           </h2>
           <p style={{ 
             fontSize: '1rem', // Tamaño reducido para móviles
             fontWeight: 300,
             lineHeight: '1.6', // Interlineado ajustado
             marginBottom: '1.5rem'
-          }}>
-            Una estadía en nuestro complejo es más que una habitación...
+          }}>Ubicanos en:
+            Complejo Los Alerces
+📍 Ruta 197 Km 1.5, Libertad
+
           </p>
           <div className="text-center"> {/* Centrado en móviles, alineado izquierda en desktop */}
             <Button 
@@ -447,9 +452,11 @@ export default function HomePublico() {
             fontSize: '1rem', // Reducido para móviles
             fontWeight: 300, 
             lineHeight: '1.6',
-            marginBottom: '1.5rem'
+            marginBottom: '1.5rem',
+            textAlign: 'justify' // Justificado para mejor lectura
           }}>
-            Hacer un recorrido por el complejo es abrir la puerta a un mundo de calma. Conocé nuestras cabañas y dejate envolver por la calidez del entorno.
+            Te ofrecemos todo lo que necesitás para una estadía perfecta, con servicios pensados para tu comodidad y relax. 
+            Disfrutá de la calidad que nos caracteriza, en un entorno donde cada detalle está cuidado para vos.
           </p>
           <div className="text-center">
             <Button 
@@ -465,7 +472,7 @@ export default function HomePublico() {
                 maxWidth: '200px'
               }}
             >
-              Ver más
+              Ver servicios
             </Button>
           </div>
         </div>
@@ -598,9 +605,9 @@ export default function HomePublico() {
         </section>
       )}
 
-      <FeaturedCabanas />
+      {/* <FeaturedCabanas /> */}
 
-      <section className="py-5 bg-light">
+      {/* <section className="py-5 bg-light">
         <Container>
           <h2 className="text-center mb-5">¿Por qué elegirnos?</h2>
           <Row className="g-4">
@@ -621,7 +628,12 @@ export default function HomePublico() {
             </Col>
           </Row>
         </Container>
-      </section>
+      </section> */}
+
+      
+
+   
+      <Footer />
     </div>
   );
 }
