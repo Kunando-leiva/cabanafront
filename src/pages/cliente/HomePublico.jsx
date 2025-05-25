@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Button, Container, Row, Col, Card, Alert } from 'react-bootstrap';
+import { Button, Container, Row, Col, Card, Alert, Overlay, Tooltip, } from 'react-bootstrap';
 import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar, FaCalendarAlt, FaSearch, FaUtensils, FaTree, FaQuestionCircle, FaFacebook, FaInstagram, FaMapMarkerAlt, FaPhone, FaEnvelope, FaHome, FaConciergeBell, FaUsers } from 'react-icons/fa';
 import PublicNavbar from '../../components/PublicNavbar';
 import CalendarFull from '../../components/CalendarFull';
@@ -24,8 +24,11 @@ export default function HomePublico() {
     error: null,
     searched: false
   });
+  const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipTarget = useRef(null);
   const navigate = useNavigate();
   const isMounted = useRef(true);
+  
 
   // Limpieza al desmontar
   useEffect(() => {
@@ -513,18 +516,29 @@ export default function HomePublico() {
       <Col lg={8} className="text-center">
         <div className="d-inline-block position-relative">
           <div 
+            ref={target}
             className="btn btn-sm btn-outline-secondary rounded-pill mb-3"
-            data-bs-toggle="tooltip" 
-            data-bs-placement="bottom"
-            data-bs-html="true"
-            title="Instrucciones para seleccionar fechas:
-                   • Primer click: Selecciona fecha de inicio
-                   • Segundo click: Selecciona fecha de fin
-                   • Doble click: Cancela o reinicia selección"
+            onClick={() => setShowTooltip(!showTooltip)}
+            style={{ cursor: 'pointer' }}
           >
             <FaQuestionCircle className="me-1" />
             Modo de elegir fechas
           </div>
+
+          <Overlay target={target.current} show={showTooltip} placement="bottom">
+            {(props) => (
+              <Tooltip id="date-instructions-tooltip" {...props}>
+                <div className="text-start">
+                  <strong>Instrucciones para seleccionar fechas:</strong>
+                  <ul className="mb-0">
+                    <li>Primer click: Selecciona fecha de inicio</li>
+                    <li>Segundo click: Selecciona fecha de fin</li>
+                    <li>Doble click: Cancela o reinicia selección</li>
+                  </ul>
+                </div>
+              </Tooltip>
+            )}
+          </Overlay>
         </div>
       </Col>
     </Row>
