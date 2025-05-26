@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Button, Container, Row, Col, Card, Alert } from 'react-bootstrap';
-import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar, FaCalendarAlt, FaSearch, FaUtensils, FaTree,
-   FaQuestionCircle, FaFacebook, FaInstagram, FaMapMarkerAlt, FaPhone, FaEnvelope, FaHome,
-    FaConciergeBell, FaUsers } from 'react-icons/fa';
+import { Button, Container, Row, Col, Card, Alert, Overlay, Tooltip } from 'react-bootstrap';
+import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar, FaCalendarAlt, FaSearch, FaUtensils, FaTree, FaQuestionCircle, FaFacebook, FaInstagram, FaMapMarkerAlt, FaPhone, FaEnvelope, FaHome, FaConciergeBell, FaUsers } from 'react-icons/fa';
 import PublicNavbar from '../../components/PublicNavbar';
 import CalendarFull from '../../components/CalendarFull';
 import { API_URL } from '../../config';
@@ -13,7 +11,6 @@ import imagenRecorrido from '../../assets/images/recorrido.jpeg';
 import encontrarnos from '../../assets/images/frente.jpeg';
 import servicios from '../../assets/images/servicios.jpg';
 import Footer from '../../components/admin/Footer';
-
 
 export default function HomePublico() {
   const [cabanas, setCabanas] = useState([]);
@@ -26,23 +23,10 @@ export default function HomePublico() {
     error: null,
     searched: false
   });
+  const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipTarget = useRef(null);
   const navigate = useNavigate();
   const isMounted = useRef(true);
-
-  const SelectorFechas = () => {
-  useEffect(() => {
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-      const tooltip = new window.bootstrap.Tooltip(tooltipTriggerEl);
-
-      // Activar tooltip también al hacer click (útil en móviles)
-      tooltipTriggerEl.addEventListener("click", function () {
-        tooltip.toggle();
-      });
-    });
-  }, []);
-}
-
 
   // Limpieza al desmontar
   useEffect(() => {
@@ -51,7 +35,18 @@ export default function HomePublico() {
     };
   }, []);
 
-  
+  // Cerrar tooltip al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (tooltipTarget.current && !tooltipTarget.current.contains(event.target)) {
+        setShowTooltip(false);
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   const getImageUrl = (imageData) => {
     if (!imageData) return `${API_URL}/default-cabana.jpg`;
     
@@ -235,7 +230,6 @@ export default function HomePublico() {
                       imagenPrincipal: cabana.imagenPrincipal
                     }
                   })}
-                  
                 >
                   Reservar ahora
                 </Button>
@@ -279,8 +273,6 @@ export default function HomePublico() {
       );
     }
 
-     
-
     return (
       <section className="py-5">
         <Container>
@@ -319,282 +311,280 @@ export default function HomePublico() {
         </Container>
       </section>
 
-
       <section style={{ 
-  
-  color: 'white', 
-  padding: '60px 0',
-  position: 'relative', 
-  overflow: 'hidden' 
-}}>
-  <Container>
-    <Row className="align-items-center">
-      {/* En móviles: orden inverso (texto primero) */}
-      <Col md={5} className="order-md-1 order-2">
-        <div style={{ padding: '20px' }}>
-          <h2 style={{ 
-            fontWeight: 300, 
-            fontSize: '2rem', // Reducido para móviles
-            letterSpacing: '1px',
-            marginBottom: '1.5rem'
-          }}>
-            ¿Por qué elegirnos?
-          </h2>
-          <p style={{ 
-            fontSize: '1rem', // Reducido para móviles
-            fontWeight: 300, 
-            lineHeight: '1.6',
-            marginBottom: '1.5rem',
-            textAlign: 'justify' // Justificado para mejor lectura
-          }}>
-            Somos un grupo familiar que busca brindarte una experiencia única, para que te relajes y desconectes de la rutina.
-             Sin nada que envidiarle a ningún otro hospedaje, contamos con los mejores servicios de Buenos Aires y del país, pero en Libertad, Merlo.
-          </p>
-          <div className="text-center">
-            <Button 
-              onClick={() => navigate('/galeria')}
-              variant="outline-light"
-              style={{
-                padding: '10px 25px',
-                fontWeight: 300,
-                letterSpacing: '1px',
-                borderRadius: '0',
-                textTransform: 'uppercase',
+        color: 'white', 
+        padding: '60px 0',
+        position: 'relative', 
+        overflow: 'hidden' 
+      }}>
+        <Container>
+          <Row className="align-items-center">
+            <Col md={5} className="order-md-1 order-2">
+              <div style={{ padding: '20px' }}>
+                <h2 style={{ 
+                  fontWeight: 300, 
+                  fontSize: '2rem',
+                  letterSpacing: '1px',
+                  marginBottom: '1.5rem'
+                }}>
+                  ¿Por qué elegirnos?
+                </h2>
+                <p style={{ 
+                  fontSize: '1rem',
+                  fontWeight: 300, 
+                  lineHeight: '1.6',
+                  marginBottom: '1.5rem',
+                  textAlign: 'justify'
+                }}>
+                  Somos un grupo familiar que busca brindarte una experiencia única, para que te relajes y desconectes de la rutina.
+                  Sin nada que envidiarle a ningún otro hospedaje, contamos con los mejores servicios de Buenos Aires y del país, pero en Libertad, Merlo.
+                </p>
+                <div className="text-center">
+                  <Button 
+                    onClick={() => navigate('/galeria')}
+                    variant="outline-light"
+                    style={{
+                      padding: '10px 25px',
+                      fontWeight: 300,
+                      letterSpacing: '1px',
+                      borderRadius: '0',
+                      textTransform: 'uppercase',
+                      width: '100%',
+                      maxWidth: '200px'
+                    }}
+                  >
+                    Ver fotos
+                  </Button>
+                </div>
+              </div>
+            </Col>
+
+            <Col md={7} className="order-md-2 order-1 mb-4 mb-md-0">
+              <div style={{
+                height: '300px',
                 width: '100%',
-                maxWidth: '200px'
-              }}
-            >
-              Ver fotos
-            </Button>
-          </div>
-        </div>
-      </Col>
-
-      {/* Imagen */}
-      <Col md={7} className="order-md-2 order-1 mb-4 mb-md-0">
-        <div style={{
-          height: '300px', // Altura reducida para móviles
-          width: '100%',
-          backgroundImage: `url(${imagenRecorrido})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          borderRadius: '8px' // Bordes redondeados
-        }} />
-      </Col>
-    </Row>
-  </Container>
-</section>
-
-     
-    <section style={{  
-  color: 'white', 
-  padding: '60px 0', // Reducido el padding para móviles
-  position: 'relative',
-  overflow: 'hidden' 
-}}>
-  <Container>
-    <Row className="align-items-center">
-      {/* Imagen - orden 1 en móviles (primero) */}
-      <Col md={7} className="order-md-2 order-1 mb-4 mb-md-0">
-        <div 
-          style={{
-            height: '300px', // Altura reducida para móviles
-            width: '100%',
-            backgroundImage: `url(${encontrarnos})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            borderRadius: '8px' // Bordes redondeados
-          }}
-          className="img-hover-zoom"
-        />
-      </Col>
-      
-      {/* Contenido de texto - orden 2 en móviles (después de la imagen) */}
-      <Col md={5} className="order-2 order-md-2">
-        <div style={{ padding: '0 15px' }}> {/* Padding lateral para móviles */}
-          <h2 style={{ 
-            fontWeight: 300,
-            fontSize: '2rem', // Tamaño reducido para móviles
-            letterSpacing: '1px',
-            marginBottom: '1.5rem'
-          }}>
-            ¿Listo para desconectar?
-          </h2>
-          <p style={{ 
-            fontSize: '1rem', // Tamaño reducido para móviles
-            fontWeight: 300,
-            lineHeight: '1.6', // Interlineado ajustado
-            marginBottom: '1.5rem'
-          }}>Ubicanos en:
-            Complejo Los Alerces
-📍 Ruta 197 Km 1.5, Libertad
-
-          </p>
-          <div className="text-center"> {/* Centrado en móviles, alineado izquierda en desktop */}
-            <Button 
-              onClick={() => navigate('/ubicacion')}
-              variant="outline-light"
-              style={{
-                padding: '10px 25px',
-                fontWeight: 300,
-                letterSpacing: '1px',
-                borderRadius: '0',
-                textTransform: 'uppercase',
-                width: '100%', // Ancho completo en móviles
-                maxWidth: '200px' // Ancho máximo controlado
-              }}
-            >
-              Ver ubicación
-            </Button>
-          </div>
-        </div>
-      </Col>
-    </Row>
-  </Container>
-</section>
-
-
-<section style={{ 
-  
-  color: 'white', 
-  padding: '60px 0',
-  position: 'relative', 
-  overflow: 'hidden' 
-}}>
-  <Container>
-    <Row className="align-items-center">
-      {/* En móviles: orden inverso (texto primero) */}
-      <Col md={5} className="order-md-1 order-2">
-        <div style={{ padding: '20px' }}>
-          <h2 style={{ 
-            fontWeight: 300, 
-            fontSize: '2rem', // Reducido para móviles
-            letterSpacing: '1px',
-            marginBottom: '1.5rem'
-          }}>
-            Nuestros Servicios 
-          </h2>
-          <p style={{ 
-            fontSize: '1rem', // Reducido para móviles
-            fontWeight: 300, 
-            lineHeight: '1.6',
-            marginBottom: '1.5rem',
-            textAlign: 'justify' // Justificado para mejor lectura
-          }}>
-            Te ofrecemos todo lo que necesitás para una estadía perfecta, con servicios pensados para tu comodidad y relax. 
-            Disfrutá de la calidad que nos caracteriza, en un entorno donde cada detalle está cuidado para vos.
-          </p>
-          <div className="text-center">
-            <Button 
-              onClick={() => navigate('/galeria')}
-              variant="outline-light"
-              style={{
-                padding: '10px 25px',
-                fontWeight: 300,
-                letterSpacing: '1px',
-                borderRadius: '0',
-                textTransform: 'uppercase',
-                width: '100%',
-                maxWidth: '200px'
-              }}
-            >
-              Ver servicios
-            </Button>
-          </div>
-        </div>
-      </Col>
-
-      {/* Imagen */}
-      <Col md={7} className="order-md-2 order-1 mb-4 mb-md-0">
-        <div style={{
-          height: '300px', // Altura reducida para móviles
-          width: '100%',
-          backgroundImage: `url(${servicios})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          borderRadius: '8px' // Bordes redondeados
-        }} />
-      </Col>
-    </Row>
-  </Container>
-</section>
-
-      <section className="py-4 bg-light">
-  <Container>
-    <h3 className="text-center mb-4">
-      <FaCalendarAlt className="me-2" />
-      Consultar disponibilidad
-    </h3>
-
-    {/* Elemento interactivo con tooltip */}
-    <Row className="justify-content-center mb-3">
-      <Col lg={8} className="text-center">
-        <div className="d-inline-block position-relative">
-          <div 
-            className="btn btn-sm btn-outline-secondary rounded-pill mb-3"
-            data-bs-toggle="tooltip" 
-            data-bs-placement="bottom"
-            data-bs-html="true"
-            title={`Instrucciones para seleccionar fechas:
-              • Primer click: Selecciona fecha de inicio
-              • Segundo click: Selecciona fecha de fin
-              • Doble click: Cancela o reinicia selección`}
-          >
-            <FaQuestionCircle className="me-1" />
-            Modo de elegir fechas
-          </div>
-        </div>
-      </Col>
-    </Row>
-    
-    <Row className="justify-content-center mb-3">
-      <Col lg={8}>
-        <CalendarFull 
-          onDatesSelected={(start, end) => {
-            if (isMounted.current) {
-              setDateRange({ start, end });
-              setSearchStatus(prev => ({ ...prev, error: null }));
-            }
-          }}
-          showInline={true}
-        />
-      </Col>
-    </Row>
-    
-    <Row className="justify-content-center">
-      <Col md={4} className="text-center">
-        <Button 
-          variant="primary" 
-          onClick={handleSearchAvailability}
-          disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
-        >
-          {searchStatus.loading ? (
-            "Buscando..."
-          ) : (
-            <>
-              <FaSearch className="me-2" />
-              Buscar disponibilidad
-            </>
-          )}
-        </Button>
-      </Col>
-    </Row>
-    
-    {dateRange.start && dateRange.end && (
-      <>
-        {searchStatus.searched && !searchStatus.loading && availableCabanas.length > 0 && (
-          <Row className="justify-content-center mt-2">
-            <Col md={8}>
-              <Alert variant="success" className="text-center">
-                {availableCabanas.length} {availableCabanas.length === 1 ? 'Cabaña disponible' : 'Cabañas disponibles'} del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
-              </Alert>
+                backgroundImage: `url(${imagenRecorrido})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                borderRadius: '8px'
+              }} />
             </Col>
           </Row>
-        )}
-      </>
-    )}
-  </Container>
-</section>
+        </Container>
+      </section>
+
+      <section style={{  
+        color: 'white', 
+        padding: '60px 0',
+        position: 'relative',
+        overflow: 'hidden' 
+      }}>
+        <Container>
+          <Row className="align-items-center">
+            <Col md={7} className="order-md-2 order-1 mb-4 mb-md-0">
+              <div 
+                style={{
+                  height: '300px',
+                  width: '100%',
+                  backgroundImage: `url(${encontrarnos})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  borderRadius: '8px'
+                }}
+                className="img-hover-zoom"
+              />
+            </Col>
+            
+            <Col md={5} className="order-2 order-md-2">
+              <div style={{ padding: '0 15px' }}>
+                <h2 style={{ 
+                  fontWeight: 300,
+                  fontSize: '2rem',
+                  letterSpacing: '1px',
+                  marginBottom: '1.5rem'
+                }}>
+                  ¿Listo para desconectar?
+                </h2>
+                <p style={{ 
+                  fontSize: '1rem',
+                  fontWeight: 300,
+                  lineHeight: '1.6',
+                  marginBottom: '1.5rem'
+                }}>Ubicanos en:
+                  Complejo Los Alerces
+                  📍 Ruta 197 Km 1.5, Libertad
+                </p>
+                <div className="text-center">
+                  <Button 
+                    onClick={() => navigate('/ubicacion')}
+                    variant="outline-light"
+                    style={{
+                      padding: '10px 25px',
+                      fontWeight: 300,
+                      letterSpacing: '1px',
+                      borderRadius: '0',
+                      textTransform: 'uppercase',
+                      width: '100%',
+                      maxWidth: '200px'
+                    }}
+                  >
+                    Ver ubicación
+                  </Button>
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </Container>
+      </section>
+
+      <section style={{ 
+        color: 'white', 
+        padding: '60px 0',
+        position: 'relative', 
+        overflow: 'hidden' 
+      }}>
+        <Container>
+          <Row className="align-items-center">
+            <Col md={5} className="order-md-1 order-2">
+              <div style={{ padding: '20px' }}>
+                <h2 style={{ 
+                  fontWeight: 300, 
+                  fontSize: '2rem',
+                  letterSpacing: '1px',
+                  marginBottom: '1.5rem'
+                }}>
+                  Nuestros Servicios 
+                </h2>
+                <p style={{ 
+                  fontSize: '1rem',
+                  fontWeight: 300, 
+                  lineHeight: '1.6',
+                  marginBottom: '1.5rem',
+                  textAlign: 'justify'
+                }}>
+                  Te ofrecemos todo lo que necesitás para una estadía perfecta, con servicios pensados para tu comodidad y relax. 
+                  Disfrutá de la calidad que nos caracteriza, en un entorno donde cada detalle está cuidado para vos.
+                </p>
+                <div className="text-center">
+                  <Button 
+                    onClick={() => navigate('/galeria')}
+                    variant="outline-light"
+                    style={{
+                      padding: '10px 25px',
+                      fontWeight: 300,
+                      letterSpacing: '1px',
+                      borderRadius: '0',
+                      textTransform: 'uppercase',
+                      width: '100%',
+                      maxWidth: '200px'
+                    }}
+                  >
+                    Ver servicios
+                  </Button>
+                </div>
+              </div>
+            </Col>
+
+            <Col md={7} className="order-md-2 order-1 mb-4 mb-md-0">
+              <div style={{
+                height: '300px',
+                width: '100%',
+                backgroundImage: `url(${servicios})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                borderRadius: '8px'
+              }} />
+            </Col>
+          </Row>
+        </Container>
+      </section>
+
+      <section className="py-4 bg-light">
+        <Container>
+          <h3 className="text-center mb-4">
+            <FaCalendarAlt className="me-2" />
+            Consultar disponibilidad
+          </h3>
+
+          <Row className="justify-content-center mb-3">
+            <Col lg={8} className="text-center">
+              <div className="d-inline-block position-relative">
+                <div 
+                  ref={tooltipTarget}
+                  className="btn btn-sm btn-outline-secondary rounded-pill mb-3"
+                  onClick={() => setShowTooltip(!showTooltip)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <FaQuestionCircle className="me-1" />
+                  Modo de elegir fechas
+                </div>
+
+                <Overlay target={tooltipTarget.current} show={showTooltip} placement="bottom">
+                  {(props) => (
+                    <Tooltip id="date-instructions-tooltip" {...props}>
+                      <div className="text-start">
+                        <strong>Instrucciones para seleccionar fechas:</strong>
+                        <ul className="mb-0">
+                          <li>Primer click: Selecciona fecha de inicio</li>
+                          <li>Segundo click: Selecciona fecha de fin</li>
+                          <li>Doble click: Cancela o reinicia selección</li>
+                        </ul>
+                      </div>
+                    </Tooltip>
+                  )}
+                </Overlay>
+              </div>
+            </Col>
+          </Row>
+          
+          <Row className="justify-content-center mb-3">
+            <Col lg={8}>
+              <CalendarFull 
+                onDatesSelected={(start, end) => {
+                  if (isMounted.current) {
+                    setDateRange({ start, end });
+                    setSearchStatus(prev => ({ ...prev, error: null }));
+                  }
+                }}
+                showInline={true}
+              />
+            </Col>
+          </Row>
+          
+          <Row className="justify-content-center">
+            <Col md={4} className="text-center">
+              <Button 
+                variant="primary" 
+                onClick={handleSearchAvailability}
+                disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
+              >
+                {searchStatus.loading ? (
+                  "Buscando..."
+                ) : (
+                  <>
+                    <FaSearch className="me-2" />
+                    Buscar disponibilidad
+                  </>
+                )}
+              </Button>
+            </Col>
+          </Row>
+          
+          {dateRange.start && dateRange.end && (
+            <>
+              {searchStatus.searched && !searchStatus.loading && availableCabanas.length > 0 && (
+                <Row className="justify-content-center mt-2">
+                  <Col md={8}>
+                    <Alert variant="success" className="text-center">
+                      {availableCabanas.length} {availableCabanas.length === 1 ? 'Cabaña disponible' : 'Cabañas disponibles'} del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
+                    </Alert>
+                  </Col>
+                </Row>
+              )}
+            </>
+          )}
+        </Container>
+      </section>
 
       {searchStatus.searched && (
         <section className="py-5">
@@ -610,8 +600,8 @@ export default function HomePublico() {
             ) : availableCabanas.length > 0 ? (
               <>
                 <h2 className="text-center mb-5 text-white">
-  {availableCabanas.length} Cabañas disponibles del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
-</h2>
+                  {availableCabanas.length} Cabañas disponibles del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
+                </h2>
                 <Row xs={1} md={3} className="g-4">
                   {availableCabanas.map(cabana => (
                     <CabanaCard 
@@ -631,34 +621,6 @@ export default function HomePublico() {
         </section>
       )}
 
-      {/* <FeaturedCabanas /> */}
-
-      {/* <section className="py-5 bg-light">
-        <Container>
-          <h2 className="text-center mb-5">¿Por qué elegirnos?</h2>
-          <Row className="g-4">
-            <Col md={4} className="text-center">
-              <FaSwimmingPool size={40} className="mb-3 text-primary" />
-              <h4>Piscinas Privadas</h4>
-              <p>Disfruta de piscinas exclusivas en cada cabaña.</p>
-            </Col>
-            <Col md={4} className="text-center">
-              <FaWifi size={40} className="mb-3 text-primary" />
-              <h4>Wifi de Alta Velocidad</h4>
-              <p>Conectividad incluso en medio de la naturaleza.</p>
-            </Col>
-            <Col md={4} className="text-center">
-              <FaSnowflake size={40} className="mb-3 text-primary" />
-              <h4>Aire Acondicionado</h4>
-              <p>Comodidad en todas las estaciones del año.</p>
-            </Col>
-          </Row>
-        </Container>
-      </section> */}
-
-      
-
-   
       <Footer />
     </div>
   );
@@ -675,16 +637,13 @@ function formatDate(date) {
 function calcularNoches(start, end) {
   if (!start || !end || start >= end) return 0;
   
-  // 1. Normalizar fechas (ignorar horas/minutos/segundos)
   const startDate = new Date(start);
   startDate.setHours(0, 0, 0, 0);
   
   const endDate = new Date(end);
   endDate.setHours(0, 0, 0, 0);
 
-  // 2. Calcular diferencia en milisegundos
   const diffMs = endDate - startDate;
   
-  // 3. Convertir a días (usando Math.floor)
   return Math.floor(diffMs / (1000 * 60 * 60 * 24)); 
 }
