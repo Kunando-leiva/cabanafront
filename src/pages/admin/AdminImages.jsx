@@ -22,22 +22,29 @@ const AdminImages = () => {
 
   // Definición de las columnas de la tabla
   const columns = useMemo(() => [
-    {
-      title: 'Miniatura',
-      dataIndex: 'url',
-      key: 'thumbnail',
-      render: (url) => (
+  {
+    title: 'Miniatura',
+    dataIndex: 'url',
+    key: 'thumbnail',
+    render: (url) => (
+      <div style={{ width: 80, height: 60, display: 'flex', alignItems: 'center' }}>
         <AntImage
           src={url}
-          width={80}
-          height={60}
+          width="100%"
+          height="100%"
           style={{ objectFit: 'cover', borderRadius: 4 }}
+          placeholder={
+            <div style={{ background: '#f0f0f0', width: '100%', height: '100%' }} />
+          }
+          fallback="https://via.placeholder.com/80x60?text=Error"
           preview={{
-            visible: previewVisible,
-            src: previewImage,
+            visible: previewVisible && previewImage === url,
+            src: url,
             onVisibleChange: (visible) => {
-              setPreviewVisible(visible);
-              if (!visible) setPreviewImage('');
+              if (!visible) {
+                setPreviewVisible(false);
+                setPreviewImage('');
+              }
             }
           }}
           onClick={() => {
@@ -45,8 +52,9 @@ const AdminImages = () => {
             setPreviewVisible(true);
           }}
         />
-      )
-    },
+      </div>
+    )
+  },
     {
       title: 'Nombre',
       dataIndex: 'filename',
