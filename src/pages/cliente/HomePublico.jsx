@@ -502,7 +502,7 @@ export default function HomePublico() {
 
       <section className="py-4 bg-light">
         <Container>
-          <h3 className="text-center mb-4">
+          <h3 className="text-center mb-4" style={{ color: "#333" }}>
             <FaCalendarAlt className="me-2" />
             Consultar disponibilidad
           </h3>

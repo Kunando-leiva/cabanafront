@@ -196,7 +196,7 @@ const triggerFileInput = () => {
 };
 
   return (
-    <Container className="mt-4">
+    <Container  className="mt-4" style={{ backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '10px' }}>
       <h2 className="text-center mb-4">Crear Nueva Cabaña</h2>
       
       {error && (

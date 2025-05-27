@@ -16,6 +16,8 @@ export default function ConfirmacionReserva() {
   *Email:* ${state?.email}
   *Fechas:* ${new Date(state?.fechaInicio).toLocaleDateString()} al ${new Date(state?.fechaFin).toLocaleDateString()}
   *Total:* $${state?.total?.toLocaleString()}
+  *check-in:* $${"12:00 PM"}
+  *check-out:* $${"10:00 AM"}
   `
 
   const asuntoEmail = `Confirmación de Reserva - ${state?.cabanaNombre}`;
@@ -52,6 +54,8 @@ export default function ConfirmacionReserva() {
             <p><strong>Email:</strong> {state?.email}</p>
             <p><strong>Teléfono:</strong> {state?.telefono}</p>
             <p><strong>DNI:</strong> {state?.dni}</p>
+            <p><strong>check-in:</strong> {"12:00 PM"}</p>
+            <p><strong>check-out:</strong> {"10:00 AM"}</p>
           </Alert>
 
           <div className="mb-4">
@@ -60,7 +64,7 @@ export default function ConfirmacionReserva() {
               <Button 
                 variant="success" 
                 size="lg"
-                href={`https://wa.me/+5491158665896?text=${encodeURIComponent(mensajeWhatsapp)}`}
+                href={`https://wa.me/+5491164680413?text=${encodeURIComponent(mensajeWhatsapp)}`}
                 target="_blank"
               >
                 <FaWhatsapp className="me-2" /> WhatsApp
@@ -68,7 +72,7 @@ export default function ConfirmacionReserva() {
               <Button
                 variant="primary"
                 size="lg"
-                href={`mailto:fer_bostero_91@hotmail.com?subject=${encodeURIComponent(asuntoEmail)}&body=${encodeURIComponent(cuerpoEmail)}`}
+                href={`mailto:Nathanquarta427@gmail.com?subject=${encodeURIComponent(asuntoEmail)}&body=${encodeURIComponent(cuerpoEmail)}`}
               >
                 <FaEnvelope className="me-2" /> Email
               </Button>
