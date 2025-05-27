@@ -1,6 +1,6 @@
 .gallery-page {
-  background-color: #f9f9f9;
-  color: #333;
+  background-color: #333;
+  color: #ffffff;
 }
 
 .gallery-item {
@@ -22,7 +22,7 @@
 }
 
 .gallery-item:hover img {
-  transform: scale(1.05);
+  transform: scale(1.00);
 }
 
 /* Modal estilizado */
@@ -34,14 +34,39 @@
 /* Paginación */
 .pagination .page-link {
   border: none;
-  color: #333;
+  color: #d81313;
   background: transparent;
 }
 
 .pagination .page-item.active .page-link {
-  background-color: #333;
+  background-color: #b41515;
   color: white;
 }
+
+.img-fluid {
+  background-color: #333;
+}
+
+.border-0 {
+  background-color: #333;
+}
+
+.page-link-custom {
+  color: #eaac25;
+  border-color: #eaac25;
+}
+
+.page-link-custom:hover {
+  background-color: #eaac25;
+  color: white;
+}
+
+.page-item.active .page-link-custom {
+  background-color: #eaac25;
+  color: white;
+  border-color: #eaac25;
+}
+
 
 /* Responsive */
 @media (max-width: 768px) {

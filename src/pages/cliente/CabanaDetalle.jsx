@@ -172,7 +172,7 @@ export default function CabanaDetalle() {
   if (loading) return (
     <div className="text-center my-5">
       <Spinner animation="border" variant="primary" />
-      <p className="mt-2">Cargando información de la cabaña...</p>
+      <p className="text-carga mt-2">Cargando información de la cabaña...</p>
     </div>
   );
 
@@ -205,7 +205,8 @@ export default function CabanaDetalle() {
   const precioTotal = calcularPrecioTotal();
 
   return (
-    <Container className="my-4">
+    <Container className="cabanas-detalle my-4">
+      
       <Button 
         variant="outline-primary" 
         onClick={() => navigate(-1)} 
@@ -220,7 +221,7 @@ export default function CabanaDetalle() {
         className="me-2"
          /> Volver
       </Button>
-
+<h1 className="text-center mb-4">Detalles de la Cabaña</h1>
       <Row className="g-4">
         {/* Sección de imágenes */}
         <Col lg={6}>

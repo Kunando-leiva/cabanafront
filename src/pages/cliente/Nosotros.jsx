@@ -2,6 +2,7 @@ import { Container, Row, Col, Image } from 'react-bootstrap';
 import PublicNavbar from '../../components/PublicNavbar';
 import Footer from '../../components/admin/Footer';
 import './Nosotros.css'; // Archivo para estilos adicionales
+import nosotrosimg from '../../assets/images/IMG_5538.jpg'; // Asegúrate de tener la imagen en esta ruta
 
 export default function Nosotros() {
   return (
@@ -24,7 +25,8 @@ export default function Nosotros() {
               fontWeight: 300,
               lineHeight: '1.8'
             }}>
-              Desde 2010 ofreciendo experiencias únicas en contacto con la naturaleza.
+              Desde hace más de 5 años ofrecemos experiencias únicas en un lugar especial,
+               creado para que disfrutes de la tranquilidad y el contacto con la naturaleza.
             </p>
             
             <p style={{ 
@@ -32,27 +34,18 @@ export default function Nosotros() {
               lineHeight: '1.8',
               marginBottom: '2rem'
             }}>
-              Fundada por amantes de la montaña, nuestras cabañas combinan confort y aventura. 
-              Cada detalle ha sido cuidadosamente diseñado para que tu estadía sea inolvidable.
+Nuestras cabañas fueron pensadas con amor y dedicación para quienes valoran los detalles. 
+Cada espacio combina comodidad, calidez y ese toque de aventura que transforma cada estadía en un recuerdo inolvidable.
             </p>
             
-            <div className="d-flex align-items-center" style={{ fontWeight: 300 }}>
-              <div className="border-end pe-3 me-3">
-                <div className="fs-1">10+</div>
-                <div>Años de experiencia</div>
-              </div>
-              <div>
-                <div className="fs-1">50+</div>
-                <div>Clientes satisfechos</div>
-              </div>
-            </div>
+            
           </Col>
 
           {/* Columna de imagen */}
           <Col md={6}>
             <div className="nosotros-image-container">
               <Image 
-                src="/images/nosotros.jpg" // Asegúrate de tener la imagen en public/images
+                src={nosotrosimg}
                 fluid
                 alt="Equipo de Cabañas del Bosque"
                 className="img-fluid"

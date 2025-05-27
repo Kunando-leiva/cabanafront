@@ -26,8 +26,8 @@ export default function Ubicacion() {
                   <h3 className="mb-0 fw-light">Dirección</h3>
                 </div>
                 <p className="text-muted" style={{ fontWeight: 300 }}>
-                  Ruta 197 Km 1.5, Marcos Paz, Buenos Aires, Argentina
-                  <small className="d-block mt-1">(A 5 minutos del centro de Marcos Paz)</small>
+                  7898+M4 Complejo "LosAlerces", Libertad, Provincia de Buenos Aires
+                  <small className="d-block mt-1"></small>
                 </p>
               </Card.Body>
             </Card>
@@ -42,9 +42,9 @@ export default function Ubicacion() {
                   <h3 className="mb-0 fw-light">Contacto</h3>
                 </div>
                 <div style={{ fontWeight: 300 }}>
-                  <p className="mb-2">+54 11 5555-5555</p>
+                  <p className="mb-2">+54 9 11 6468-0413</p>
                   <a 
-                    href="https://wa.me/541155555555" 
+                    href="https://wa.me/5491164680413" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="d-block mb-2 text-decoration-none"
@@ -54,12 +54,12 @@ export default function Ubicacion() {
                     WhatsApp
                   </a>
                   <a 
-                    href="mailto:info@losalerces.com.ar" 
+                    href="mailto:Nathanquarta427@gmail.com" 
                     className="d-block text-decoration-none"
                     style={{ color: '#333' }}
                   >
                     <FaEnvelope className="me-2" />
-                    info@losalerces.com.ar
+                    Nathanquarta427@gmail.com
                   </a>
                 </div>
               </Card.Body>

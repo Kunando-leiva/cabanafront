@@ -94,8 +94,10 @@ export default function CabanasPublico() {
   if (loading) {
     return (
       <div className="text-center py-5">
-        <Spinner animation="border" style={{ color: '#333' }} />
-        <p className="mt-3" style={{ fontWeight: 300 }}>Cargando cabañas...</p>
+        <Spinner animation="border" />
+        <p className="text-cabana mt-3" style={{ fontWeight: 300,
+          color: '#fff'
+         }}>Cargando cabañas...</p>
       </div>
     );
   }

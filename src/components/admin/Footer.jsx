@@ -73,15 +73,15 @@ const Footer = () => {
             <ul className="list-unstyled" style={{ fontWeight: 300 }}>
               <li className="mb-3 d-flex align-items-center">
                 <FaMapMarkerAlt className="me-3" />
-                <span>Dirección: Ruta 123, Libertad, Pontevedra</span>
+                <span>Dirección: 7898+M4 Complejo "LosAlerces", Libertad, Provincia de Buenos Aires</span>
               </li>
               <li className="mb-3 d-flex align-items-center">
                 <FaPhone className="me-3" />
-                <span>Teléfono: +54 11 1234-5678</span>
+                <span>Teléfono: +54 9 11 6468-0413</span>
               </li>
               <li className="d-flex align-items-center">
                 <FaEnvelope className="me-3" />
-                <span>Email: info@complejolosalerces.com</span>
+                <span>Email: Nathanquarta427@gmail.com</span>
               </li>
             </ul>
           </Col>

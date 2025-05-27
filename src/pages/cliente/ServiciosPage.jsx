@@ -6,8 +6,12 @@ import {
   FaWifi, FaFan, FaTv, FaCoffee, FaSnowflake
 } from 'react-icons/fa';
 import { BiFridge } from 'react-icons/bi';
-import { GiElectric } from 'react-icons/gi';
+import { GiElectric, GiBunkBeds,GiVolleyballBall,GiGreekTemple,GiKidSlide  } from 'react-icons/gi';
+import { TbSoccerField} from "react-icons/tb";
+import { FaToiletsPortable } from "react-icons/fa6";
+import { PiParkFill, PiArmchairFill } from "react-icons/pi";
 import { IoIosBonfire } from 'react-icons/io';
+import { MdTableRestaurant, MdBalcony, MdKingBed } from "react-icons/md";
 import { Link } from 'react-router-dom';
 import PublicNavbar from '../../components/PublicNavbar';
 import Footer from '../../components/admin/Footer';
@@ -16,36 +20,36 @@ import './ServiciosPage.css'
 
 const ServiciosPage = () => {
     const COLORES = {
-    azul: '#3498db',
-    rojo: '#e74c3c',
-    verde: '#2ecc71',
-    violeta: '#9b59b6',
-    turquesa: '#1abc9c',
-    naranja: '#e67e22',
-    grisOscuro: '#34495e',
-    marronOscura: '#5c290c',
-    blanco: '#ecf0f1'
-  };
+    marronClaro: '#333',
+    }
+
+ 
   const SERVICIOS = [
-    { nombre: 'Piscina', icono: <FaSwimmingPool />, categoria: 'Exterior', color: COLORES.azul },
-    { nombre: 'Cocina equipada', icono: <FaUtensils />, categoria: 'Interior', color: COLORES.rojo },
-    { nombre: 'Estacionamiento', icono: <FaParking />, categoria: 'Exterior', color: COLORES.verde },
-    { nombre: 'Ropa de cama', icono: <FaBed />, categoria: 'Habitación', color: COLORES.violeta },
-    { nombre: 'Artículos de aseo', icono: <FaShower />, categoria: 'Baño', color: COLORES.turquesa },
-    { nombre: 'Balcón o terraza', icono: <FaUmbrellaBeach />, categoria: 'Exterior', color: COLORES.naranja },
-    { nombre: 'Baños privados', icono: <FaShower />, categoria: 'Baño', color: COLORES.turquesa },
-    { nombre: 'Cama doble', icono: <FaBed />, categoria: 'Habitación', color: COLORES.violeta },
-    { nombre: 'Heladera', icono: <BiFridge />, categoria: 'Cocina', color: COLORES.azul },
-    { nombre: 'Pava eléctrica', icono: <GiElectric />, categoria: 'Cocina', color: COLORES.rojo },
-    { nombre: 'Toallones', icono: <FaTshirt />, categoria: 'Baño', color: COLORES.azul },
-    { nombre: 'Vajilla completa', icono: <FaGlassWhiskey />, categoria: 'Cocina', color: COLORES.verde },
-    { nombre: 'Wi-Fi premium', icono: <FaWifi />, categoria: 'Comodidades', color: COLORES.azul },
-    { nombre: 'Ventiladores', icono: <FaFan />, categoria: 'Habitación', color: COLORES.turquesa },
-    { nombre: 'TV Smart', icono: <FaTv />, categoria: 'Entretenimiento', color: COLORES.violeta },
-    { nombre: 'Desayuno seco', icono: <FaCoffee />, categoria: 'Servicios', color: COLORES.marronOscura },
-    { nombre: 'Fogón exterior', icono: <IoIosBonfire />, categoria: 'Exterior', color: COLORES.rojo },
-    { nombre: 'Parque privado', icono: <FaUmbrellaBeach />, categoria: 'Exterior', color: COLORES.verde },
-    { nombre: 'Aire acondicionado', icono: <FaSnowflake />, categoria: 'Habitación', color: COLORES.turquesa },
+    { nombre: 'Piscina', icono: <FaSwimmingPool />, categoria: 'Exterior', color: COLORES.marronClaro },
+    { nombre: 'Parque amplio', icono: <PiParkFill />, categoria: 'Exterior', color: COLORES.marronClaro },
+    { nombre: 'juegos de exterior', icono: <GiKidSlide />, categoria: 'Exterior', color: COLORES.marronClaro },
+    { nombre: 'cancha de Futbol', icono: <TbSoccerField />, categoria: 'Exterior', color: COLORES.marronClaro },
+    { nombre: 'cancha de Voley', icono: <GiVolleyballBall />, categoria: 'Exterior', color: COLORES.marronClaro },
+    { nombre: 'Pérgola de madera', icono: <GiGreekTemple />, categoria: 'Exterior', color: COLORES.marronClaro },
+    { nombre: 'Mesas', icono: <MdTableRestaurant />, categoria: 'Exterior', color: COLORES.marronClaro },
+    { nombre: 'sillones', icono: <PiArmchairFill />, categoria: 'Exterior', color: COLORES.marronClaro },
+    { nombre: 'Cocina equipada', icono: <FaUtensils />, categoria: 'Interior', color: COLORES.marronClaro },
+    { nombre: 'Estacionamiento', icono: <FaParking />, categoria: 'Exterior', color: COLORES.marronClaro },
+    { nombre: 'Ropa de cama', icono: <FaBed />, categoria: 'Habitación', color: COLORES.marronClaro },
+    { nombre: 'Artículos de aseo', icono: <FaToiletsPortable />, categoria: 'Baño', color: COLORES.marronClaro },
+    { nombre: 'Balcón o terraza', icono: <MdBalcony />, categoria: 'Exterior', color: COLORES.marronClaro },
+    { nombre: 'Baños privados', icono: <FaShower />, categoria: 'Baño', color: COLORES.marronClaro },
+    { nombre: 'Cama doble', icono: <MdKingBed />, categoria: 'Habitación', color: COLORES.marronClaro },
+    { nombre: 'Heladera', icono: <BiFridge />, categoria: 'Cocina', color: COLORES.marronClaro },
+    { nombre: 'Pava eléctrica', icono: <GiElectric />, categoria: 'Cocina', color: COLORES.marronClaro },
+    { nombre: 'Toallones', icono: <FaTshirt />, categoria: 'Baño', color: COLORES.marronClaro },
+    { nombre: 'Vajilla completa', icono: <FaGlassWhiskey />, categoria: 'Cocina', color: COLORES.marronClaro },
+    { nombre: 'Wi-Fi premium', icono: <FaWifi />, categoria: 'Comodidades', color: COLORES.marronClaro },
+    { nombre: 'Ventiladores', icono: <FaFan />, categoria: 'Habitación', color: COLORES.marronClaro },
+    { nombre: 'TV Smart', icono: <FaTv />, categoria: 'Entretenimiento', color: COLORES.marronClaro },
+    { nombre: 'Desayuno seco', icono: <FaCoffee />, categoria: 'Servicios', color: COLORES.marronClaro },
+    { nombre: 'Fogón exterior', icono: <IoIosBonfire />, categoria: 'Exterior', color: COLORES.marronClaro },
+    { nombre: 'Cama Litera', icono: <GiBunkBeds />, categoria: 'Habitación', color: COLORES.marronClaro },
   ];
 
   // Agrupar servicios por categoría

@@ -1,10 +1,12 @@
 .ubicacion-page {
-  background-color: #f9f9f9;
-  color: #333;
+  background-color: #333;
+  color: #ffffff;
 }
 
 /* Efecto hover para tarjetas */
-.card {
+.ubicacion-page .card {
+  background-color: white !important;
+  color: #333 !important;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -27,4 +29,8 @@ a {
 
 a:hover {
   color: #666 !important;
+}
+
+.text-muted {
+  color: #999 !important;
 }

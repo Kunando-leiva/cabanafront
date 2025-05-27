@@ -1,18 +1,22 @@
 .cabanas-publico {
   background-color: #333;
-  color: #333;
+  color: #e7e0e0;
 }
-
 
 
  .H1-text{
-  color: #fff;
+  color: #ffffff;
+}
+
+.text-cabanas {
+  color: #ffffff;
 }
 
 /* Efecto hover para las cards */
-.card {
-  transition: all 0.3s ease;
-  overflow: hidden;
+.cabanas-publico .card {
+  background-color: white !important; /* Fuerza el fondo blanco */
+  color: #333; /* Color de texto oscuro */
+  border-radius: 4px; /* Bordes redondeados opcionales */
 }
 
 .card:hover {

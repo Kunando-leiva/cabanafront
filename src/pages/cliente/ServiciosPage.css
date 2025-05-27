@@ -2,8 +2,8 @@
 
 /* Estilos base heredados */
 .home-publico {
-  background-color: #969292;
-  color: #333;
+  background-color:#333;
+  color: #ffffff;
   font-family: 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.6;
 }
@@ -11,7 +11,7 @@
 /* Hero Section */
 .hero-section {
   background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
-                  url('../../assets/images/servicios.jpg');
+                  url('../../assets/images/servicio.jpg');
   background-size: 70% auto;
   background-position: center;
   padding: 80px 0;

@@ -9,8 +9,9 @@ import { API_URL } from '../../config';
 import './HomePublico.css';
 import imagenRecorrido from '../../assets/images/recorrido.jpeg';
 import encontrarnos from '../../assets/images/frente.jpeg';
-import servicios from '../../assets/images/servicios.jpg';
+import servicio from '../../assets/images/servicio.jpg';
 import Footer from '../../components/admin/Footer';
+
 
 export default function HomePublico() {
   const [cabanas, setCabanas] = useState([]);
@@ -412,7 +413,7 @@ export default function HomePublico() {
                   marginBottom: '1.5rem'
                 }}>Ubicanos en:
                   Complejo Los Alerces
-                  📍 Ruta 197 Km 1.5, Libertad
+                  📍 7898+M4, Libertad, Provincia de Buenos Aires
                 </p>
                 <div className="text-center">
                   <Button 
@@ -467,7 +468,7 @@ export default function HomePublico() {
                 </p>
                 <div className="text-center">
                   <Button 
-                    onClick={() => navigate('/galeria')}
+                    onClick={() => navigate('/servicios')}
                     variant="outline-light"
                     style={{
                       padding: '10px 25px',
@@ -489,7 +490,7 @@ export default function HomePublico() {
               <div style={{
                 height: '300px',
                 width: '100%',
-                backgroundImage: `url(${servicios})`,
+                backgroundImage: `url(${servicio})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 borderRadius: '8px'
