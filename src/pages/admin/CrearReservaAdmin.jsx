@@ -5,13 +5,16 @@ import { Container, Form, Row, Col, Card, Button, Alert, Spinner } from 'react-b
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { API_URL } from '../../config';
+import { calcularPrecioReserva, formatearPrecioArgentino } from '../../services/api'; // ✅ AGREGAR IMPORT
 
 const CrearReservaAdmin = () => {
   const { user, token, isAuthenticated, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [cabanas, setCabanas] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [calculandoPrecio, setCalculandoPrecio] = useState(false); // ✅ NUEVO ESTADO
   const [error, setError] = useState('');
+  const [precioDesglose, setPrecioDesglose] = useState(null); // ✅ NUEVO ESTADO
   
   const processCabanasData = (data) => {
     if (Array.isArray(data)) return data;
@@ -79,10 +82,10 @@ const CrearReservaAdmin = () => {
         }
     
         const data = await response.json();
-        console.log('Datos recibidos de cabañas:', data); // Para debug
+        console.log('Datos recibidos de cabañas:', data);
         
         const processedCabanas = processCabanasData(data);
-        console.log('Cabañas procesadas:', processedCabanas); // Para debug
+        console.log('Cabañas procesadas:', processedCabanas);
         
         if (!Array.isArray(processedCabanas)) {
           throw new Error('Formato de datos inesperado');
@@ -92,34 +95,58 @@ const CrearReservaAdmin = () => {
       } catch (err) {
         console.error('Error al cargar cabañas:', err);
         setError(err.message);
-        setCabanas([]); // Asegurar que siempre sea un array
+        setCabanas([]);
       } finally {
         setLoading(false);
       }
     };
-    
 
     if (isAuthenticated && isAdmin() && token) {
       fetchCabanas();
     }
   }, [token, isAuthenticated, logout, isAdmin]);
 
-  // Calcular precio cuando cambian fechas o cabaña
+  // ✅ MODIFICADO: Calcular precio DINÁMICO cuando cambian fechas
   useEffect(() => {
-    if (formData.cabanaId && formData.fechaInicio && formData.fechaFin) {
-      const cabana = cabanas.find(c => c._id === formData.cabanaId);
-      if (cabana) {
-        const diffTime = Math.abs(new Date(formData.fechaFin) - new Date(formData.fechaInicio));
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        const total = diffDays * cabana.precio;
+    const calcularPrecioDinamico = async () => {
+      if (formData.fechaInicio && formData.fechaFin && 
+          formData.fechaInicio < formData.fechaFin) {
         
-        setFormData(prev => ({ 
-          ...prev, 
-          precioTotal: total > 0 ? total : 0 
-        }));
+        setCalculandoPrecio(true);
+        try {
+          const precioData = await calcularPrecioReserva(
+            formData.fechaInicio, 
+            formData.fechaFin
+          );
+          
+          setFormData(prev => ({ 
+            ...prev, 
+            precioTotal: precioData.precioTotal || 0 
+          }));
+          
+          setPrecioDesglose({
+            total: precioData.precioTotal,
+            desglose: precioData.desglose || [],
+            totalDias: precioData.totalDias || 0,
+            precioFormateado: formatearPrecioArgentino(precioData.precioTotal)
+          });
+          
+          setError('');
+        } catch (err) {
+          console.error('Error calculando precio:', err);
+          setFormData(prev => ({ ...prev, precioTotal: 0 }));
+          setPrecioDesglose(null);
+        } finally {
+          setCalculandoPrecio(false);
+        }
+      } else {
+        setFormData(prev => ({ ...prev, precioTotal: 0 }));
+        setPrecioDesglose(null);
       }
-    }
-  }, [formData.fechaInicio, formData.fechaFin, formData.cabanaId, cabanas]);
+    };
+
+    calcularPrecioDinamico();
+  }, [formData.fechaInicio, formData.fechaFin]); // ✅ Ya NO depende de cabanaId ni cabanas
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -163,7 +190,7 @@ const CrearReservaAdmin = () => {
         throw new Error('El DNI debe contener solo números');
       }
 
-      // Crear payload
+      // ✅ El precioTotal NO se envía - el backend lo calcula automáticamente
       const payload = {
         cabanaId: formData.cabanaId,
         fechaInicio: formData.fechaInicio.toISOString(),
@@ -179,7 +206,6 @@ const CrearReservaAdmin = () => {
       };
 
       const response = await fetch(`${API_URL}/api/reservas/admin/crear`, {
-
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -322,21 +348,21 @@ const CrearReservaAdmin = () => {
               <Form.Group className="mb-3">
                 <Form.Label>Cabaña <span className="text-danger">*</span></Form.Label>
                 <Form.Select
-  value={formData.cabanaId}
-  onChange={(e) => setFormData({...formData, cabanaId: e.target.value})}
-  required
-  disabled={loading || cabanas.length === 0}
->
-  <option value="">
-    {loading ? 'Cargando cabañas...' : 
-     cabanas.length === 0 ? 'No hay cabañas disponibles' : 'Seleccionar cabaña...'}
-  </option>
-  {Array.isArray(cabanas) && cabanas.map((cabana) => (
-    <option key={cabana._id} value={cabana._id}>
-      {cabana.nombre} (${cabana.precio?.toFixed(2) || '0.00'}/noche)
-    </option>
-  ))}
-</Form.Select>
+                  value={formData.cabanaId}
+                  onChange={(e) => setFormData({...formData, cabanaId: e.target.value})}
+                  required
+                  disabled={loading || cabanas.length === 0}
+                >
+                  <option value="">
+                    {loading ? 'Cargando cabañas...' : 
+                     cabanas.length === 0 ? 'No hay cabañas disponibles' : 'Seleccionar cabaña...'}
+                  </option>
+                  {Array.isArray(cabanas) && cabanas.map((cabana) => (
+                    <option key={cabana._id} value={cabana._id}>
+                      {cabana.nombre} (Precio varía según fechas) {/* ✅ MODIFICADO */}
+                    </option>
+                  ))}
+                </Form.Select>
               </Form.Group>
             </Col>
             
@@ -374,15 +400,42 @@ const CrearReservaAdmin = () => {
               </Form.Group>
             </Col>
             
+            {/* ✅ NUEVO: Sección de Precio Calculado */}
             <Col md={12}>
               <Form.Group className="mb-3">
-                <Form.Label>Precio Total</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={`$${formData.precioTotal.toFixed(2)}`}
-                  readOnly
-                  className="fw-bold"
-                />
+                <Form.Label>Precio Total Calculado</Form.Label>
+                <div className="border p-3 rounded bg-light">
+                  {calculandoPrecio ? (
+                    <div className="text-center">
+                      <Spinner size="sm" animation="border" className="me-2" />
+                      Calculando precio...
+                    </div>
+                  ) : precioDesglose ? (
+                    <div>
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <span><strong>Total:</strong></span>
+                        <span className="fs-4 fw-bold text-success">
+                          {precioDesglose.precioFormateado}
+                        </span>
+                      </div>
+                      
+                      <div className="small text-muted">
+                        <div className="d-flex justify-content-between">
+                          <span>{precioDesglose.totalDias} días:</span>
+                          <span>
+                            {precioDesglose.desglose.filter(d => d.tipo === 'semana').length} días semana ($150.000) +{' '}
+                            {precioDesglose.desglose.filter(d => d.tipo === 'fin de semana').length} fines de semana ($180.000) +{' '}
+                            {precioDesglose.desglose.filter(d => d.tipo === 'feriado').length} feriados ($200.000)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-muted text-center">
+                      Seleccione fechas para calcular el precio
+                    </div>
+                  )}
+                </div>
               </Form.Group>
             </Col>
           </Row>
@@ -399,7 +452,7 @@ const CrearReservaAdmin = () => {
             <Button 
               variant="primary" 
               type="submit" 
-              disabled={loading}
+              disabled={loading || calculandoPrecio || !precioDesglose}
               className="px-4"
             >
               {loading ? (

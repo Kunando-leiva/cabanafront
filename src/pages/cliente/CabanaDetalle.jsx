@@ -14,6 +14,7 @@ import { IoIosBonfire } from "react-icons/io";
 import axios from 'axios';
 import CalendarFull from '../../components/CalendarFull';
 import { API_URL } from '../../config';
+import { calcularPrecioReserva, formatearPrecioArgentino } from '../../services/api'; // ✅ AGREGAR IMPORT
 import "./CabanaDetalle.css";
 
 const SERVICIOS = [
@@ -25,19 +26,19 @@ const SERVICIOS = [
   { nombre: 'Balcón o terraza', icono: <FaUmbrellaBeach /> },
   { nombre: 'Baños', icono: <FaShower /> },
   { nombre: 'Cama doble', icono: <FaBed /> },
-  { nombre: 'Heladera', icono: <BiFridge /> }, // Alternativa: podrías importar BiFridge de react-icons/bi
-  { nombre: 'Pava eléctrica', icono: <FaTemperatureHigh /> }, // Alternativa: podrías importar GiElectric de react-icons/gi
+  { nombre: 'Heladera', icono: <BiFridge /> },
+  { nombre: 'Pava eléctrica', icono: <FaTemperatureHigh /> },
   { nombre: 'Toallones', icono: <FaShower /> },
   { nombre: 'Vasos', icono: <FaUtensils /> },
   { nombre: 'Platos', icono: <FaUtensils /> },
   { nombre: 'Cubiertos', icono: <FaUtensils /> },
   { nombre: 'Wi-Fi', icono: <FaWifi /> },
-  { nombre: 'Ventiladores', icono: <FaTemperatureHigh /> }, // Alternativa: podrías importar FaFan de react-icons/fa
+  { nombre: 'Ventiladores', icono: <FaTemperatureHigh /> },
   { nombre: 'TV', icono: <FaTv /> },
   { nombre: 'Ollas', icono: <FaUtensils /> },
   { nombre: 'Fuentes para horno', icono: <FaUtensils /> },
   { nombre: 'Parrillas', icono: <FaUtensils /> },
-  { nombre: 'Desayuno seco', icono: <FaUtensils /> }, // Alternativa: podrías importar FaCoffee de react-icons/fa
+  { nombre: 'Desayuno seco', icono: <FaUtensils /> },
   { nombre: 'Fogón', icono: <IoIosBonfire /> },
   { nombre: 'Parque', icono: <FaUmbrellaBeach /> },
   { nombre: 'Cancha de fútbol', icono: <FaSwimmingPool /> },
@@ -50,33 +51,72 @@ export default function CabanaDetalle() {
   const navigate = useNavigate();
   const [cabana, setCabana] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [calculandoPrecio, setCalculandoPrecio] = useState(false); // ✅ NUEVO
   const [error, setError] = useState('');
   const [selectedDates, setSelectedDates] = useState({ start: null, end: null });
   const [activeImgIndex, setActiveImgIndex] = useState(0);
+  const [precioCalculado, setPrecioCalculado] = useState({ // ✅ NUEVO
+    total: 0,
+    desglose: [],
+    totalDias: 0,
+    precioFormateado: '$0'
+  });
 
-  // Función para calcular noches entre fechas
+  // ✅ MODIFICADO: Función para calcular noches
   const calcularNoches = (start, end) => {
-  if (!start || !end || start >= end) return 0;
-  
-  // Normaliza las fechas (misma hora para ambas)
-  const startDate = new Date(start);
-  startDate.setHours(0, 0, 0, 0);
-  
-  const endDate = new Date(end);
-  endDate.setHours(0, 0, 0, 0);
+    if (!start || !end || start >= end) return 0;
+    
+    const startDate = new Date(start);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(end);
+    endDate.setHours(0, 0, 0, 0);
 
-  // Diferencia en milisegundos
-  const diffTime = endDate - startDate;
-  
-  // Convierte a días (86400000 ms = 1 día)
-  return Math.floor(diffTime / 86400000); // Usa Math.floor en lugar de Math.ceil
-};
-  // Función para calcular precio total
-  const calcularPrecioTotal = () => {
-    const noches = calcularNoches(selectedDates.start, selectedDates.end);
-    if (!cabana?.precio || noches <= 0) return 0;
-    return (noches * cabana.precio).toFixed(2);
+    const diffTime = endDate - startDate;
+    return Math.floor(diffTime / 86400000);
   };
+
+  // ✅ NUEVO: Función para calcular precio dinámico
+  const calcularPrecioDinamico = async (fechaInicio, fechaFin) => {
+    if (!fechaInicio || !fechaFin || fechaInicio >= fechaFin) {
+      setPrecioCalculado({
+        total: 0,
+        desglose: [],
+        totalDias: 0,
+        precioFormateado: '$0'
+      });
+      return;
+    }
+
+    try {
+      setCalculandoPrecio(true);
+      const precioData = await calcularPrecioReserva(fechaInicio, fechaFin);
+      
+      setPrecioCalculado({
+        total: precioData.precioTotal || 0,
+        desglose: precioData.desglose || [],
+        totalDias: precioData.totalDias || 0,
+        precioFormateado: formatearPrecioArgentino(precioData.precioTotal)
+      });
+      
+      setError('');
+    } catch (err) {
+      console.error('Error calculando precio:', err);
+      setPrecioCalculado({
+        total: 0,
+        desglose: [],
+        totalDias: 0,
+        precioFormateado: '$0'
+      });
+    } finally {
+      setCalculandoPrecio(false);
+    }
+  };
+
+  // ✅ MODIFICADO: Calcular precio cuando cambian las fechas
+  useEffect(() => {
+    calcularPrecioDinamico(selectedDates.start, selectedDates.end);
+  }, [selectedDates.start, selectedDates.end]);
 
   // Cargar datos de la cabaña
   useEffect(() => {
@@ -85,12 +125,10 @@ export default function CabanaDetalle() {
         setLoading(true);
         setError('');
         
-        // Validar ID primero
         if (!id || !/^[0-9a-fA-F]{24}$/.test(id)) {
           throw new Error('ID de cabaña no válido');
         }
 
-        // 1. Obtener datos principales
         const cabanaResponse = await axios.get(`${API_URL}/api/cabanas/${id}`);
         
         if (!cabanaResponse.data?.success) {
@@ -99,7 +137,6 @@ export default function CabanaDetalle() {
 
         const cabanaData = cabanaResponse.data.data;
 
-        // 2. Obtener imágenes si no vinieron en la respuesta
         let imagenes = cabanaData.images || [];
         if (imagenes.length === 0) {
           try {
@@ -112,7 +149,6 @@ export default function CabanaDetalle() {
           }
         }
 
-        // Formatear URLs de imágenes
         const formatImageUrl = (img) => {
           if (!img?.url) return `${API_URL}/default-cabana.jpg`;
           return img.url.startsWith('http') ? img.url : `${API_URL}${img.url.startsWith('/') ? '' : '/'}${img.url}`;
@@ -144,7 +180,7 @@ export default function CabanaDetalle() {
     fetchCabana();
   }, [id]);
 
-  // Manejar reserva
+  // ✅ MODIFICADO: Manejar reserva con precio dinámico
   const handleReservar = () => {
     if (!selectedDates.start || !selectedDates.end) {
       setError('Selecciona un rango de fechas válido');
@@ -156,19 +192,24 @@ export default function CabanaDetalle() {
       return;
     }
 
+    if (precioCalculado.total <= 0) {
+      setError('El precio calculado no es válido');
+      return;
+    }
+
     navigate(`/reservar/${id}`, {
       state: {
         cabanaId: id,
         cabanaNombre: cabana.nombre,
         fechaInicio: selectedDates.start,
         fechaFin: selectedDates.end,
-        precioTotal: calcularPrecioTotal(),
+        precioTotal: precioCalculado.total, // ✅ Usa precio dinámico
+        precioDesglose: precioCalculado.desglose, // ✅ Envía desglose
         imagenPrincipal: cabana.imagenPrincipal
       }
     });
   };
 
-  // Estados de carga
   if (loading) return (
     <div className="text-center my-5">
       <Spinner animation="border" variant="primary" />
@@ -176,7 +217,6 @@ export default function CabanaDetalle() {
     </div>
   );
 
-  // Manejo de errores
   if (error || !cabana) return (
     <Container className="my-5">
       <Alert variant="danger" className="text-center">
@@ -202,28 +242,27 @@ export default function CabanaDetalle() {
   );
 
   const noches = calcularNoches(selectedDates.start, selectedDates.end);
-  const precioTotal = calcularPrecioTotal();
 
   return (
     <Container className="cabanas-detalle my-4">
-      
       <Button 
         variant="outline-primary" 
         onClick={() => navigate(-1)} 
         className="mb-4"
-        style={{  fontWeight: 300,
-            lineHeight: '1.6', // Interlineado ajustado
-            marginBottom: '1.5rem',
-            backgroundColor: '#eaac25',
-            borderColor: '#eaac25', }}
+        style={{  
+          fontWeight: 300,
+          lineHeight: '1.6',
+          marginBottom: '1.5rem',
+          backgroundColor: '#eaac25',
+          borderColor: '#eaac25',
+        }}
       >
-        <FaArrowLeft 
-        className="me-2"
-         /> Volver
+        <FaArrowLeft className="me-2" /> Volver
       </Button>
-<h1 className="text-center mb-4">Detalles de la Cabaña</h1>
+      
+      <h1 className="text-center mb-4">Detalles de la Cabaña</h1>
+      
       <Row className="g-4">
-        {/* Sección de imágenes */}
         <Col lg={6}>
           <Card className="shadow-sm">
             <Carousel 
@@ -274,7 +313,6 @@ export default function CabanaDetalle() {
           </Card>
         </Col>
 
-        {/* Sección de detalles */}
         <Col lg={6}>
           <Card className="shadow-sm h-100">
             <Card.Body className="d-flex flex-column">
@@ -295,10 +333,11 @@ export default function CabanaDetalle() {
                   <div className="d-flex align-items-center p-3 bg-light rounded h-100">
                     <FaMoneyBillWave className="text-success me-3 fs-4" />
                     <div>
-                      <small className="text-muted">Precio por noche</small>
+                      <small className="text-muted">Precio base por noche*</small>
                       <div className="fs-5">
-                        <strong>${cabana.precio?.toLocaleString('es-AR') || '0'}</strong>
+                        <strong>{formatearPrecioArgentino(cabana.precio || 0)}</strong>
                       </div>
+                      <small className="text-muted">*Varía según tipo de día</small>
                     </div>
                   </div>
                 </Col>
@@ -333,26 +372,77 @@ export default function CabanaDetalle() {
               <div className="mb-4">
                 <h5 className="d-flex align-items-center mb-3">
                   <FaCalendarAlt className="me-2 text-primary" />
-                  Disponibilidad
+                  Disponibilidad y Precio
                 </h5>
                 <CalendarFull 
-                  cabanaId={id}
-                  onDatesSelected={(start, end) => {
-                    setSelectedDates({ start, end });
-                    setError('');
-                  }}
-                />
+  cabanaId={id}
+  onDatesSelected={(start, end, calculatedTotal) => {
+    console.log('Dates selected in CabanaDetalle:', start, end);
+    
+    if (start && end) {
+      // Validación básica
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (start < today) {
+        setError('No puedes seleccionar fechas pasadas');
+        return;
+      }
+      
+      if (start >= end) {
+        setError('La fecha de fin debe ser posterior al inicio');
+        return;
+      }
+      
+      setSelectedDates({ start, end });
+      setError('');
+    }
+  }}
+  precioPorNoche={cabana?.precio || 0}
+  showTotal={false}
+/>
 
                 {selectedDates.start && selectedDates.end && (
                   <Alert variant="info" className="mt-3">
-                    <div className="d-flex justify-content-between mb-2">
-                      <span>Desde: {new Date(selectedDates.start).toLocaleDateString('es-ES')}</span>
-                      <span>Hasta: {new Date(selectedDates.end).toLocaleDateString('es-ES')}</span>
-                    </div>
-                    <div className="d-flex justify-content-between fw-bold">
-                      <span>Noches: {noches}</span>
-                      <span>Total: ${precioTotal}</span>
-                    </div>
+                    {calculandoPrecio ? (
+                      <div className="text-center">
+                        <Spinner size="sm" animation="border" className="me-2" />
+                        Calculando precio...
+                      </div>
+                    ) : (
+                      <>
+                        <div className="d-flex justify-content-between mb-2">
+                          <span>Desde:</span>
+                          <span>{new Date(selectedDates.start).toLocaleDateString('es-ES')}</span>
+                        </div>
+                        <div className="d-flex justify-content-between mb-2">
+                          <span>Hasta:</span>
+                          <span>{new Date(selectedDates.end).toLocaleDateString('es-ES')}</span>
+                        </div>
+                        <hr className="my-2" />
+                        <div className="d-flex justify-content-between mb-2">
+                          <span>Estadía:</span>
+                          <span>{noches} noches</span>
+                        </div>
+                        {precioCalculado.desglose.length > 0 && (
+                          <div className="small text-muted mb-2">
+                            <div>
+                              {precioCalculado.desglose.filter(d => d.tipo === 'semana').length} días semana ($150.000)
+                            </div>
+                            <div>
+                              {precioCalculado.desglose.filter(d => d.tipo === 'fin de semana').length} fines de semana ($180.000)
+                            </div>
+                            <div>
+                              {precioCalculado.desglose.filter(d => d.tipo === 'feriado').length} feriados ($200.000)
+                            </div>
+                          </div>
+                        )}
+                        <div className="d-flex justify-content-between fw-bold mt-2 pt-2 border-top">
+                          <span>Total:</span>
+                          <span className="fs-5 text-success">{precioCalculado.precioFormateado}</span>
+                        </div>
+                      </>
+                    )}
                   </Alert>
                 )}
 
@@ -369,17 +459,17 @@ export default function CabanaDetalle() {
                   size="lg"
                   className="boton-detalle w-100 py-3 fw-bold"
                   onClick={handleReservar}
-                  disabled={!selectedDates.start || !selectedDates.end}
-                  style={{ fontSize: '1rem', // Tamaño reducido para móviles
-            fontWeight: 300,
-            lineHeight: '1.6', // Interlineado ajustado
-            marginBottom: '1.5rem',
-            backgroundColor: '#eaac25',
-            borderColor: '#eaac25',
-
-          }}
+                  disabled={!selectedDates.start || !selectedDates.end || calculandoPrecio || precioCalculado.total <= 0}
+                  style={{ 
+                    fontSize: '1rem',
+                    fontWeight: 300,
+                    lineHeight: '1.6',
+                    marginBottom: '1.5rem',
+                    backgroundColor: '#eaac25',
+                    borderColor: '#eaac25',
+                  }}
                 >
-                  Reservar ahora
+                  {calculandoPrecio ? 'Calculando precio...' : 'Reservar ahora'}
                 </Button>
               </div>
             </Card.Body>
