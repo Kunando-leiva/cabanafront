@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Container, Card, Form, Button, Alert, Spinner, ListGroup, Badge } from 'react-bootstrap';
 import { 
   FaCalendarAlt, FaMoneyBillWave, FaHome, FaUser, FaPhone, 
-  FaEnvelope, FaComment, FaCalendarDay, FaTag 
+  FaEnvelope, FaComment, FaCalendarDay, FaTag, FaArrowLeft 
 } from 'react-icons/fa';
-import { formatearPrecioArgentino } from '../../services/api'; // ✅ AGREGAR IMPORT
+import { formatearPrecioArgentino } from '../../services/api';
 
 export default function Reservar() {
   const { state } = useLocation();
@@ -25,20 +25,33 @@ export default function Reservar() {
     noches: 0,
     total: 0,
     precioNoche: 0,
-    desglosePrecios: [], // ✅ NUEVO: Para mostrar desglose
+    desglosePrecios: [],
     fechaInicio: null,
     fechaFin: null
   });
+  const [isMounted, setIsMounted] = useState(false);
+  const formRef = useRef(null);
+  const containerRef = useRef(null);
 
-  // ✅ MODIFICADO: Validar y calcular datos al cargar el componente
+  // Controlar montaje del componente
   useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
+
+  // Validar y calcular datos al cargar el componente
+  useEffect(() => {
+    if (!isMounted) return;
+
     if (!state) {
       setError('No se encontraron datos de reserva');
+      navigate('/cabanas', { replace: true });
       return;
     }
 
     if (!state.fechaInicio || !state.fechaFin) {
       setError('Fechas de reserva no especificadas');
+      setTimeout(() => navigate('/cabanas'), 2000);
       return;
     }
 
@@ -47,25 +60,34 @@ export default function Reservar() {
       return;
     }
 
-    const fechaInicio = new Date(state.fechaInicio);
-    const fechaFin = new Date(state.fechaFin);
-    const diffTime = Math.abs(fechaFin - fechaInicio);
-    const noches = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    try {
+      const fechaInicio = new Date(state.fechaInicio);
+      const fechaFin = new Date(state.fechaFin);
+      
+      if (isNaN(fechaInicio.getTime()) || isNaN(fechaFin.getTime())) {
+        throw new Error('Fechas inválidas');
+      }
 
-    // ✅ Usar precioTotal enviado desde CabanaDetalle (ya calculado dinámicamente)
-    setReservaData({
-      noches,
-      total: state.precioTotal || 0,
-      precioNoche: state.precio || 0,
-      desglosePrecios: state.precioDesglose || [], // ✅ Usar desglose si está disponible
-      fechaInicio: state.fechaInicio,
-      fechaFin: state.fechaFin
-    });
-  }, [state]);
+      const diffTime = Math.abs(fechaFin - fechaInicio);
+      const noches = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  // ✅ NUEVO: Función para mostrar desglose de precios
-  const renderDesglosePrecios = () => {
-    if (!reservaData.desglosePrecios || reservaData.desglosePrecios.length === 0) {
+      setReservaData({
+        noches,
+        total: state.precioTotal || 0,
+        precioNoche: state.precio || 0,
+        desglosePrecios: state.precioDesglose || [],
+        fechaInicio: state.fechaInicio,
+        fechaFin: state.fechaFin
+      });
+    } catch (err) {
+      console.error('Error al procesar fechas:', err);
+      setError('Error al procesar los datos de reserva');
+    }
+  }, [state, isMounted, navigate]);
+
+  // Función para mostrar desglose de precios
+  const renderDesglosePrecios = useCallback(() => {
+    if (!reservaData.desglosePrecios || !Array.isArray(reservaData.desglosePrecios) || reservaData.desglosePrecios.length === 0) {
       return null;
     }
 
@@ -76,10 +98,17 @@ export default function Reservar() {
     };
 
     reservaData.desglosePrecios.forEach(dia => {
-      const tipo = dia.tipo.replace('fin de semana', 'finSemana').replace(' ', '');
+      if (!dia || !dia.tipo) return;
+      
+      const tipo = dia.tipo.includes('fin de semana') || dia.tipo.includes('finSemana') 
+        ? 'finSemana' 
+        : dia.tipo.includes('feriado') 
+          ? 'feriado' 
+          : 'semana';
+      
       if (resumen[tipo]) {
         resumen[tipo].count += 1;
-        resumen[tipo].total += dia.precio;
+        resumen[tipo].total += dia.precio || 0;
       }
     });
 
@@ -136,12 +165,16 @@ export default function Reservar() {
         </div>
       </div>
     );
-  };
+  }, [reservaData.desglosePrecios, reservaData.noches, reservaData.total]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = useCallback((e) => {
     e.preventDefault();
-    setLoading(true);
     
+    if (!isMounted) return;
+    
+    setLoading(true);
+    setError('');
+
     // Validación adicional
     if (!reservaData.total || reservaData.total <= 0) {
       setError('El total de la reserva no es válido');
@@ -150,7 +183,7 @@ export default function Reservar() {
     }
 
     // Validar datos del formulario
-    if (!formData.nombre || !formData.dni || !formData.email || !formData.telefono) {
+    if (!formData.nombre.trim() || !formData.dni.trim() || !formData.email.trim() || !formData.telefono.trim()) {
       setError('Complete todos los campos obligatorios');
       setLoading(false);
       return;
@@ -171,27 +204,63 @@ export default function Reservar() {
       return;
     }
 
-    // Simular envío a la API (aquí deberías integrar con tu backend real)
-    setTimeout(() => {
-      navigate('/confirmacion-reserva', { 
-        state: {
-          ...state,
-          ...formData,
-          ...reservaData,
-          precioFormateado: formatearPrecioArgentino(reservaData.total)
-        }
-      });
-    }, 1000);
-  };
+    // Validar teléfono
+    if (!/^[\d\s\-\(\)\+]+$/.test(formData.telefono)) {
+      setError('Ingrese un teléfono válido');
+      setLoading(false);
+      return;
+    }
 
-  if (error) {
+    // Preparar datos para enviar
+    const reservaFinal = {
+      ...state,
+      ...formData,
+      ...reservaData,
+      precioFormateado: formatearPrecioArgentino(reservaData.total),
+      fechaReserva: new Date().toISOString()
+    };
+
+    // Simular envío a la API
+    setTimeout(() => {
+      if (!isMounted) return;
+      
+      // Usar replace: true para evitar problemas de navegación
+      navigate('/confirmacion-reserva', { 
+        state: reservaFinal,
+        replace: true 
+      });
+    }, 800);
+
+  }, [formData, reservaData, state, navigate, isMounted]);
+
+  const handleInputChange = useCallback((field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }, []);
+
+  const handleGoBack = useCallback(() => {
+    navigate(-1);
+  }, [navigate]);
+
+  if (!isMounted) {
     return (
-      <Container className="my-5">
+      <Container className="my-5 d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+        <Spinner animation="border" variant="primary" />
+      </Container>
+    );
+  }
+
+  if (error && !loading) {
+    return (
+      <Container className="my-5" ref={containerRef}>
         <Alert variant="danger" className="text-center">
-          {error}
+          <h4>Error</h4>
+          <p>{error}</p>
           <div className="mt-3">
-            <Button variant="primary" onClick={() => navigate('/')}>
-              <FaHome className="me-2" /> Volver al inicio
+            <Button variant="primary" onClick={handleGoBack}>
+              <FaArrowLeft className="me-2" /> Volver
             </Button>
           </div>
         </Alert>
@@ -199,11 +268,36 @@ export default function Reservar() {
     );
   }
 
+  // Formatear fechas de forma segura
+  const formatDateSafe = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Fecha inválida';
+      return date.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return 'Fecha inválida';
+    }
+  };
+
   return (
-    <Container className="my-5">
-      <Card className="shadow">
+    <Container className="my-5" ref={containerRef}>
+      <Card className="shadow" ref={formRef}>
         <Card.Body>
-          <h2 className="mb-4 text-center">Confirmar Reserva</h2>
+          <div className="mb-4">
+            <Button 
+              variant="outline-secondary" 
+              onClick={handleGoBack}
+              className="mb-3"
+            >
+              <FaArrowLeft className="me-2" /> Volver
+            </Button>
+            <h2 className="text-center mb-4">Confirmar Reserva</h2>
+          </div>
           
           {/* Detalles de la Reserva */}
           <div className="mb-4 p-3 bg-light rounded">
@@ -219,8 +313,7 @@ export default function Reservar() {
             <div className="d-flex justify-content-between mb-2">
               <span><strong>Fechas:</strong></span>
               <span>
-                {new Date(state?.fechaInicio).toLocaleDateString('es-ES')} - 
-                {' '}{new Date(state?.fechaFin).toLocaleDateString('es-ES')}
+                {formatDateSafe(state?.fechaInicio)} - {formatDateSafe(state?.fechaFin)}
               </span>
             </div>
             
@@ -239,12 +332,12 @@ export default function Reservar() {
               <span>{reservaData.noches}</span>
             </div>
             
-            {/* ✅ Desglose de precios */}
+            {/* Desglose de precios */}
             {renderDesglosePrecios()}
           </div>
 
           {/* Formulario de Contacto */}
-          <Form onSubmit={handleSubmit}>
+          <Form onSubmit={handleSubmit} id="reserva-form">
             <h5 className="mb-3">
               <FaUser className="me-2" /> Información personal
               <span className="text-danger ms-1">* Campos obligatorios</span>
@@ -257,10 +350,12 @@ export default function Reservar() {
               <Form.Control
                 type="text"
                 value={formData.nombre}
-                onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                onChange={(e) => handleInputChange('nombre', e.target.value)}
                 required
                 minLength={3}
+                maxLength={100}
                 placeholder="Ej: Juan Pérez"
+                disabled={loading}
               />
             </Form.Group>
 
@@ -271,13 +366,14 @@ export default function Reservar() {
               <Form.Control
                 type="text"
                 value={formData.dni}
-                onChange={(e) => setFormData({...formData, dni: e.target.value.replace(/\D/g, '')})}
+                onChange={(e) => handleInputChange('dni', e.target.value.replace(/\D/g, '').slice(0, 8))}
                 required
                 minLength={7}
                 maxLength={8}
                 pattern="\d{7,8}"
                 title="7 u 8 números sin puntos"
                 placeholder="Ej: 12345678"
+                disabled={loading}
               />
             </Form.Group>
 
@@ -288,9 +384,10 @@ export default function Reservar() {
               <Form.Control
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e) => handleInputChange('email', e.target.value)}
                 required
                 placeholder="ejemplo@email.com"
+                disabled={loading}
               />
             </Form.Group>
 
@@ -301,9 +398,11 @@ export default function Reservar() {
               <Form.Control
                 type="tel"
                 value={formData.telefono}
-                onChange={(e) => setFormData({...formData, telefono: e.target.value})}
+                onChange={(e) => handleInputChange('telefono', e.target.value)}
                 required
+                minLength={8}
                 placeholder="Ej: 11 2345-6789"
+                disabled={loading}
               />
             </Form.Group>
 
@@ -314,8 +413,9 @@ export default function Reservar() {
               <Form.Control
                 type="text"
                 value={formData.direccion}
-                onChange={(e) => setFormData({...formData, direccion: e.target.value})}
+                onChange={(e) => handleInputChange('direccion', e.target.value)}
                 placeholder="Ej: Calle Falsa 123"
+                disabled={loading}
               />
             </Form.Group>
 
@@ -326,8 +426,9 @@ export default function Reservar() {
               <Form.Control
                 type="text"
                 value={formData.ciudad}
-                onChange={(e) => setFormData({...formData, ciudad: e.target.value})}
+                onChange={(e) => handleInputChange('ciudad', e.target.value)}
                 placeholder="Ej: Buenos Aires"
+                disabled={loading}
               />
             </Form.Group>
 
@@ -339,31 +440,53 @@ export default function Reservar() {
                 as="textarea"
                 rows={3}
                 value={formData.comentarios}
-                onChange={(e) => setFormData({...formData, comentarios: e.target.value})}
+                onChange={(e) => handleInputChange('comentarios', e.target.value)}
                 placeholder="Indica si tienes requerimientos especiales, horarios especiales, etc."
+                disabled={loading}
+                maxLength={500}
               />
             </Form.Group>
 
-            {error && <Alert variant="danger" className="mb-3">{error}</Alert>}
+            {error && (
+              <Alert 
+                variant="danger" 
+                className="mb-3"
+                dismissible
+                onClose={() => setError('')}
+              >
+                {error}
+              </Alert>
+            )}
 
             <div className="d-grid gap-2">
               <Button 
                 variant="primary" 
                 type="submit" 
                 size="lg"
-                disabled={loading || !reservaData.total}
+                disabled={loading || !reservaData.total || !isMounted}
                 style={{
-                  fontWeight: 300,
+                  fontWeight: 600,
                   lineHeight: '1.6',
                   marginBottom: '1.5rem',
                   backgroundColor: '#eaac25',
                   borderColor: '#00000666',
+                  transition: 'all 0.3s ease',
+                  opacity: loading ? 0.7 : 1
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
               >
                 {loading ? (
                   <>
-                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
-                    <span className="ms-2">Procesando...</span>
+                    <Spinner 
+                      as="span" 
+                      animation="border" 
+                      size="sm" 
+                      role="status" 
+                      aria-hidden="true" 
+                      className="me-2"
+                    />
+                    <span>Procesando reserva...</span>
                   </>
                 ) : (
                   <>

@@ -1,25 +1,9 @@
-// import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-// import { Home } from './pages/Home';
-// import './App.css';
-
-// function App() {
-//   return (
-//     <Router>
-//       <Routes>
-//         <Route path="/" element={<Home />} />
-//         {/* Agrega más rutas aquí */}
-//       </Routes>
-//     </Router>
-//   );
-// }
-
-// export default App;
-// src/App.js
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import AuthRoute from './components/AuthRoute';
 import AdminLayout from './components/AdminLayout'; // Crea este componente
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
+import { Suspense } from 'react';
 
 // Importaciones de páginas
 import Login from './pages/admin/Login';
@@ -49,6 +33,7 @@ function App() {
   return (
     
     <BrowserRouter>
+     <Suspense fallback={<div>Cargando...</div>}>
       <Routes>
         {/* Rutas públicas */}
         <Route path="/" element={<HomePublico />} />
@@ -90,6 +75,7 @@ function App() {
         {/* 404 */}
         <Route path="*" element={<div>404 Not Found</div>} />
       </Routes>
+       </Suspense>
     </BrowserRouter>
   );
 }
