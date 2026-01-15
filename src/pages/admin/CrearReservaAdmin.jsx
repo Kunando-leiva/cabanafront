@@ -5,7 +5,7 @@ import { Container, Form, Row, Col, Card, Button, Alert, Spinner } from 'react-b
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { API_URL } from '../../config';
-import { calcularPrecioReserva, formatearPrecioArgentino } from '../../services/api'; // ✅ AGREGAR IMPORT
+import { calcularPrecioReserva, formatearPrecioArgentino } from '../../config'; // ✅ AGREGAR IMPORT
 
 const CrearReservaAdmin = () => {
   const { user, token, isAuthenticated, logout, isAdmin } = useAuth();

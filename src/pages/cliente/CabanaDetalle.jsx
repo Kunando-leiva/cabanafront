@@ -14,7 +14,7 @@ import { IoIosBonfire } from "react-icons/io";
 import axios from 'axios';
 import CalendarFull from '../../components/CalendarFull';
 import { API_URL } from '../../config';
-import { calcularPrecioReserva, formatearPrecioArgentino } from '../../services/api'; // ✅ AGREGAR IMPORT
+import { calcularPrecioReserva, formatearPrecioArgentino } from '../../config'; // ✅ AGREGAR IMPORT
 import "./CabanaDetalle.css";
 
 const SERVICIOS = [

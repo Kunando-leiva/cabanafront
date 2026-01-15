@@ -5,7 +5,7 @@ import {
   FaCalendarAlt, FaMoneyBillWave, FaHome, FaUser, FaPhone, 
   FaEnvelope, FaComment, FaCalendarDay, FaTag, FaArrowLeft 
 } from 'react-icons/fa';
-import { formatearPrecioArgentino } from '../../services/api';
+import { formatearPrecioArgentino } from '../../config.js';
 
 export default function Reservar() {
   const { state } = useLocation();

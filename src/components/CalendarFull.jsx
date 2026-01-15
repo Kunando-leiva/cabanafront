@@ -5,7 +5,7 @@ import './CalendarFull.css';
 import axios from 'axios';
 import { Spinner, Alert, Badge } from 'react-bootstrap';
 import { FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
-import { API_URL } from '../config';
+import { API_URL, getOccupiedDates } from '../config';
 
 const CalendarFull = ({ 
   cabanaId, 
@@ -61,22 +61,15 @@ const CalendarFull = ({
         setLoading(true);
         setError(null);
         
-        const url = `${API_URL}/api/reservas/ocupadas${cabanaId ? `?cabanaId=${cabanaId}` : ''}`;
-        console.log('Fetching from:', url);
-        
-        const response = await axios.get(url, {
-          timeout: 10000,
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        });
+        // Usar la función del config.js
+        const occupiedData = await getOccupiedDates(cabanaId);
         
         if (!isMounted) return;
         
-        if (response.data.success && Array.isArray(response.data.data)) {
+        if (Array.isArray(occupiedData)) {
           const occupiedSet = new Set();
           
-          response.data.data.forEach((range) => {
+          occupiedData.forEach((range) => {
             try {
               const startDate = normalizeDate(range.fechaInicio);
               const endDate = normalizeDate(range.fechaFin);
@@ -107,7 +100,14 @@ const CalendarFull = ({
       } catch (err) {
         if (!isMounted) return;
         console.error('Error al obtener fechas ocupadas:', err);
-        setError('Error al cargar disponibilidad');
+        
+        // Error específico para timeout
+        if (err.message && err.message.includes('demasiado')) {
+          setError('El servidor está respondiendo lentamente. Intenta nuevamente.');
+        } else {
+          setError('Error al cargar disponibilidad. Intenta recargar la página.');
+        }
+        
         setOccupiedDates([]);
       } finally {
         if (isMounted) {
@@ -322,5 +322,4 @@ const CalendarFull = ({
   );
 };
 
-// Memoizar el componente para evitar re-renders innecesarios
 export default React.memo(CalendarFull);

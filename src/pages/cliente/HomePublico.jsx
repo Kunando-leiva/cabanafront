@@ -1,30 +1,78 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button, Container, Row, Col, Card, Alert, Overlay, Tooltip } from 'react-bootstrap';
 import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar, FaCalendarAlt, FaSearch, FaUtensils, FaTree, FaQuestionCircle, FaFacebook, FaInstagram, FaMapMarkerAlt, FaPhone, FaEnvelope, FaHome, FaConciergeBell, FaUsers } from 'react-icons/fa';
 import PublicNavbar from '../../components/PublicNavbar';
 import CalendarFull from '../../components/CalendarFull';
-import { API_URL } from '../../config';
-import { calcularPrecioReserva, formatearPrecioArgentino } from '../../services/api';
+import { API_URL, formatearPrecioArgentino, calcularPrecioReserva, obtenerCabanas } from '../../config';
 import './HomePublico.css';
 import imagenRecorrido from '../../assets/images/recorrido.jpeg';
 import encontrarnos from '../../assets/images/frente.jpeg';
 import servicio from '../../assets/images/servicio.jpg';
 import Footer from '../../components/admin/Footer';
 
-// Mover CabanaCard fuera del componente principal
+// Helper functions REGULARES (sin hooks)
+const formatDate = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
+
+const calcularNoches = (start, end) => {
+  if (!start || !end) return 0;
+  
+  const startDate = new Date(start);
+  startDate.setHours(0, 0, 0, 0);
+  
+  const endDate = new Date(end);
+  endDate.setHours(0, 0, 0, 0);
+
+  if (startDate >= endDate) return 0;
+  
+  const diffMs = endDate - startDate;
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+};
+
+const getImageUrl = (imageData) => {
+  if (!imageData) return `${API_URL}/default-cabana.jpg`;
+  
+  if (typeof imageData === 'string') {
+    if (imageData.startsWith('http')) return imageData;
+    if (imageData.startsWith('/')) return `${API_URL}${imageData}`;
+    return `${API_URL}/${imageData}`;
+  }
+  
+  if (imageData.url) {
+    if (imageData.url.startsWith('http')) return imageData.url;
+    if (imageData.url.startsWith('/')) return `${API_URL}${imageData.url}`;
+    return `${API_URL}/${imageData.url}`;
+  }
+  
+  if (imageData._id || imageData.fileId) {
+    return `${API_URL}/api/images/${imageData._id || imageData.fileId}`;
+  }
+  
+  return `${API_URL}/default-cabana.jpg`;
+};
+
+// Componente CabanaCard
 const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
   const noches = dateRange ? calcularNoches(dateRange.start, dateRange.end) : 0;
   const estaCalculando = calculandoPrecios[cabana._id];
   const precioInfo = cabana.precioCalculado;
 
   return (
-    <Col key={cabana._id}>
+    <Col xs={12} md={6} lg={4}>
       <Card className="h-100 shadow-sm">
         <div className="ratio ratio-16x9">
           <img
-            src={cabana.imagenPrincipal}
+            src={cabana.imagenPrincipal || `${API_URL}/default-cabana.jpg`}
             alt={cabana.nombre}
             className="card-img-top"
             style={{ objectFit: 'cover' }}
@@ -36,17 +84,11 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
         </div>
         <Card.Body className="d-flex flex-column">
           <Card.Title>{cabana.nombre}</Card.Title>
-          <Card.Text className="text-muted">
-            <small>
-              <FaStar className="text-warning" /> {cabana.capacidad} personas
-            </small>
-            <br />
-            <small className="text-muted">
-              {dateRange ? 'Precio según fechas seleccionadas' : `Precio base: ${formatearPrecioArgentino(cabana.precio)}/noche`}
-            </small>
+          <Card.Text className="text-muted small">
+            <FaStar className="text-warning" /> {cabana.capacidad} personas
           </Card.Text>
           
-          {dateRange && (
+          {dateRange && dateRange.start && dateRange.end && (
             <div className="mt-auto">
               <div className="mb-3">
                 {estaCalculando ? (
@@ -62,21 +104,17 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
                     </div>
                     {precioInfo.desglose && precioInfo.desglose.length > 0 && (
                       <div className="small text-muted">
-                        <div>
-                          {precioInfo.desglose.filter(d => d.tipo === 'semana').length} días semana
-                        </div>
-                        <div>
-                          {precioInfo.desglose.filter(d => d.tipo === 'fin de semana').length} fines de semana
-                        </div>
-                        <div>
-                          {precioInfo.desglose.filter(d => d.tipo === 'feriado').length} feriados
-                        </div>
+                        <div>{precioInfo.desglose.filter(d => d.tipo === 'semana').length} días semana</div>
+                        <div>{precioInfo.desglose.filter(d => d.tipo === 'fin de semana').length} fines de semana</div>
+                        {precioInfo.desglose.filter(d => d.tipo === 'feriado').length > 0 && (
+                          <div>{precioInfo.desglose.filter(d => d.tipo === 'feriado').length} feriados</div>
+                        )}
                       </div>
                     )}
                   </>
                 ) : (
                   <div className="text-muted text-center">
-                    <small>Precio base: {formatearPrecioArgentino(cabana.precio)}/noche</small>
+                    <small>Precio base: {formatearPrecioArgentino(cabana.precio || 0)}/noche</small>
                   </div>
                 )}
               </div>
@@ -132,58 +170,6 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
   );
 };
 
-// Helper functions fuera del componente
-const formatDate = (date) => {
-  if (!date) return '';
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  
-  return d.toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-};
-
-const calcularNoches = (start, end) => {
-  if (!start || !end) return 0;
-  
-  const startDate = new Date(start);
-  startDate.setHours(0, 0, 0, 0);
-  
-  const endDate = new Date(end);
-  endDate.setHours(0, 0, 0, 0);
-
-  if (startDate >= endDate) return 0;
-  
-  const diffMs = endDate - startDate;
-  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
-};
-
-const getImageUrl = (imageData, API_URL) => {
-  if (!imageData) return `${API_URL}/default-cabana.jpg`;
-  
-  if (typeof imageData === 'string' && imageData.startsWith('http')) {
-    return imageData;
-  }
-  
-  if (typeof imageData === 'string') {
-    return `${API_URL}${imageData.startsWith('/') ? '' : '/'}${imageData}`;
-  }
-  
-  if (imageData.url) {
-    return imageData.url.startsWith('http') 
-      ? imageData.url 
-      : `${API_URL}${imageData.url.startsWith('/') ? '' : '/'}${imageData.url}`;
-  }
-  
-  if (imageData._id || imageData.fileId) {
-    return `${API_URL}/api/images/${imageData._id || imageData.fileId}`;
-  }
-  
-  return `${API_URL}/default-cabana.jpg`;
-};
-
 export default function HomePublico() {
   const [cabanas, setCabanas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -200,39 +186,25 @@ export default function HomePublico() {
   const tooltipTarget = useRef(null);
   const navigate = useNavigate();
 
-  // Cerrar tooltip al hacer clic fuera
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (tooltipTarget.current && !tooltipTarget.current.contains(event.target)) {
-        setShowTooltip(false);
-      }
-    };
-    
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
-
   // Cargar cabañas destacadas
   useEffect(() => {
     let isMounted = true;
     
     const fetchCabanas = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/cabanas?destacadas=true`);
+        const cabanasData = await obtenerCabanas();
         
         if (isMounted) {
-          const data = response.data?.data || response.data;
-          
-          if (!Array.isArray(data)) {
+          if (!Array.isArray(cabanasData)) {
             throw new Error('Formato de respuesta inválido');
           }
 
-          const processedCabanas = data.map(cabana => ({
+          const processedCabanas = cabanasData.map(cabana => ({
             ...cabana,
-            imagenPrincipal: getImageUrl(cabana.imagenPrincipal || cabana.imagenes?.[0], API_URL),
+            imagenPrincipal: getImageUrl(cabana.imagenPrincipal || cabana.imagenes?.[0]),
             imagenes: (cabana.imagenes || []).map(img => ({
               ...img,
-              url: getImageUrl(img, API_URL)
+              url: getImageUrl(img)
             }))
           }));
 
@@ -261,77 +233,68 @@ export default function HomePublico() {
 
   // Calcular precios dinámicos cuando cambian las fechas
   useEffect(() => {
-    const calcularPreciosDisponibles = async () => {
-      if (dateRange.start && dateRange.end && availableCabanas.length > 0) {
-        const nuevosPrecios = {};
+  // CANCELAR cálculos si cambian las fechas rápidamente
+  let isCancelled = false;
+  
+  const calcularPreciosDisponibles = async () => {
+    if (dateRange.start && dateRange.end && availableCabanas.length > 0) {
+      // DEBOUNCE: esperar 300ms antes de calcular
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      if (isCancelled) return;
+      
+      // Calcular solo para primeras 3 cabañas inicialmente
+      const cabanasACalcular = availableCabanas.slice(0, 3);
+      
+      for (const cabana of cabanasACalcular) {
+        if (isCancelled) break;
         
-        for (const cabana of availableCabanas) {
-          try {
-            setCalculandoPrecios(prev => ({ ...prev, [cabana._id]: true }));
-            
-            // Calcular precio usando el endpoint específico
-            const precioData = await calcularPrecioReserva(
-              dateRange.start,
-              dateRange.end,
-              cabana._id
-            );
-            
-            nuevosPrecios[cabana._id] = {
-              total: precioData.precioTotal || cabana.precio || 0,
-              precioFormateado: formatearPrecioArgentino(precioData.precioTotal || cabana.precio || 0),
-              desglose: precioData.desglose || []
-            };
-          } catch (err) {
+        try {
+          setCalculandoPrecios(prev => ({ ...prev, [cabana._id]: true }));
+          
+          const precioData = await calcularPrecioReserva(
+            dateRange.start,
+            dateRange.end,
+            cabana._id
+          );
+          
+          if (!isCancelled) {
+            // Actualizar solo esta cabaña
+            setAvailableCabanas(prev => prev.map(c => 
+              c._id === cabana._id 
+                ? { ...c, precioCalculado: {
+                    total: precioData.precioTotal || c.precio || 0,
+                    precioFormateado: formatearPrecioArgentino(precioData.precioTotal || c.precio || 0),
+                    desglose: precioData.desglose || []
+                  }}
+                : c
+            ));
+          }
+        } catch (err) {
+          if (!isCancelled) {
             console.error(`Error calculando precio para cabaña ${cabana._id}:`, err);
-            nuevosPrecios[cabana._id] = {
-              total: cabana.precio || 0,
-              precioFormateado: formatearPrecioArgentino(cabana.precio || 0),
-              desglose: []
-            };
-          } finally {
+          }
+        } finally {
+          if (!isCancelled) {
             setCalculandoPrecios(prev => ({ ...prev, [cabana._id]: false }));
           }
         }
-        
-        setAvailableCabanas(prev => prev.map(cabana => ({
-          ...cabana,
-          precioCalculado: nuevosPrecios[cabana._id] || null
-        })));
       }
-    };
+    }
+  };
 
-    calcularPreciosDisponibles();
-  }, [dateRange, availableCabanas]);
+  calcularPreciosDisponibles();
+  
+  return () => {
+    isCancelled = true;
+  };
+}, [dateRange, availableCabanas]); // Solo dependencias necesarias
 
   const handleSearchAvailability = async () => {
     if (!dateRange.start || !dateRange.end) {
       setSearchStatus({
         loading: false,
         error: 'Por favor seleccione ambas fechas',
-        searched: false
-      });
-      return;
-    }
-
-    // Validar que la fecha de inicio sea hoy o después
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const startDate = new Date(dateRange.start);
-    startDate.setHours(0, 0, 0, 0);
-    
-    if (startDate < today) {
-      setSearchStatus({
-        loading: false,
-        error: 'No puedes seleccionar fechas pasadas',
-        searched: false
-      });
-      return;
-    }
-
-    if (dateRange.start >= dateRange.end) {
-      setSearchStatus({
-        loading: false,
-        error: 'La fecha de fin debe ser posterior a la de inicio',
         searched: false
       });
       return;
@@ -363,7 +326,7 @@ export default function HomePublico() {
 
       const processedCabanas = (response.data.data || []).map(cabana => ({
         ...cabana,
-        imagenPrincipal: cabana.imagenPrincipal || getImageUrl(null, API_URL),
+        imagenPrincipal: getImageUrl(cabana.imagenPrincipal),
         precioCalculado: null
       }));
 
@@ -413,7 +376,7 @@ export default function HomePublico() {
         </Container>
       </section>
 
-      {/* Secciones de contenido */}
+      {/* Sección ¿Por qué elegirnos? */}
       <section style={{ 
         color: 'white', 
         padding: '60px 0',
@@ -476,23 +439,21 @@ export default function HomePublico() {
         </Container>
       </section>
 
-      {/* Más secciones... */}
-      {/* Mantén las otras secciones igual */}
-
       {/* Cabañas Destacadas */}
-      <section className="py-5">
+      <section className="py-5 bg-light">
         <Container>
-          <h2 className="text-center mb-5">Nuestras Cabañas Destacadas</h2>
+          <h2 className="text-center mb-5 fw-bold">Nuestras Cabañas Destacadas</h2>
           {loading ? (
             <div className="text-center py-5">
-              <p>Cargando cabañas destacadas...</p>
+              <span className="spinner-border spinner-border-lg text-primary me-2"></span>
+              <p className="mt-2">Cargando cabañas destacadas...</p>
             </div>
           ) : error ? (
             <Alert variant="danger" className="text-center my-5">
               Error al cargar cabañas: {error}
             </Alert>
           ) : cabanas.length > 0 ? (
-            <Row xs={1} md={3} className="g-4">
+            <Row xs={1} md={2} lg={3} className="g-4">
               {cabanas.map(cabana => (
                 <CabanaCard 
                   key={cabana._id} 
@@ -512,9 +473,9 @@ export default function HomePublico() {
       </section>
 
       {/* Buscador de disponibilidad */}
-      <section className="py-4 bg-light">
+      <section className="py-4 bg-white">
         <Container>
-          <h3 className="text-center mb-4" style={{ color: "#333" }}>
+          <h3 className="text-center mb-4 fw-bold" style={{ color: "#333" }}>
             <FaCalendarAlt className="me-2" />
             Consultar disponibilidad
           </h3>
@@ -527,20 +488,22 @@ export default function HomePublico() {
                   className="btn btn-sm btn-outline-secondary rounded-pill mb-3"
                   onClick={() => setShowTooltip(!showTooltip)}
                   style={{ cursor: 'pointer' }}
+                  aria-label="Instrucciones para seleccionar fechas"
                 >
                   <FaQuestionCircle className="me-1" />
-                  Modo de elegir fechas
+                  ¿Cómo seleccionar fechas?
                 </div>
 
                 <Overlay target={tooltipTarget.current} show={showTooltip} placement="bottom">
                   {(props) => (
                     <Tooltip id="date-instructions-tooltip" {...props}>
-                      <div className="text-start">
-                        <strong>Instrucciones para seleccionar fechas:</strong>
-                        <ul className="mb-0">
-                          <li>Primer click: Selecciona fecha de inicio</li>
-                          <li>Segundo click: Selecciona fecha de fin</li>
-                          <li>Doble click: Cancela o reinicia selección</li>
+                      <div className="text-start p-2">
+                        <strong>Instrucciones:</strong>
+                        <ul className="mb-0 mt-2">
+                          <li>Primer click: Fecha de inicio</li>
+                          <li>Segundo click: Fecha de fin</li>
+                          <li>Click en fecha seleccionada: Cancelar</li>
+                          <li>Click fuera del rango: Nuevo rango</li>
                         </ul>
                       </div>
                     </Tooltip>
@@ -553,26 +516,32 @@ export default function HomePublico() {
           <Row className="justify-content-center mb-3">
             <Col lg={8}>
               <CalendarFull 
-  onDatesSelected={(start, end, calculatedTotal) => {
-    setDateRange({ start, end });
-    setSearchStatus(prev => ({ ...prev, error: null }));
-    setAvailableCabanas([]);
-  }}
-  showInline={true}
-  showTotal={false}
-/>
+                onDatesSelected={(start, end) => handleDatesSelected(start, end)}
+                showInline={true}
+                showTotal={false}
+                key="calendar-home"
+              />
             </Col>
           </Row>
           
           {dateRange.start && dateRange.end && (
             <Row className="justify-content-center mb-3">
               <Col md={8} className="text-center">
-                <Alert variant="info">
-                  Fechas seleccionadas: {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
-                  <br />
-                  <small className="text-muted">
-                    {calcularNoches(dateRange.start, dateRange.end)} noche{calcularNoches(dateRange.start, dateRange.end) !== 1 ? 's' : ''}
-                  </small>
+                <Alert variant="info" className="py-2">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>Fechas seleccionadas:</strong>
+                      <div className="small">
+                        {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
+                      </div>
+                    </div>
+                    <div className="text-end">
+                      <strong>Noches:</strong>
+                      <div className="small">
+                        {calcularNoches(dateRange.start, dateRange.end)} noche{calcularNoches(dateRange.start, dateRange.end) !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  </div>
                 </Alert>
               </Col>
             </Row>
@@ -585,9 +554,11 @@ export default function HomePublico() {
                 onClick={handleSearchAvailability}
                 disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
                 style={{
-                  fontWeight: 300,
+                  fontWeight: 500,
                   backgroundColor: '#eaac25',
                   borderColor: '#eaac25',
+                  padding: '10px 30px',
+                  transition: 'all 0.3s ease'
                 }}
               >
                 {searchStatus.loading ? (
@@ -608,7 +579,12 @@ export default function HomePublico() {
           {searchStatus.error && (
             <Row className="justify-content-center mt-3">
               <Col md={8}>
-                <Alert variant="danger" className="text-center">
+                <Alert 
+                  variant="danger" 
+                  className="text-center"
+                  dismissible
+                  onClose={() => setSearchStatus(prev => ({ ...prev, error: null }))}
+                >
                   {searchStatus.error}
                 </Alert>
               </Col>
@@ -619,14 +595,17 @@ export default function HomePublico() {
 
       {/* Resultados de búsqueda */}
       {searchStatus.searched && !searchStatus.loading && (
-        <section className="py-5">
+        <section className="py-5 bg-light">
           <Container>
             {availableCabanas.length > 0 ? (
               <>
-                <h2 className="text-center mb-5">
-                  {availableCabanas.length} Cabaña{availableCabanas.length !== 1 ? 's' : ''} disponible{availableCabanas.length !== 1 ? 's' : ''} del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
+                <h2 className="text-center mb-5 fw-bold">
+                  {availableCabanas.length} Cabaña{availableCabanas.length !== 1 ? 's' : ''} disponible{availableCabanas.length !== 1 ? 's' : ''}
                 </h2>
-                <Row xs={1} md={3} className="g-4">
+                <p className="text-center text-muted mb-4">
+                  Del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
+                </p>
+                <Row xs={1} md={2} lg={3} className="g-4">
                   {availableCabanas.map(cabana => (
                     <CabanaCard 
                       key={cabana._id}
@@ -638,24 +617,36 @@ export default function HomePublico() {
                   ))}
                 </Row>
               </>
-            ) : (
+            ) : !searchStatus.error ? (
               <Alert variant="warning" className="text-center">
-                No hay cabañas disponibles para las fechas seleccionadas.
+                <h4>No hay disponibilidad para estas fechas</h4>
+                <p className="mb-3">Por favor, intenta con otras fechas</p>
                 <div className="mt-2">
                   <Button 
                     as={Link} 
                     to="/cabanas" 
                     variant="outline-warning"
+                    className="me-2"
                   >
                     Ver todas las cabañas
                   </Button>
+                  <Button 
+                    variant="warning"
+                    onClick={() => {
+                      setDateRange({ start: null, end: null });
+                      setSearchStatus({ loading: false, error: null, searched: false });
+                    }}
+                  >
+                    Limpiar búsqueda
+                  </Button>
                 </div>
               </Alert>
-            )}
+            ) : null}
           </Container>
         </section>
       )}
 
+      {/* Footer */}
       <Footer />
     </div>
   );

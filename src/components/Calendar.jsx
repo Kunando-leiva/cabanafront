@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { getOccupiedDates } from '../services/api';
+import { getOccupiedDates } from '../config';
 
 export const Calendar = () => {
   const [startDate, setStartDate] = useState(null);
