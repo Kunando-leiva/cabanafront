@@ -1,31 +1,30 @@
-// src/config.js
-export const API_URL = 'https://backendcabana.onrender.com';
+// src/config.js - VERSIÓN CORREGIDA
+export const API_URL = process.env.REACT_APP_API_URL || 'https://backendcabana.onrender.com';
 
 import axios from 'axios';
 
-// Instancia principal de axios
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 15000, // Reducido de 20000 a 10000
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: false,
 });
 
-// Interceptors
+// Interceptor de request
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // NO agregar Cache-Control manualmente
     return config;
   },
   (error) => Promise.reject(error)
 );
 
+// Interceptor de response
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -41,9 +40,7 @@ api.interceptors.response.use(
   }
 );
 
-// ================= FUNCIONES ESPECÍFICAS =================
-
-// 1. FUNCIÓN PARA CALCULAR PRECIOS DINÁMICOS
+// 1. FUNCIÓN PARA CALCULAR PRECIOS DINÁMICOS - CORREGIDA
 export const calcularPrecioReserva = async (fechaInicio, fechaFin, cabanaId) => {
   try {
     const formatDateForAPI = (date) => {
@@ -59,7 +56,11 @@ export const calcularPrecioReserva = async (fechaInicio, fechaFin, cabanaId) => 
       cabanaId: cabanaId || undefined
     });
     
-    return response.data;
+    if (response.data && response.data.success) {
+      return response.data;
+    } else {
+      throw new Error(response.data?.error || 'Error calculando precio');
+    }
   } catch (error) {
     console.error('Error calculando precio:', error);
     throw error;
@@ -78,7 +79,7 @@ export const formatearPrecioArgentino = (precio) => {
   }).format(precio);
 };
 
-// 3. FUNCIÓN PARA OBTENER FECHAS OCUPADAS (OPTIMIZADA)
+// 3. FUNCIÓN PARA OBTENER FECHAS OCUPADAS
 export const getOccupiedDates = async (cabanaId = null) => {
   try {
     const url = cabanaId 
@@ -86,7 +87,7 @@ export const getOccupiedDates = async (cabanaId = null) => {
       : '/api/reservas/ocupadas';
     
     const response = await api.get(url, {
-      timeout: 8000 // Timeout específico para esta ruta
+      timeout: 8000
     });
     
     const data = response.data?.data || response.data || [];
@@ -96,42 +97,23 @@ export const getOccupiedDates = async (cabanaId = null) => {
       return [];
     }
     
-    return data.map(item => {
-      if (item.fechaInicio && item.fechaFin) {
-        return {
-          fechaInicio: new Date(item.fechaInicio),
-          fechaFin: new Date(item.fechaFin)
-        };
-      }
-      return new Date(item);
-    });
+    return data;
   } catch (error) {
     console.error("Error fetching occupied dates:", error);
     return [];
   }
 };
 
-// 4. FUNCIÓN PARA CREAR RESERVA
-export const crearReserva = async (reservaData) => {
-  try {
-    const response = await api.post('/api/reservas', reservaData);
-    return response.data;
-  } catch (error) {
-    console.error('Error creando reserva:', error);
-    throw error;
-  }
-};
-
-// 5. FUNCIÓN PARA OBTENER CABANAS (CON CACHE)
+// 4. FUNCIÓN PARA OBTENER CABANAS CON CACHE
 const cabanasCache = {
   data: null,
   timestamp: 0,
-  ttl: 5 * 60 * 1000 // 5 minutos
+  ttl: 5 * 60 * 1000
 };
 
 export const obtenerCabanas = async (forceRefresh = false) => {
-  // Verificar cache
   const now = Date.now();
+  
   if (!forceRefresh && cabanasCache.data && (now - cabanasCache.timestamp) < cabanasCache.ttl) {
     return cabanasCache.data;
   }
@@ -141,9 +123,14 @@ export const obtenerCabanas = async (forceRefresh = false) => {
       timeout: 12000
     });
     
-    const data = response.data?.data || response.data || [];
+    let data = [];
     
-    // Actualizar cache
+    if (response.data && response.data.success) {
+      data = response.data.data || [];
+    } else if (Array.isArray(response.data)) {
+      data = response.data;
+    }
+    
     cabanasCache.data = data;
     cabanasCache.timestamp = now;
     
@@ -151,20 +138,12 @@ export const obtenerCabanas = async (forceRefresh = false) => {
   } catch (error) {
     console.error('Error obteniendo cabañas:', error);
     
-    // Si hay cache, usarlo como fallback
     if (cabanasCache.data) {
-      console.warn('Usando datos cacheados debido a error');
       return cabanasCache.data;
     }
     
     return [];
   }
-};
-
-// 6. FUNCIÓN PARA LIMPIAR CACHE
-export const limpiarCacheCabanas = () => {
-  cabanasCache.data = null;
-  cabanasCache.timestamp = 0;
 };
 
 export default api;

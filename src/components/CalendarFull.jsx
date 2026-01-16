@@ -56,150 +56,162 @@ const CalendarFull = ({
   }, [precioPorNoche, normalizeDate]);
 
   // Obtener fechas ocupadas UNA SOLA VEZ
-  useEffect(() => {
-    if (!isMounted) return;
-    
-    let abortController = new AbortController();
+  // En CalendarFull.jsx - actualiza el useEffect de fetchOccupiedDates:
+useEffect(() => {
+  if (!isMounted) return;
+  
+  let abortController = new AbortController();
 
-    const fetchOccupiedDates = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchOccupiedDates = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const occupiedData = await getOccupiedDates(cabanaId);
+      
+      if (!isMounted) return;
+      
+      if (Array.isArray(occupiedData)) {
+        const occupiedSet = new Set();
         
-        const occupiedData = await getOccupiedDates(cabanaId);
-        
-        if (!isMounted) return;
-        
-        if (Array.isArray(occupiedData)) {
-          const occupiedSet = new Set();
-          
-          occupiedData.forEach((range) => {
-            try {
-              const startDate = normalizeDate(range.fechaInicio);
-              const endDate = normalizeDate(range.fechaFin);
-              
-              if (!startDate || !endDate || startDate >= endDate) return;
-              
-              const current = new Date(startDate);
-              
-              // Excluir el día de checkout
-              while (current < endDate) {
-                const dateStr = dateToYMD(current);
-                occupiedSet.add(dateStr);
-                current.setDate(current.getDate() + 1);
-              }
-            } catch (err) {
-              console.warn('Error procesando rango:', err);
+        occupiedData.forEach((item) => {
+          try {
+            // El backend devuelve objetos con fechaInicio y fechaFin
+            let startDate, endDate;
+            
+            if (item.fechaInicio && item.fechaFin) {
+              // Formato: { fechaInicio: "2024-01-01", fechaFin: "2024-01-05" }
+              startDate = normalizeDate(item.fechaInicio);
+              endDate = normalizeDate(item.fechaFin);
+            } else if (typeof item === 'string') {
+              // Formato: "2024-01-01"
+              startDate = normalizeDate(item);
+              endDate = normalizeDate(item); // Mismo día
             }
-          });
-          
-          setOccupiedDates(Array.from(occupiedSet));
-        }
+            
+            if (!startDate || !endDate) return;
+            
+            const current = new Date(startDate);
+            
+            while (current <= endDate) {
+              const dateStr = dateToYMD(current);
+              occupiedSet.add(dateStr);
+              current.setDate(current.getDate() + 1);
+            }
+          } catch (err) {
+            console.warn('Error procesando fecha:', err);
+          }
+        });
         
-      } catch (err) {
-        if (!isMounted) return;
-        
-        console.error('Error al obtener fechas ocupadas:', err);
-        
-        // No mostrar error si es cancelado
-        if (err.name === 'AbortError') return;
-        
-        setError('Error al cargar disponibilidad. Intenta nuevamente.');
-        setOccupiedDates([]);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-          setIsCalculating(false);
-        }
+        setOccupiedDates(Array.from(occupiedSet));
       }
-    };
+      
+    } catch (err) {
+      if (!isMounted) return;
+      
+      console.error('Error al obtener fechas ocupadas:', err);
+      
+      if (err.name === 'AbortError') return;
+      
+      setError('Error al cargar disponibilidad. Intenta nuevamente.');
+      setOccupiedDates([]);
+    } finally {
+      if (isMounted) {
+        setLoading(false);
+        setIsCalculating(false);
+      }
+    }
+  };
 
-    fetchOccupiedDates();
-    
-    return () => {
-      abortController.abort();
-    };
-  }, [cabanaId, normalizeDate, dateToYMD, isMounted]);
+  fetchOccupiedDates();
+  
+  return () => {
+    abortController.abort();
+  };
+}, [cabanaId, normalizeDate, dateToYMD, isMounted]);
 
   // Handler de fechas OPTIMIZADO (sin re-renderizaciones innecesarias)
-  const handleDateChange = useCallback((newDateRange) => {
-    if (!isMounted) return;
-    
-    const [start, end] = newDateRange;
-    
-    // Limpiar estados previos
-    setError(null);
-    setSuccess(null);
-    setDateRange(newDateRange);
-    setIsCalculating(true);
-    
-    if (!start || !end) {
-      setIsCalculating(false);
-      if (onDatesSelected) onDatesSelected(null, null, 0);
-      return;
-    }
-    
-    // Usar setTimeout para no bloquear el renderizado
-    setTimeout(() => {
-      try {
-        // Validaciones
-        const today = normalizeDate(new Date());
-        const startDate = normalizeDate(start);
-        const endDate = normalizeDate(end);
-        
-        if (!startDate || !endDate) {
-          setError('Fechas inválidas');
-          setIsCalculating(false);
-          return;
-        }
-        
-        if (startDate >= endDate) {
-          setError('La fecha de fin debe ser posterior a la de inicio');
-          setIsCalculating(false);
-          return;
-        }
-        
-        if (startDate < today) {
-          setError('No puedes seleccionar fechas pasadas');
-          setIsCalculating(false);
-          return;
-        }
-        
-        // Verificar disponibilidad
-        const occupiedSet = new Set(occupiedDates);
-        const current = new Date(startDate);
-        let hasConflict = false;
-        
-        while (current < endDate) {
-          if (occupiedSet.has(dateToYMD(current))) {
-            hasConflict = true;
-            break;
-          }
-          current.setDate(current.getDate() + 1);
-        }
-        
-        if (hasConflict) {
-          setError('Las fechas seleccionadas incluyen días ocupados');
-          setIsCalculating(false);
-          return;
-        }
-        
-        // Calcular total
-        const calculatedTotal = calcularTotal(startDate, endDate);
-        
-        setSuccess('Fechas disponibles para reserva');
+  // En la función handleDateChange:
+const handleDateChange = useCallback((newDateRange) => {
+  if (!isMounted) return;
+  
+  const [start, end] = newDateRange;
+  
+  // Limpiar estados previos
+  setError(null);
+  setSuccess(null);
+  setDateRange(newDateRange);
+  setIsCalculating(true);
+  
+  if (!start || !end) {
+    setIsCalculating(false);
+    // Llama a onDatesSelected con null, null (sin tercer parámetro)
+    if (onDatesSelected) onDatesSelected(null, null);
+    return;
+  }
+  
+  // Usar setTimeout para no bloquear el renderizado
+  setTimeout(() => {
+    try {
+      // Validaciones
+      const today = normalizeDate(new Date());
+      const startDate = normalizeDate(start);
+      const endDate = normalizeDate(end);
+      
+      if (!startDate || !endDate) {
+        setError('Fechas inválidas');
         setIsCalculating(false);
-        
-        if (onDatesSelected) {
-          onDatesSelected(startDate, endDate, calculatedTotal);
-        }
-      } catch (err) {
-        console.error('Error en handleDateChange:', err);
-        setError('Error al procesar fechas');
-        setIsCalculating(false);
+        return;
       }
-    }, 10); // Pequeño delay para no bloquear
-  }, [occupiedDates, onDatesSelected, normalizeDate, dateToYMD, calcularTotal, isMounted]);
+      
+      if (startDate >= endDate) {
+        setError('La fecha de fin debe ser posterior a la de inicio');
+        setIsCalculating(false);
+        return;
+      }
+      
+      if (startDate < today) {
+        setError('No puedes seleccionar fechas pasadas');
+        setIsCalculating(false);
+        return;
+      }
+      
+      // Verificar disponibilidad
+      const occupiedSet = new Set(occupiedDates);
+      const current = new Date(startDate);
+      let hasConflict = false;
+      
+      while (current < endDate) {
+        if (occupiedSet.has(dateToYMD(current))) {
+          hasConflict = true;
+          break;
+        }
+        current.setDate(current.getDate() + 1);
+      }
+      
+      if (hasConflict) {
+        setError('Las fechas seleccionadas incluyen días ocupados');
+        setIsCalculating(false);
+        return;
+      }
+      
+      // Calcular total (opcional)
+      const calculatedTotal = calcularTotal(startDate, endDate);
+      
+      setSuccess('Fechas disponibles para reserva');
+      setIsCalculating(false);
+      
+      // Llama a onDatesSelected solo con startDate y endDate
+      if (onDatesSelected) {
+        onDatesSelected(startDate, endDate);
+      }
+    } catch (err) {
+      console.error('Error en handleDateChange:', err);
+      setError('Error al procesar fechas');
+      setIsCalculating(false);
+    }
+  }, 10);
+}, [occupiedDates, onDatesSelected, normalizeDate, dateToYMD, calcularTotal, isMounted]);
 
   // Funciones de tile MEMOIZADAS (CRÍTICO para evitar errores)
   const tileDisabled = useMemo(() => {

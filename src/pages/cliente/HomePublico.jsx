@@ -303,35 +303,36 @@ export default function HomePublico() {
   }, [dateRange, availableCabanas]);
 
   // Manejador de fechas seleccionadas
-  const handleDatesSelected = useCallback((start, end) => {
-    if (!isMounted.current) return;
-    
-    if (!start || !end || !(start instanceof Date) || !(end instanceof Date)) {
-      console.error('Fechas inválidas recibidas:', start, end);
-      return;
-    }
-    
-    // Asegurar que las fechas sean del día (sin hora)
-    const startDate = new Date(start);
-    startDate.setHours(0, 0, 0, 0);
-    
-    const endDate = new Date(end);
-    endDate.setHours(0, 0, 0, 0);
-    
-    // Verificar que end sea posterior a start
-    if (startDate >= endDate) {
-      setSearchStatus(prev => ({ 
-        ...prev, 
-        error: 'La fecha de fin debe ser posterior al inicio' 
-      }));
-      return;
-    }
-    
-    // Actualizar estado de forma segura
-    setDateRange({ start: startDate, end: endDate });
-    setSearchStatus(prev => ({ ...prev, error: null }));
-    setAvailableCabanas([]);
-  }, []);
+  // En HomePublico.jsx - actualiza handleDatesSelected:
+const handleDatesSelected = useCallback((start, end) => { // Solo 2 parámetros
+  if (!isMounted.current) return;
+  
+  if (!start || !end || !(start instanceof Date) || !(end instanceof Date)) {
+    console.error('Fechas inválidas recibidas:', start, end);
+    return;
+  }
+  
+  // Asegurar que las fechas sean del día (sin hora)
+  const startDate = new Date(start);
+  startDate.setHours(0, 0, 0, 0);
+  
+  const endDate = new Date(end);
+  endDate.setHours(0, 0, 0, 0);
+  
+  // Verificar que end sea posterior a start
+  if (startDate >= endDate) {
+    setSearchStatus(prev => ({ 
+      ...prev, 
+      error: 'La fecha de fin debe ser posterior al inicio' 
+    }));
+    return;
+  }
+  
+  // Actualizar estado de forma segura
+  setDateRange({ start: startDate, end: endDate });
+  setSearchStatus(prev => ({ ...prev, error: null }));
+  setAvailableCabanas([]);
+}, [isMounted]);
 
   const handleSearchAvailability = async () => {
     if (!dateRange.start || !dateRange.end) {
