@@ -6,7 +6,7 @@ import axios from 'axios';
 // Instancia principal de axios
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 10000, // Reducido de 20000 a 10000
+  timeout: 15000, // Reducido de 20000 a 10000
   headers: {
     'Content-Type': 'application/json',
   },

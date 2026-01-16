@@ -1,18 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button, Container, Row, Col, Card, Alert, Overlay, Tooltip } from 'react-bootstrap';
-import { FaWifi, FaSwimmingPool, FaSnowflake, FaStar, FaCalendarAlt, FaSearch, FaUtensils, FaTree, FaQuestionCircle, FaFacebook, FaInstagram, FaMapMarkerAlt, FaPhone, FaEnvelope, FaHome, FaConciergeBell, FaUsers } from 'react-icons/fa';
+import { 
+  FaWifi, FaSwimmingPool, FaSnowflake, FaStar, FaCalendarAlt, 
+  FaSearch, FaUtensils, FaTree, FaQuestionCircle, FaFacebook, 
+  FaInstagram, FaMapMarkerAlt, FaPhone, FaEnvelope, FaHome, 
+  FaConciergeBell, FaUsers, FaExclamationTriangle, FaCheckCircle 
+} from 'react-icons/fa';
 import PublicNavbar from '../../components/PublicNavbar';
 import CalendarFull from '../../components/CalendarFull';
-import { API_URL, formatearPrecioArgentino, calcularPrecioReserva, obtenerCabanas } from '../../config';
+import { API_URL, calcularPrecioReserva, formatearPrecioArgentino, obtenerCabanas } from '../../config';
 import './HomePublico.css';
 import imagenRecorrido from '../../assets/images/recorrido.jpeg';
 import encontrarnos from '../../assets/images/frente.jpeg';
 import servicio from '../../assets/images/servicio.jpg';
 import Footer from '../../components/admin/Footer';
 
-// Helper functions REGULARES (sin hooks)
+// Helper functions REGULARES
 const formatDate = (date) => {
   if (!date) return '';
   const d = new Date(date);
@@ -185,6 +190,14 @@ export default function HomePublico() {
   const [calculandoPrecios, setCalculandoPrecios] = useState({});
   const tooltipTarget = useRef(null);
   const navigate = useNavigate();
+  const isMounted = useRef(true);
+
+  // Limpieza al desmontar
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Cargar cabañas destacadas
   useEffect(() => {
@@ -233,62 +246,92 @@ export default function HomePublico() {
 
   // Calcular precios dinámicos cuando cambian las fechas
   useEffect(() => {
-  // CANCELAR cálculos si cambian las fechas rápidamente
-  let isCancelled = false;
-  
-  const calcularPreciosDisponibles = async () => {
-    if (dateRange.start && dateRange.end && availableCabanas.length > 0) {
-      // DEBOUNCE: esperar 300ms antes de calcular
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      if (isCancelled) return;
-      
-      // Calcular solo para primeras 3 cabañas inicialmente
-      const cabanasACalcular = availableCabanas.slice(0, 3);
-      
-      for (const cabana of cabanasACalcular) {
-        if (isCancelled) break;
+    let isCancelled = false;
+    
+    const calcularPreciosDisponibles = async () => {
+      if (dateRange.start && dateRange.end && availableCabanas.length > 0) {
+        // DEBOUNCE: esperar 300ms antes de calcular
+        await new Promise(resolve => setTimeout(resolve, 300));
         
-        try {
-          setCalculandoPrecios(prev => ({ ...prev, [cabana._id]: true }));
+        if (isCancelled) return;
+        
+        // Calcular solo para primeras 3 cabañas inicialmente
+        const cabanasACalcular = availableCabanas.slice(0, 3);
+        
+        for (const cabana of cabanasACalcular) {
+          if (isCancelled) break;
           
-          const precioData = await calcularPrecioReserva(
-            dateRange.start,
-            dateRange.end,
-            cabana._id
-          );
-          
-          if (!isCancelled) {
-            // Actualizar solo esta cabaña
-            setAvailableCabanas(prev => prev.map(c => 
-              c._id === cabana._id 
-                ? { ...c, precioCalculado: {
-                    total: precioData.precioTotal || c.precio || 0,
-                    precioFormateado: formatearPrecioArgentino(precioData.precioTotal || c.precio || 0),
-                    desglose: precioData.desglose || []
-                  }}
-                : c
-            ));
-          }
-        } catch (err) {
-          if (!isCancelled) {
-            console.error(`Error calculando precio para cabaña ${cabana._id}:`, err);
-          }
-        } finally {
-          if (!isCancelled) {
-            setCalculandoPrecios(prev => ({ ...prev, [cabana._id]: false }));
+          try {
+            setCalculandoPrecios(prev => ({ ...prev, [cabana._id]: true }));
+            
+            const precioData = await calcularPrecioReserva(
+              dateRange.start,
+              dateRange.end,
+              cabana._id
+            );
+            
+            if (!isCancelled) {
+              // Actualizar solo esta cabaña
+              setAvailableCabanas(prev => prev.map(c => 
+                c._id === cabana._id 
+                  ? { ...c, precioCalculado: {
+                      total: precioData.precioTotal || c.precio || 0,
+                      precioFormateado: formatearPrecioArgentino(precioData.precioTotal || c.precio || 0),
+                      desglose: precioData.desglose || []
+                    }}
+                  : c
+              ));
+            }
+          } catch (err) {
+            if (!isCancelled) {
+              console.error(`Error calculando precio para cabaña ${cabana._id}:`, err);
+            }
+          } finally {
+            if (!isCancelled) {
+              setCalculandoPrecios(prev => ({ ...prev, [cabana._id]: false }));
+            }
           }
         }
       }
-    }
-  };
+    };
 
-  calcularPreciosDisponibles();
-  
-  return () => {
-    isCancelled = true;
-  };
-}, [dateRange, availableCabanas]); // Solo dependencias necesarias
+    calcularPreciosDisponibles();
+    
+    return () => {
+      isCancelled = true;
+    };
+  }, [dateRange, availableCabanas]);
+
+  // Manejador de fechas seleccionadas
+  const handleDatesSelected = useCallback((start, end) => {
+    if (!isMounted.current) return;
+    
+    if (!start || !end || !(start instanceof Date) || !(end instanceof Date)) {
+      console.error('Fechas inválidas recibidas:', start, end);
+      return;
+    }
+    
+    // Asegurar que las fechas sean del día (sin hora)
+    const startDate = new Date(start);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(end);
+    endDate.setHours(0, 0, 0, 0);
+    
+    // Verificar que end sea posterior a start
+    if (startDate >= endDate) {
+      setSearchStatus(prev => ({ 
+        ...prev, 
+        error: 'La fecha de fin debe ser posterior al inicio' 
+      }));
+      return;
+    }
+    
+    // Actualizar estado de forma segura
+    setDateRange({ start: startDate, end: endDate });
+    setSearchStatus(prev => ({ ...prev, error: null }));
+    setAvailableCabanas([]);
+  }, []);
 
   const handleSearchAvailability = async () => {
     if (!dateRange.start || !dateRange.end) {
@@ -353,12 +396,6 @@ export default function HomePublico() {
       });
       setAvailableCabanas([]);
     }
-  };
-
-  const handleDatesSelected = (start, end, calculatedTotal) => {
-    setDateRange({ start, end });
-    setSearchStatus(prev => ({ ...prev, error: null }));
-    setAvailableCabanas([]);
   };
 
   return (
@@ -439,6 +476,135 @@ export default function HomePublico() {
         </Container>
       </section>
 
+       {/* Sección ¿Listo para desconectar? */}
+      <section style={{  
+        color: 'white', 
+        padding: '60px 0',
+        position: 'relative',
+        overflow: 'hidden' 
+      }}>
+        <Container>
+          <Row className="align-items-center">
+            <Col md={7} className="order-md-2 order-1 mb-4 mb-md-0">
+              <div 
+                style={{
+                  height: '300px',
+                  width: '100%',
+                  backgroundImage: `url(${encontrarnos})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  borderRadius: '8px'
+                }}
+                className="img-hover-zoom"
+              />
+            </Col>
+            
+            <Col md={5} className="order-2 order-md-2">
+              <div style={{ padding: '0 15px' }}>
+                <h2 style={{ 
+                  fontWeight: 300,
+                  fontSize: '2rem',
+                  letterSpacing: '1px',
+                  marginBottom: '1.5rem'
+                }}>
+                  ¿Listo para desconectar?
+                </h2>
+                <p style={{ 
+                  fontSize: '1rem',
+                  fontWeight: 300,
+                  lineHeight: '1.6',
+                  marginBottom: '1.5rem'
+                }}>Ubicanos en:
+                  Complejo Los Alerces
+                  📍 7898+M4, Libertad, Provincia de Buenos Aires
+                </p>
+                <div className="text-center">
+                  <Button 
+                    onClick={() => navigate('/ubicacion')}
+                    variant="outline-light"
+                    style={{
+                      padding: '10px 25px',
+                      fontWeight: 300,
+                      letterSpacing: '1px',
+                      borderRadius: '0',
+                      textTransform: 'uppercase',
+                      width: '100%',
+                      maxWidth: '200px'
+                    }}
+                  >
+                    Ver ubicación
+                  </Button>
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </Container>
+      </section>
+
+         {/* Sección Nuestros Servicios */}
+      <section style={{ 
+        color: 'white', 
+        padding: '60px 0',
+        position: 'relative', 
+        overflow: 'hidden' 
+      }}>
+        <Container>
+          <Row className="align-items-center">
+            <Col md={5} className="order-md-1 order-2">
+              <div style={{ padding: '20px' }}>
+                <h2 style={{ 
+                  fontWeight: 300, 
+                  fontSize: '2rem',
+                  letterSpacing: '1px',
+                  marginBottom: '1.5rem'
+                }}>
+                  Nuestros Servicios 
+                </h2>
+                <p style={{ 
+                  fontSize: '1rem',
+                  fontWeight: 300, 
+                  lineHeight: '1.6',
+                  marginBottom: '1.5rem',
+                  textAlign: 'justify'
+                }}>
+                  Te ofrecemos todo lo que necesitás para una estadía perfecta, con servicios pensados para tu comodidad y relax. 
+                  Disfrutá de la calidad que nos caracteriza, en un entorno donde cada detalle está cuidado para vos.
+                </p>
+                <div className="text-center">
+                  <Button 
+                    onClick={() => navigate('/servicios')}
+                    variant="outline-light"
+                    style={{
+                      padding: '10px 25px',
+                      fontWeight: 300,
+                      letterSpacing: '1px',
+                      borderRadius: '0',
+                      textTransform: 'uppercase',
+                      width: '100%',
+                      maxWidth: '200px'
+                    }}
+                  >
+                    Ver servicios
+                  </Button>
+                </div>
+              </div>
+            </Col>
+
+            <Col md={7} className="order-md-2 order-1 mb-4 mb-md-0">
+              <div style={{
+                height: '300px',
+                width: '100%',
+                backgroundImage: `url(${servicio})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                borderRadius: '8px'
+              }} />
+            </Col>
+          </Row>
+        </Container>
+      </section>
+
+
       {/* Cabañas Destacadas */}
       <section className="py-5 bg-light">
         <Container>
@@ -516,7 +682,7 @@ export default function HomePublico() {
           <Row className="justify-content-center mb-3">
             <Col lg={8}>
               <CalendarFull 
-                onDatesSelected={(start, end) => handleDatesSelected(start, end)}
+                onDatesSelected={handleDatesSelected}
                 showInline={true}
                 showTotal={false}
                 key="calendar-home"

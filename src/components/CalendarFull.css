@@ -80,3 +80,45 @@
   font-weight: 600;
   color: #333;
 }
+
+/* src/components/CalendarFull.css - AGREGAR: */
+.calendar-container {
+  isolation: isolate; /* Previene conflictos de stacking context */
+}
+
+.react-calendar {
+  width: 100% !important;
+  max-width: 100% !important;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Para el admin calendar */
+.admin-calendar .react-calendar {
+  border: 1px solid #dee2e6;
+}
+
+/* Fechas ocupadas */
+.occupied-date {
+  background-color: #ff6b6b !important;
+  color: white !important;
+  border-radius: 50%;
+}
+
+.occupied-date:hover {
+  background-color: #ff5252 !important;
+}
+
+/* Range seleccionado */
+.selected-range-start,
+.selected-range-end {
+  background-color: #0d6efd !important;
+  color: white !important;
+  border-radius: 50%;
+}
+
+.selected-range-middle {
+  background-color: #e7f1ff !important;
+}

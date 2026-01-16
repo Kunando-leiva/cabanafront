@@ -1,4 +1,6 @@
-import { Calendar } from 'react-calendar';
+// src/components/admin/AdminCalendar.jsx - VERSIÓN CORREGIDA
+import React, { useState } from 'react';
+import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 
 export const AdminCalendar = () => {
@@ -11,12 +13,18 @@ export const AdminCalendar = () => {
         onChange={setDate} 
         value={date}
         className="mx-auto border rounded shadow p-2"
+        locale="es" // ← AGREGAR locale español
+        minDate={new Date()} // ← AGREGAR fecha mínima
       />
       {/* Listado de reservas para la fecha seleccionada */}
       <div className="mt-4">
-        <h3 className="text-xl font-semibold">Reservas para {date.toLocaleDateString()}</h3>
+        <h3 className="text-xl font-semibold">
+          Reservas para {date.toLocaleDateString('es-ES')}
+        </h3>
         {/* Aquí iría la lista de reservas */}
       </div>
     </div>
   );
 };
+
+export default AdminCalendar;

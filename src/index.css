@@ -91,3 +91,265 @@ code {
   background: #0d6efd;
   color: white;
 }
+
+/* ============================================================================
+   ESTILOS PARA SOLUCIONAR ERRORES DEL CALENDARIO (insertBefore)
+   ============================================================================ */
+
+/* 1. ESTILOS BASE DEL CALENDARIO - CRÍTICO */
+.react-calendar {
+  width: 100% !important;
+  max-width: 100% !important;
+  border: 1px solid #ddd !important;
+  border-radius: 8px !important;
+  padding: 10px !important;
+  font-family: inherit !important;
+  background: white !important;
+  box-sizing: border-box !important;
+}
+
+/* 2. PREVENIR TRANSICIONES PROBLEMÁTICAS */
+.react-calendar__tile {
+  transition: none !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.react-calendar__tile:focus {
+  outline: 2px solid #007bff !important;
+  outline-offset: 2px !important;
+}
+
+/* 3. ESTADOS ESPECIALES */
+.occupied-date {
+  background-color: #ff6b6b !important;
+  color: white !important;
+  text-decoration: line-through !important;
+  cursor: not-allowed !important;
+}
+
+.selected-range-start {
+  background-color: #28a745 !important;
+  color: white !important;
+  border-radius: 50% 0 0 50% !important;
+}
+
+.selected-range-end {
+  background-color: #28a745 !important;
+  color: white !important;
+  border-radius: 0 50% 50% 0 !important;
+}
+
+.selected-range-middle {
+  background-color: rgba(40, 167, 69, 0.3) !important;
+}
+
+/* 4. PREVENIR FLASHES Y RE-RENDERIZACIONES */
+.calendar-container {
+  opacity: 1 !important;
+  transition: opacity 0.3s ease !important;
+  position: relative !important;
+  min-height: 400px !important;
+}
+
+.calendar-container.calendar-loading {
+  opacity: 0.7 !important;
+  pointer-events: none !important;
+}
+
+/* 5. MEJORAR NAVEGACIÓN DEL CALENDARIO */
+.react-calendar__navigation {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 10px !important;
+}
+
+.react-calendar__navigation button {
+  min-width: 44px !important;
+  background: none !important;
+  border: 1px solid #ddd !important;
+  border-radius: 4px !important;
+  padding: 8px !important;
+}
+
+.react-calendar__navigation button:hover {
+  background-color: #f8f9fa !important;
+}
+
+/* 6. MEJORAR VISUALIZACIÓN DE DÍAS DE LA SEMANA */
+.react-calendar__month-view__weekdays {
+  text-align: center !important;
+  text-transform: uppercase !important;
+  font-weight: bold !important;
+  font-size: 0.75em !important;
+  color: #6c757d !important;
+  margin-bottom: 5px !important;
+}
+
+.react-calendar__month-view__weekdays__weekday {
+  padding: 10px 0 !important;
+}
+
+/* 7. ESTILOS PARA DÍAS DEL MES */
+.react-calendar__month-view__days {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  gap: 2px !important;
+}
+
+.react-calendar__month-view__days__day {
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 4px !important;
+}
+
+.react-calendar__month-view__days__day--neighboringMonth {
+  color: #ccc !important;
+}
+
+/* 8. CONTENEDOR PARA MENSAJES DE ERROR/ÉXITO */
+.calendar-messages {
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+.calendar-messages .alert {
+  margin-bottom: 10px !important;
+  border-radius: 6px !important;
+}
+
+/* 9. TOTAL ESTIMADO */
+.total-container {
+  border: 1px solid #dee2e6 !important;
+  background: linear-gradient(to bottom, #ffffff, #f8f9fa) !important;
+}
+
+.total-container .badge {
+  font-size: 1rem !important;
+  padding: 8px 16px !important;
+}
+
+/* 10. ESTILOS PARA CALENDARIO INLINE */
+.inline-calendar .react-calendar {
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 11. PREVENIR PROBLEMAS DE Z-INDEX */
+.react-calendar,
+.react-calendar * {
+  box-sizing: border-box !important;
+}
+
+/* 12. ESTILOS PARA DISABLED STATES */
+.react-calendar__tile:disabled,
+.react-calendar__tile[disabled] {
+  background-color: #f8f9fa !important;
+  color: #adb5bd !important;
+  cursor: not-allowed !important;
+}
+
+/* 13. MEJORAR RESPONSIVIDAD */
+@media (max-width: 768px) {
+  .react-calendar {
+    padding: 5px !important;
+    font-size: 0.875rem !important;
+  }
+  
+  .react-calendar__month-view__days__day {
+    height: 35px !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .calendar-container {
+    min-height: 350px !important;
+  }
+}
+
+/* 14. ANIMACIONES SEGURAS */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.calendar-container {
+  animation: fadeIn 0.3s ease !important;
+}
+
+/* 15. FIJAR ALTURA MÍNIMA PARA PREVENIR RE-FLOWS */
+.calendar-wrapper {
+  min-height: 450px !important;
+  position: relative !important;
+}
+
+/* 16. ESTILOS PARA EL BOTÓN DE HOY */
+.react-calendar__tile--now {
+  background-color: #e7f3ff !important;
+  font-weight: bold !important;
+}
+
+.react-calendar__tile--now:hover {
+  background-color: #d0e7ff !important;
+}
+
+/* 17. MEJORAR ACCESIBILIDAD */
+.react-calendar__tile:focus-visible {
+  outline: 3px solid #0056b3 !important;
+  outline-offset: 2px !important;
+  z-index: 2 !important;
+}
+
+/* 18. EVITAR SELECCIÓN DE TEXTO DURANTE INTERACCIÓN */
+.react-calendar__tile {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* 19. ESTILOS PARA MESES Y AÑOS EN VISTAS SUPERIORES */
+.react-calendar__year-view__months__month,
+.react-calendar__decade-view__years__year,
+.react-calendar__century-view__decades__decade {
+  padding: 20px 10px !important;
+  border-radius: 4px !important;
+}
+
+/* 20. CLASE PARA ERRORES CRÍTICOS */
+.calendar-error {
+  border: 2px solid #dc3545 !important;
+  animation: shake 0.5s ease !important;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* 21. ESTILOS PARA RANGOS DE FECHAS */
+.react-calendar__tile--hasActive {
+  background: #76baff !important;
+}
+
+.react-calendar__tile--hasActive:enabled:hover,
+.react-calendar__tile--hasActive:enabled:focus {
+  background: #a9d4ff !important;
+}
+
+/* 22. REMOVER ESTILOS POR DEFECTO QUE CAUSAN CONFLICTOS */
+.react-calendar__tile--active:enabled:hover,
+.react-calendar__tile--active:enabled:focus {
+  background: #0066cc !important;
+}
+
+/* 23. ESTILOS PARA CALENDARIO EN FORMULARIOS */
+.form-calendar .react-calendar {
+  border-color: #ced4da !important;
+}
+
+.form-calendar .react-calendar:focus-within {
+  border-color: #86b7fe !important;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
