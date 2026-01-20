@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Container, Row, Col, Card, Alert, Overlay, Tooltip } from 'react-bootstrap';
 import { 
   FaWifi, FaSwimmingPool, FaSnowflake, FaStar, FaCalendarAlt, 
   FaSearch, FaUtensils, FaTree, FaQuestionCircle, FaFacebook, 
@@ -17,7 +16,156 @@ import servicio from '../../assets/images/servicio.jpg';
 import Footer from '../../components/admin/Footer';
 import './HomePublico.css';
 
-// Helper functions REGULARES
+// ============================================
+// COMPONENTES NATIVOS PARA REEMPLAZAR REACT-BOOTSTRAP
+// ============================================
+
+const Container = ({ children, className = '', fluid, ...props }) => (
+  <div 
+    className={`${fluid ? 'container-fluid' : 'container'} ${className}`} 
+    {...props}
+  >
+    {children}
+  </div>
+);
+
+const Row = ({ children, className = '', ...props }) => (
+  <div className={`row ${className}`} {...props}>
+    {children}
+  </div>
+);
+
+const Col = ({ children, xs, md, lg, xl, className = '', ...props }) => {
+  const colClasses = [
+    xs ? `col-${xs}` : '',
+    md ? `col-md-${md}` : '',
+    lg ? `col-lg-${lg}` : '',
+    xl ? `col-xl-${xl}` : '',
+    className
+  ].filter(Boolean).join(' ');
+  
+  return (
+    <div className={colClasses} {...props}>
+      {children}
+    </div>
+  );
+};
+
+const Card = ({ children, className = '', ...props }) => (
+  <div className={`card ${className}`} {...props}>
+    {children}
+  </div>
+);
+
+const CardBody = ({ children, className = '', ...props }) => (
+  <div className={`card-body ${className}`} {...props}>
+    {children}
+  </div>
+);
+
+const CardTitle = ({ children, className = '', tag: Tag = 'h5', ...props }) => (
+  <Tag className={`card-title ${className}`} {...props}>
+    {children}
+  </Tag>
+);
+
+const CardText = ({ children, className = '', ...props }) => (
+  <div className={`card-text ${className}`} {...props}>
+    {children}
+  </div>
+);
+
+const Alert = ({ 
+  children, 
+  variant = 'info', 
+  className = '', 
+  dismissible, 
+  onClose, 
+  ...props 
+}) => {
+  const alertClass = `alert alert-${variant} ${dismissible ? 'alert-dismissible' : ''} ${className}`;
+  
+  return (
+    <div className={alertClass} role="alert" {...props}>
+      {children}
+      {dismissible && onClose && (
+        <button 
+          type="button" 
+          className="btn-close" 
+          aria-label="Close"
+          onClick={onClose}
+        ></button>
+      )}
+    </div>
+  );
+};
+
+const Button = ({ 
+  children, 
+  variant = 'primary', 
+  className = '', 
+  type = 'button',
+  as, 
+  to,
+  href,
+  disabled = false,
+  onClick,
+  style = {},
+  ...props 
+}) => {
+  const buttonClass = `btn btn-${variant} ${disabled ? 'disabled' : ''} ${className}`;
+  const buttonStyle = {
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.65 : 1,
+    ...style
+  };
+  
+  if (as === Link && to) {
+    return (
+      <Link 
+        to={to} 
+        className={buttonClass}
+        style={buttonStyle}
+        onClick={disabled ? undefined : onClick}
+        {...props}
+      >
+        {children}
+      </Link>
+    );
+  }
+  
+  if (as === 'a' && href) {
+    return (
+      <a 
+        href={href} 
+        className={buttonClass}
+        style={buttonStyle}
+        onClick={disabled ? undefined : onClick}
+        {...props}
+      >
+        {children}
+      </a>
+    );
+  }
+  
+  return (
+    <button 
+      type={type}
+      className={buttonClass}
+      style={buttonStyle}
+      disabled={disabled}
+      onClick={disabled ? undefined : onClick}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
 const formatDate = (date) => {
   if (!date) return '';
   const d = new Date(date);
@@ -66,7 +214,10 @@ const getImageUrl = (imageData) => {
   return `${API_URL}/default-cabana.jpg`;
 };
 
-// Componente CabanaCard - VERSIÓN CORREGIDA
+// ============================================
+// COMPONENTE CabañaCard
+// ============================================
+
 const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate }) => {
   const [precioLocal, setPrecioLocal] = useState(null);
   const [cargandoLocal, setCargandoLocal] = useState(false);
@@ -79,13 +230,11 @@ const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate 
     };
   }, []);
   
-  // Calcula noches solo cuando dateRange cambia
   const noches = React.useMemo(() => {
     if (!dateRange || !dateRange.start || !dateRange.end) return 0;
     return calcularNoches(dateRange.start, dateRange.end);
   }, [dateRange]);
 
-  // Efecto para manejar cambios en el cálculo de precios
   useEffect(() => {
     if (!isMounted.current) return;
     
@@ -97,7 +246,6 @@ const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate 
       return;
     }
 
-    // Verificar si realmente cambiaron las fechas
     const dateRangeKey = dateRange.start?.toISOString() + dateRange.end?.toISOString();
     const prevDateRangeKey = prevDateRange.current?.start?.toISOString() + prevDateRange.current?.end?.toISOString();
     
@@ -121,7 +269,6 @@ const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate 
     }
   }, [cabana.precioCalculado, calculandoPrecios, cabana._id, dateRange, precioLocal, cargandoLocal]);
 
-  // Función para manejar clic en reservar
   const handleReservarClick = () => {
     if (!isMounted.current || !precioLocal || cargandoLocal) return;
     
@@ -136,20 +283,6 @@ const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate 
         imagenPrincipal: cabana.imagenPrincipal
       }
     });
-  };
-
-  // Estilos comunes para botones
-  const buttonStyles = {
-    primary: {
-      backgroundColor: '#eaac25',
-      borderColor: '#eaac25',
-      color: 'white'
-    },
-    outline: {
-      backgroundColor: 'transparent',
-      borderColor: '#eaac25',
-      color: '#eaac25'
-    }
   };
 
   return (
@@ -167,20 +300,18 @@ const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate 
             }}
           />
         </div>
-        <Card.Body className="d-flex flex-column">
-          <Card.Title className="text-truncate">{cabana.nombre}</Card.Title>
-          <Card.Text className="text-muted small mb-3">
+        <CardBody className="d-flex flex-column">
+          <CardTitle className="text-truncate">{cabana.nombre}</CardTitle>
+          <CardText className="text-muted small mb-3">
             <FaStar className="text-warning" /> {cabana.capacidad} personas
-          </Card.Text>
+          </CardText>
           
           {dateRange && dateRange.start && dateRange.end ? (
             <div className="mt-auto">
               <div className="mb-3">
                 {cargandoLocal ? (
                   <div className="text-center py-2">
-                    <div className="d-inline-block spinner-grow spinner-grow-sm text-warning me-2" role="status">
-                      {/* Sin span interno */}
-                    </div>
+                    <div className="spinner-grow spinner-grow-sm text-warning me-2" role="status"></div>
                     <span className="text-muted">Calculando precio...</span>
                   </div>
                 ) : precioLocal ? (
@@ -218,23 +349,19 @@ const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate 
                 )}
               </div>
               
-              {/* BOTÓN RESERVAR AHORA - REEMPLAZADO */}
-              <button 
-                className="btn w-100 mb-2"
+              <Button 
+                variant="primary" 
+                className="w-100 mb-2"
                 onClick={handleReservarClick}
                 disabled={!precioLocal || cargandoLocal || (precioLocal.total || 0) <= 0}
                 style={{
                   fontWeight: 500,
-                  backgroundColor: buttonStyles.primary.backgroundColor,
-                  border: `1px solid ${buttonStyles.primary.borderColor}`,
-                  color: buttonStyles.primary.color,
-                  padding: '10px',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
+                  backgroundColor: '#eaac25',
+                  borderColor: '#eaac25',
                 }}
               >
                 {cargandoLocal ? '⌛ Calculando...' : '✅ Reservar ahora'}
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="mt-auto text-center text-muted py-3">
@@ -243,31 +370,31 @@ const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate 
             </div>
           )}
           
-          {/* BOTÓN VER DETALLES - REEMPLAZADO */}
-          <Link 
+          <Button 
+            as={Link}
             to={`/cabanas/${cabana._id}`}
-            className="btn w-100 mt-auto"
+            variant={dateRange ? "outline-primary" : "primary"}
+            className="w-100 mt-auto"
             style={{
               fontWeight: 300,
-              backgroundColor: dateRange ? buttonStyles.outline.backgroundColor : buttonStyles.primary.backgroundColor,
-              border: `1px solid ${buttonStyles.primary.borderColor}`,
-              color: dateRange ? buttonStyles.outline.color : buttonStyles.primary.color,
-              padding: '10px',
-              borderRadius: '4px',
-              textDecoration: 'none',
-              textAlign: 'center',
-              display: 'block'
+              backgroundColor: dateRange ? 'transparent' : '#eaac25',
+              borderColor: '#eaac25',
+              color: dateRange ? '#eaac25' : 'white',
             }}
           >
             Ver detalles
-          </Link>
-        </Card.Body>
+          </Button>
+        </CardBody>
       </Card>
     </Col>
   );
 });
 
 CabanaCard.displayName = 'CabanaCard';
+
+// ============================================
+// COMPONENTE PRINCIPAL HomePublico
+// ============================================
 
 export default function HomePublico() {
   const [cabanas, setCabanas] = useState([]);
@@ -280,20 +407,16 @@ export default function HomePublico() {
     error: null,
     searched: false
   });
-  const [showTooltip, setShowTooltip] = useState(false);
   const [calculandoPrecios, setCalculandoPrecios] = useState({});
-  const tooltipTarget = useRef(null);
   const navigate = useNavigate();
   const isMounted = useRef(true);
 
-  // Limpieza al desmontar
   useEffect(() => {
     return () => {
       isMounted.current = false;
     };
   }, []);
 
-  // Cargar cabañas destacadas
   useEffect(() => {
     let isMountedLocal = true;
     
@@ -338,7 +461,6 @@ export default function HomePublico() {
     };
   }, []);
 
-  // Calcular precios dinámicos
   useEffect(() => {
     let isCancelled = false;
     let calculationTimeout = null;
@@ -413,7 +535,6 @@ export default function HomePublico() {
     };
   }, [dateRange, availableCabanas]);
 
-  // Manejador de fechas seleccionadas
   const handleDatesSelected = useCallback((start, end) => {
     if (!isMounted.current) return;
     
@@ -534,23 +655,9 @@ export default function HomePublico() {
         <Container className="position-relative z-index-1">
           <h1 className="display-4 fw-bold mb-4">Complejo Los Alerces</h1>
           <p className="lead mb-4">Libertad - Pontevedra</p>
-          {/* BOTÓN HERO - REEMPLAZADO */}
-          <Link 
-            to="/cabanas" 
-            className="btn btn-lg"
-            style={{
-              backgroundColor: '#eaac25',
-              borderColor: '#eaac25',
-              color: 'white',
-              fontWeight: 'bold',
-              padding: '12px 30px',
-              borderRadius: '4px',
-              textDecoration: 'none',
-              display: 'inline-block'
-            }}
-          >
+          <Button as={Link} to="/cabanas" variant="primary" size="lg">
             Ver Cabañas Disponibles
-          </Link>
+          </Button>
         </Container>
       </section>
 
@@ -562,7 +669,7 @@ export default function HomePublico() {
           </h2>
           {loading ? (
             <div className="text-center py-5">
-              <div className="d-inline-block spinner-grow spinner-grow-lg text-warning me-2"></div>
+              <div className="spinner-grow spinner-grow-lg text-warning me-2"></div>
               <p className="mt-2 text-white">Cargando cabañas destacadas...</p>
             </div>
           ) : error ? (
@@ -619,10 +726,9 @@ export default function HomePublico() {
                   Sin nada que envidiarle a ningún otro hospedaje, contamos con los mejores servicios de Buenos Aires y del país, pero en Libertad, Merlo.
                 </p>
                 <div className="text-center">
-                  {/* BOTÓN VER FOTOS - REEMPLAZADO */}
-                  <button 
-                    className="btn"
+                  <Button 
                     onClick={() => navigate('/galeria')}
+                    variant="outline-light"
                     style={{
                       padding: '10px 25px',
                       fontWeight: 300,
@@ -630,14 +736,11 @@ export default function HomePublico() {
                       borderRadius: '0',
                       textTransform: 'uppercase',
                       width: '100%',
-                      maxWidth: '200px',
-                      backgroundColor: 'transparent',
-                      border: '1px solid white',
-                      color: 'white'
+                      maxWidth: '200px'
                     }}
                   >
                     Ver fotos
-                  </button>
+                  </Button>
                 </div>
               </div>
             </Col>
@@ -699,10 +802,9 @@ export default function HomePublico() {
                   📍 7898+M4, Libertad, Provincia de Buenos Aires
                 </p>
                 <div className="text-center">
-                  {/* BOTÓN VER UBICACIÓN - REEMPLAZADO */}
-                  <button 
-                    className="btn"
+                  <Button 
                     onClick={() => navigate('/ubicacion')}
+                    variant="outline-light"
                     style={{
                       padding: '10px 25px',
                       fontWeight: 300,
@@ -710,14 +812,11 @@ export default function HomePublico() {
                       borderRadius: '0',
                       textTransform: 'uppercase',
                       width: '100%',
-                      maxWidth: '200px',
-                      backgroundColor: 'transparent',
-                      border: '1px solid white',
-                      color: 'white'
+                      maxWidth: '200px'
                     }}
                   >
                     Ver ubicación
-                  </button>
+                  </Button>
                 </div>
               </div>
             </Col>
@@ -755,10 +854,9 @@ export default function HomePublico() {
                   Disfrutá de la calidad que nos caracteriza, en un entorno donde cada detalle está cuidado para vos.
                 </p>
                 <div className="text-center">
-                  {/* BOTÓN VER SERVICIOS - REEMPLAZADO */}
-                  <button 
-                    className="btn"
+                  <Button 
                     onClick={() => navigate('/servicios')}
+                    variant="outline-light"
                     style={{
                       padding: '10px 25px',
                       fontWeight: 300,
@@ -766,14 +864,11 @@ export default function HomePublico() {
                       borderRadius: '0',
                       textTransform: 'uppercase',
                       width: '100%',
-                      maxWidth: '200px',
-                      backgroundColor: 'transparent',
-                      border: '1px solid white',
-                      color: 'white'
+                      maxWidth: '200px'
                     }}
                   >
                     Ver servicios
-                  </button>
+                  </Button>
                 </div>
               </div>
             </Col>
@@ -803,32 +898,15 @@ export default function HomePublico() {
           <Row className="justify-content-center mb-3">
             <Col lg={8} className="text-center">
               <div className="d-inline-block position-relative">
-                <div 
-                  ref={tooltipTarget}
-                  className="btn btn-sm btn-outline-secondary rounded-pill mb-3"
-                  onClick={() => setShowTooltip(!showTooltip)}
-                  style={{ cursor: 'pointer', color: 'white' }} 
-                  aria-label="Instrucciones para seleccionar fechas"
+                <Button 
+                  variant="outline-secondary"
+                  size="sm"
+                  className="rounded-pill mb-3"
+                  style={{ color: 'white' }}
                 >
-                  <FaQuestionCircle className="me-1"  />
+                  <FaQuestionCircle className="me-1" />
                   ¿Cómo seleccionar fechas?
-                </div>
-
-                <Overlay target={tooltipTarget.current} show={showTooltip} placement="bottom">
-                  {(props) => (
-                    <Tooltip id="date-instructions-tooltip" {...props}>
-                      <div className="text-start p-2">
-                        <strong>Instrucciones:</strong>
-                        <ul className="mb-0 mt-2">
-                          <li>Primer click: Fecha de inicio</li>
-                          <li>Segundo click: Fecha de fin</li>
-                          <li>Click en fecha seleccionada: Cancelar</li>
-                          <li>Click fuera del rango: Nuevo rango</li>
-                        </ul>
-                      </div>
-                    </Tooltip>
-                  )}
-                </Overlay>
+                </Button>
               </div>
             </Col>
           </Row>
@@ -869,35 +947,31 @@ export default function HomePublico() {
           
           <Row className="justify-content-center">
             <Col md={4} className="text-center">
-              {/* BOTÓN BUSCAR DISPONIBILIDAD - REEMPLAZADO */}
-              <button 
-                className="btn"
+              <Button 
+                variant="primary" 
                 onClick={handleSearchAvailability}
                 disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
                 type="button"
                 style={{
                   fontWeight: 500,
                   backgroundColor: '#eaac25',
-                  border: '1px solid #eaac25',
-                  color: 'white',
+                  borderColor: '#eaac25',
                   padding: '10px 30px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  width: '100%'
+                  transition: 'all 0.3s ease'
                 }}
               >
                 {searchStatus.loading ? (
-                  <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                  <>
                     <div className="spinner-grow spinner-grow-sm me-2"></div>
                     Buscando...
-                  </span>
+                  </>
                 ) : (
-                  <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                  <>
                     <FaSearch className="me-2" />
                     Buscar disponibilidad
-                  </span>
+                  </>
                 )}
-              </button>
+              </Button>
             </Col>
           </Row>
           
@@ -924,7 +998,7 @@ export default function HomePublico() {
           <Container>
             {searchStatus.loading ? (
               <div className="text-center py-5">
-                <div className="d-inline-block spinner-grow spinner-grow-lg text-warning"></div>
+                <div className="spinner-grow spinner-grow-lg text-warning"></div>
                 <p className="mt-3 text-white">Buscando cabañas disponibles...</p>
               </div>
             ) : searchStatus.error ? (
@@ -937,38 +1011,24 @@ export default function HomePublico() {
                 <h4>No hay disponibilidad para estas fechas</h4>
                 <p className="mb-3">Por favor, intenta con otras fechas</p>
                 <div className="mt-2">
-                  {/* BOTONES EN ALERTA - REEMPLAZADOS */}
-                  <Link 
+                  <Button 
+                    as={Link} 
                     to="/cabanas" 
-                    className="btn me-2"
-                    style={{
-                      backgroundColor: 'transparent',
-                      border: '1px solid #ffc107',
-                      color: '#ffc107',
-                      padding: '8px 20px',
-                      borderRadius: '4px',
-                      textDecoration: 'none'
-                    }}
+                    variant="outline-warning"
+                    className="me-2"
                   >
                     Ver todas las cabañas
-                  </Link>
-                  <button 
-                    className="btn"
+                  </Button>
+                  <Button 
+                    variant="warning"
                     onClick={() => {
                       setDateRange({ start: null, end: null });
                       setSearchStatus({ loading: false, error: null, searched: false });
                       setAvailableCabanas([]);
                     }}
-                    style={{
-                      backgroundColor: '#ffc107',
-                      border: '1px solid #ffc107',
-                      color: '#000',
-                      padding: '8px 20px',
-                      borderRadius: '4px'
-                    }}
                   >
                     Limpiar búsqueda
-                  </button>
+                  </Button>
                 </div>
               </Alert>
             ) : (
