@@ -74,6 +74,7 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
   const [precioLocal, setPrecioLocal] = useState(null);
   const [cargandoLocal, setCargandoLocal] = useState(false);
   const prevDateRange = useRef(null);
+  const isMounted = useRef(true); // ← Agrega esto
   
   // Calcula noches solo cuando dateRange cambia
   const noches = React.useMemo(() => {
@@ -829,6 +830,7 @@ const handleDatesSelected = useCallback((start, end) => {
                 variant="primary" 
                 onClick={handleSearchAvailability}
                 disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
+                type='button'
                 style={{
                   fontWeight: 500,
                   backgroundColor: '#eaac25',
@@ -870,58 +872,71 @@ const handleDatesSelected = useCallback((start, end) => {
 </section>
 
       {/* Resultados de búsqueda */}
-         {searchStatus.searched && !searchStatus.loading && (
-        <section className="py-5" style={{ backgroundColor: "#333" }}>
-          <Container>
-            {availableCabanas.length > 0 ? (
-              <>
-                <h2 className="text-center mb-5 fw-bold text-white">
-                  {availableCabanas.length} Cabaña{availableCabanas.length !== 1 ? 's' : ''} disponible{availableCabanas.length !== 1 ? 's' : ''}
-                </h2>
-                <p className="text-center text-muted mb-4">
-                  Del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
-                </p>
-                <Row xs={1} md={2} lg={3} className="g-4 justify-content-center">
-                  {availableCabanas.map(cabana => (
-                    <CabanaCard 
-                      key={cabana._id}
-                      cabana={cabana}
-                      dateRange={dateRange}
-                      calculandoPrecios={calculandoPrecios}
-                      navigate={navigate}
-                    />
-                  ))}
-                </Row>
-              </>
-            ) : (
-              <Alert variant="warning" className="text-center">
-                <h4>No hay disponibilidad para estas fechas</h4>
-                <p className="mb-3">Por favor, intenta con otras fechas</p>
-                <div className="mt-2">
-                  <Button 
-                    as={Link} 
-                    to="/cabanas" 
-                    variant="outline-warning"
-                    className="me-2"
-                  >
-                    Ver todas las cabañas
-                  </Button>
-                  <Button 
-                    variant="warning"
-                    onClick={() => {
-                      setDateRange({ start: null, end: null });
-                      setSearchStatus({ loading: false, error: null, searched: false });
-                      setAvailableCabanas([]);
-                    }}
-                  >
-                    Limpiar búsqueda
-                  </Button>
-                </div>
-              </Alert>
-            )}
-          </Container>
-        </section>
+        {searchStatus.searched && (
+  <section className="py-5" style={{ backgroundColor: "#333" }}>
+    <Container>
+      {searchStatus.loading ? (
+        <div className="text-center py-5">
+          <div className="spinner-border text-warning" role="status">
+            <span className="visually-hidden">Cargando...</span>
+          </div>
+          <p className="mt-3 text-white">Buscando cabañas disponibles...</p>
+        </div>
+      ) : searchStatus.error ? (
+        <Alert variant="danger" className="text-center">
+          <h4>Error en la búsqueda</h4>
+          <p>{searchStatus.error}</p>
+        </Alert>
+      ) : availableCabanas.length === 0 ? (
+        <Alert variant="warning" className="text-center">
+          <h4>No hay disponibilidad para estas fechas</h4>
+          <p className="mb-3">Por favor, intenta con otras fechas</p>
+          <div className="mt-2">
+            <Button 
+              as={Link} 
+              to="/cabanas" 
+              variant="outline-warning"
+              className="me-2"
+            >
+              Ver todas las cabañas
+            </Button>
+            <Button 
+              variant="warning"
+              onClick={() => {
+                setDateRange({ start: null, end: null });
+                setSearchStatus({ loading: false, error: null, searched: false });
+                setAvailableCabanas([]);
+              }}
+            >
+              Limpiar búsqueda
+            </Button>
+          </div>
+        </Alert>
+      ) : (
+        <>
+          <h2 className="text-center mb-5 fw-bold text-white">
+            {availableCabanas.length} Cabaña{availableCabanas.length !== 1 ? 's' : ''} disponible{availableCabanas.length !== 1 ? 's' : ''}
+          </h2>
+          <p className="text-center text-muted mb-4">
+            Del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
+          </p>
+          <Row xs={1} md={2} lg={3} className="g-4 justify-content-center">
+            {availableCabanas.map(cabana => (
+              <CabanaCard 
+                key={cabana._id}
+                cabana={cabana}
+                dateRange={dateRange}
+                calculandoPrecios={calculandoPrecios}
+                navigate={navigate}
+              />
+            ))}
+          </Row>
+        </>
       )}
+    </Container>
+  </section>
+)}
+
 
       {/* Footer */}
       <Footer />
