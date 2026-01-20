@@ -162,7 +162,7 @@ export default function CabanasPublico() {
                         <strong>Capacidad:</strong> {cabana.capacidad} personas
                       </small>
                       <small className="d-block">
-                        <strong>Precio:</strong> ${cabana.precio?.toLocaleString()} por noche
+                        <strong>Precio:</strong> desde ${cabana.precio?.toLocaleString()} por noche
                       </small>
                     </Card.Text>
                     

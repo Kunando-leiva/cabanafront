@@ -68,7 +68,7 @@ const getImageUrl = (imageData) => {
 };
 
 
-// Componente CabanaCard - VERSIÓN OPTIMIZADA
+
 // Componente CabanaCard - VERSIÓN CORREGIDA
 const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
   const [precioLocal, setPrecioLocal] = useState(null);
@@ -119,7 +119,7 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
   return (
     <Col xs={12} md={6} lg={4}>
       <Card className="h-100 shadow-sm cabana-card">
-        <div className="ratio ratio-16x9">
+        <div className="ratio ratio-16x9 ">
           <img
             src={cabana.imagenPrincipal || `${API_URL}/default-cabana.jpg`}
             alt={cabana.nombre}
@@ -131,7 +131,7 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
             }}
           />
         </div>
-        <Card.Body className="d-flex flex-column">
+        <Card.Body className="d-flex flex-column justify-content-center align-items-center">
           <Card.Title className="text-truncate">{cabana.nombre}</Card.Title>
           <Card.Text className="text-muted small mb-3">
             <FaStar className="text-warning" /> {cabana.capacidad} personas
@@ -212,8 +212,8 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
             </div>
           ) : (
             <div className="mt-auto text-center text-muted py-3">
-              <FaCalendarAlt className="mb-2 fs-4" />
-              <div>Selecciona fechas para ver precio</div>
+              
+              
             </div>
           )}
           
@@ -520,7 +520,9 @@ const handleDatesSelected = useCallback((start, end) => {
       <section className="py-5" style={{ backgroundColor: "#333" }}>
 
         <Container>
-          <h2 className="text-center mb-5 fw-bold">Nuestras Cabañas Destacadas</h2>
+          <h2 className="text-center mb-5 fw-bold" style={{ color: "#ffffff" }}>
+    Nuestras Cabañas Destacadas
+  </h2>
           {loading ? (
             <div className="text-center py-5">
               <span className="spinner-border spinner-border-lg text-primary me-2"></span>

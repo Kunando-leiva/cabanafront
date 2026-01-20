@@ -333,11 +333,11 @@ export default function CabanaDetalle() {
                   <div className="d-flex align-items-center p-3 bg-light rounded h-100">
                     <FaMoneyBillWave className="text-success me-3 fs-4" />
                     <div>
-                      <small className="text-muted">Precio base por noche*</small>
+                      <small className="text-muted">Precio por noche desde</small>
                       <div className="fs-5">
                         <strong>{formatearPrecioArgentino(cabana.precio || 0)}</strong>
                       </div>
-                      <small className="text-muted">*Varía según tipo de día</small>
+                      {/* <small className="text-muted">*Varía según tipo de día</small> */}
                     </div>
                   </div>
                 </Col>

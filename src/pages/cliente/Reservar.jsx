@@ -120,7 +120,9 @@ export default function Reservar() {
         </h6>
         <ListGroup variant="flush">
           {resumen.semana.count > 0 && (
-            <ListGroup.Item className="d-flex justify-content-between align-items-center border-0 px-0 py-1">
+            <ListGroup.Item
+  className="d-flex justify-content-between align-items-center px-0 py-1"
+  style={{ borderTop: 'none', boxShadow: 'none', backgroundColor: 'transparent' }}>
               <span>
                 <Badge bg="info" className="me-2">L-V</Badge>
                 {resumen.semana.count} día{resumen.semana.count !== 1 ? 's' : ''} semana
@@ -131,7 +133,9 @@ export default function Reservar() {
             </ListGroup.Item>
           )}
           {resumen.finSemana.count > 0 && (
-            <ListGroup.Item className="d-flex justify-content-between align-items-center border-0 px-0 py-1">
+            <ListGroup.Item
+  className="d-flex justify-content-between align-items-center px-0 py-1"
+  style={{ borderTop: 'none', boxShadow: 'none', backgroundColor: 'transparent' }}>
               <span>
                 <Badge bg="warning" className="me-2">S-D</Badge>
                 {resumen.finSemana.count} fin{resumen.finSemana.count !== 1 ? 'es' : ''} de semana
@@ -142,7 +146,9 @@ export default function Reservar() {
             </ListGroup.Item>
           )}
           {resumen.feriado.count > 0 && (
-            <ListGroup.Item className="d-flex justify-content-between align-items-center border-0 px-0 py-1">
+            <ListGroup.Item
+  className="d-flex justify-content-between align-items-center px-0 py-1"
+  style={{ borderTop: 'none', boxShadow: 'none', backgroundColor: 'transparent' }}>
               <span>
                 <Badge bg="danger" className="me-2">F</Badge>
                 {resumen.feriado.count} feriado{resumen.feriado.count !== 1 ? 's' : ''}
@@ -152,7 +158,9 @@ export default function Reservar() {
               </span>
             </ListGroup.Item>
           )}
-          <ListGroup.Item className="d-flex justify-content-between align-items-center border-0 px-0 py-1 mt-2 pt-2 border-top">
+         <ListGroup.Item
+  className="d-flex justify-content-between align-items-center border-0 px-0 py-1 mt-2 pt-2"
+  style={{ borderTop: 'none', boxShadow: 'none', backgroundColor: 'transparent' }}>
             <span className="fw-bold">Total {reservaData.noches} noche{reservaData.noches !== 1 ? 's' : ''}:</span>
             <span className="fs-5 fw-bold text-success">
               {formatearPrecioArgentino(reservaData.total)}
