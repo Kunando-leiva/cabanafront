@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Button, Container, Row, Col, Card, Alert, Overlay, Tooltip } from 'react-bootstrap';
+import { Container, Row, Col, Card, Alert, Overlay, Tooltip } from 'react-bootstrap';
 import { 
   FaWifi, FaSwimmingPool, FaSnowflake, FaStar, FaCalendarAlt, 
   FaSearch, FaUtensils, FaTree, FaQuestionCircle, FaFacebook, 
@@ -16,7 +16,6 @@ import encontrarnos from '../../assets/images/frente.jpeg';
 import servicio from '../../assets/images/servicio.jpg';
 import Footer from '../../components/admin/Footer';
 import './HomePublico.css';
-
 
 // Helper functions REGULARES
 const formatDate = (date) => {
@@ -67,14 +66,18 @@ const getImageUrl = (imageData) => {
   return `${API_URL}/default-cabana.jpg`;
 };
 
-
-
 // Componente CabanaCard - VERSIÓN CORREGIDA
-const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
+const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate }) => {
   const [precioLocal, setPrecioLocal] = useState(null);
   const [cargandoLocal, setCargandoLocal] = useState(false);
   const prevDateRange = useRef(null);
-  const isMounted = useRef(true); // ← Agrega esto
+  const isMounted = useRef(true);
+  
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
   
   // Calcula noches solo cuando dateRange cambia
   const noches = React.useMemo(() => {
@@ -84,6 +87,8 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
 
   // Efecto para manejar cambios en el cálculo de precios
   useEffect(() => {
+    if (!isMounted.current) return;
+    
     if (!dateRange || !dateRange.start || !dateRange.end) {
       if (precioLocal || cargandoLocal) {
         setPrecioLocal(null);
@@ -97,7 +102,6 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
     const prevDateRangeKey = prevDateRange.current?.start?.toISOString() + prevDateRange.current?.end?.toISOString();
     
     if (dateRangeKey === prevDateRangeKey && precioLocal !== null) {
-      // Las fechas no cambiaron, no hacer nada
       return;
     }
     
@@ -117,10 +121,41 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
     }
   }, [cabana.precioCalculado, calculandoPrecios, cabana._id, dateRange, precioLocal, cargandoLocal]);
 
+  // Función para manejar clic en reservar
+  const handleReservarClick = () => {
+    if (!isMounted.current || !precioLocal || cargandoLocal) return;
+    
+    navigate(`/reservar/${cabana._id}`, {
+      state: {
+        cabanaId: cabana._id,
+        cabanaNombre: cabana.nombre,
+        fechaInicio: dateRange.start,
+        fechaFin: dateRange.end,
+        precioTotal: precioLocal.total,
+        precioDesglose: precioLocal.desglose,
+        imagenPrincipal: cabana.imagenPrincipal
+      }
+    });
+  };
+
+  // Estilos comunes para botones
+  const buttonStyles = {
+    primary: {
+      backgroundColor: '#eaac25',
+      borderColor: '#eaac25',
+      color: 'white'
+    },
+    outline: {
+      backgroundColor: 'transparent',
+      borderColor: '#eaac25',
+      color: '#eaac25'
+    }
+  };
+
   return (
     <Col xs={12} md={6} lg={4}>
       <Card className="h-100 shadow-sm cabana-card">
-        <div className="ratio ratio-16x9 ">
+        <div className="ratio ratio-16x9">
           <img
             src={cabana.imagenPrincipal || `${API_URL}/default-cabana.jpg`}
             alt={cabana.nombre}
@@ -132,7 +167,7 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
             }}
           />
         </div>
-        <Card.Body className="d-flex flex-column justify-content-center align-items-center">
+        <Card.Body className="d-flex flex-column">
           <Card.Title className="text-truncate">{cabana.nombre}</Card.Title>
           <Card.Text className="text-muted small mb-3">
             <FaStar className="text-warning" /> {cabana.capacidad} personas
@@ -143,8 +178,8 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
               <div className="mb-3">
                 {cargandoLocal ? (
                   <div className="text-center py-2">
-                    <div className="spinner-border spinner-border-sm text-primary me-2" role="status">
-
+                    <div className="d-inline-block spinner-grow spinner-grow-sm text-warning me-2" role="status">
+                      {/* Sin span interno */}
                     </div>
                     <span className="text-muted">Calculando precio...</span>
                   </div>
@@ -183,60 +218,56 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
                 )}
               </div>
               
-              <Button 
-                variant="primary" 
-                className="w-100 mb-2"
-                onClick={() => {
-                  if (!precioLocal || cargandoLocal) return;
-                  
-                  navigate(`/reservar/${cabana._id}`, {
-                    state: {
-                      cabanaId: cabana._id,
-                      cabanaNombre: cabana.nombre,
-                      fechaInicio: dateRange.start,
-                      fechaFin: dateRange.end,
-                      precioTotal: precioLocal.total,
-                      precioDesglose: precioLocal.desglose,
-                      imagenPrincipal: cabana.imagenPrincipal
-                    }
-                  });
-                }}
+              {/* BOTÓN RESERVAR AHORA - REEMPLAZADO */}
+              <button 
+                className="btn w-100 mb-2"
+                onClick={handleReservarClick}
                 disabled={!precioLocal || cargandoLocal || (precioLocal.total || 0) <= 0}
                 style={{
                   fontWeight: 500,
-                  backgroundColor: '#eaac25',
-                  borderColor: '#eaac25',
+                  backgroundColor: buttonStyles.primary.backgroundColor,
+                  border: `1px solid ${buttonStyles.primary.borderColor}`,
+                  color: buttonStyles.primary.color,
+                  padding: '10px',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
                 }}
               >
-                {cargandoLocal ? 'Calculando...' : 'Reservar ahora'}
-              </Button>
+                {cargandoLocal ? '⌛ Calculando...' : '✅ Reservar ahora'}
+              </button>
             </div>
           ) : (
             <div className="mt-auto text-center text-muted py-3">
-              
-              
+              <FaCalendarAlt className="mb-2 fs-4" />
+              <div>Selecciona fechas para ver precio</div>
             </div>
           )}
           
-          <Button 
-            as={Link}
+          {/* BOTÓN VER DETALLES - REEMPLAZADO */}
+          <Link 
             to={`/cabanas/${cabana._id}`}
-            variant={dateRange ? "outline-primary" : "primary"}
-            className="w-100 mt-auto"
+            className="btn w-100 mt-auto"
             style={{
               fontWeight: 300,
-              backgroundColor: dateRange ? 'transparent' : '#eaac25',
-              borderColor: '#eaac25',
-              color: dateRange ? '#eaac25' : 'white',
+              backgroundColor: dateRange ? buttonStyles.outline.backgroundColor : buttonStyles.primary.backgroundColor,
+              border: `1px solid ${buttonStyles.primary.borderColor}`,
+              color: dateRange ? buttonStyles.outline.color : buttonStyles.primary.color,
+              padding: '10px',
+              borderRadius: '4px',
+              textDecoration: 'none',
+              textAlign: 'center',
+              display: 'block'
             }}
           >
             Ver detalles
-          </Button>
+          </Link>
         </Card.Body>
       </Card>
     </Col>
   );
-};
+});
+
+CabanaCard.displayName = 'CabanaCard';
 
 export default function HomePublico() {
   const [cabanas, setCabanas] = useState([]);
@@ -264,13 +295,13 @@ export default function HomePublico() {
 
   // Cargar cabañas destacadas
   useEffect(() => {
-    let isMounted = true;
+    let isMountedLocal = true;
     
     const fetchCabanas = async () => {
       try {
         const cabanasData = await obtenerCabanas();
         
-        if (isMounted) {
+        if (isMountedLocal) {
           if (!Array.isArray(cabanasData)) {
             throw new Error('Formato de respuesta inválido');
           }
@@ -288,13 +319,13 @@ export default function HomePublico() {
           setError(null);
         }
       } catch (err) {
-        if (isMounted) {
+        if (isMountedLocal) {
           console.error('Error al cargar cabañas:', err);
           setError(err.message);
           setCabanas([]);
         }
       } finally {
-        if (isMounted) {
+        if (isMountedLocal) {
           setLoading(false);
         }
       }
@@ -303,203 +334,196 @@ export default function HomePublico() {
     fetchCabanas();
     
     return () => {
-      isMounted = false;
+      isMountedLocal = false;
     };
   }, []);
 
-  // Calcular precios dinámicos cuando cambian las fechas
-  // REEMPLAZA el useEffect que calcula precios con este:
-useEffect(() => {
-  let isCancelled = false;
-  let calculationTimeout = null;
-  
-  const calcularPreciosDisponibles = async () => {
-    if (dateRange.start && dateRange.end && availableCabanas.length > 0) {
-      // Limpiar timeout anterior
-      if (calculationTimeout) clearTimeout(calculationTimeout);
+  // Calcular precios dinámicos
+  useEffect(() => {
+    let isCancelled = false;
+    let calculationTimeout = null;
+    
+    const calcularPreciosDisponibles = async () => {
+      if (!isMounted.current) return;
       
-      // DEBOUNCE más largo para evitar cálculos innecesarios
-      calculationTimeout = setTimeout(async () => {
-        if (isCancelled) return;
+      if (dateRange.start && dateRange.end && availableCabanas.length > 0) {
+        if (calculationTimeout) clearTimeout(calculationTimeout);
         
-        // Inicializar estado de cálculo para todas las cabañas
-        const calculandoInicial = {};
-        availableCabanas.forEach(cabana => {
-          calculandoInicial[cabana._id] = true;
-        });
-        setCalculandoPrecios(calculandoInicial);
-        
-        // Calcular precios para todas las cabañas disponibles
-        const calculosPromises = availableCabanas.map(async (cabana) => {
-          try {
-            const precioData = await calcularPrecioReserva(
-              dateRange.start,
-              dateRange.end,
-              cabana._id
-            );
-            
-            return {
-              cabanaId: cabana._id,
-              success: true,
-              data: {
-                total: precioData.precioTotal || cabana.precio || 0,
-                precioFormateado: formatearPrecioArgentino(precioData.precioTotal || cabana.precio || 0),
-                desglose: precioData.desglose || []
-              }
-            };
-          } catch (err) {
-            console.error(`Error calculando precio para cabaña ${cabana._id}:`, err);
-            return {
-              cabanaId: cabana._id,
-              success: false,
-              error: err.message
-            };
-          }
-        });
-        
-        // Esperar todos los cálculos
-        const resultados = await Promise.all(calculosPromises);
-        
-        if (!isCancelled) {
-          // Actualizar todas las cabañas de una vez
-          setAvailableCabanas(prev => prev.map(cabana => {
-            const resultado = resultados.find(r => r.cabanaId === cabana._id);
-            if (resultado?.success) {
+        calculationTimeout = setTimeout(async () => {
+          if (isCancelled || !isMounted.current) return;
+          
+          const calculandoInicial = {};
+          availableCabanas.forEach(cabana => {
+            calculandoInicial[cabana._id] = true;
+          });
+          setCalculandoPrecios(calculandoInicial);
+          
+          const calculosPromises = availableCabanas.map(async (cabana) => {
+            try {
+              const precioData = await calcularPrecioReserva(
+                dateRange.start,
+                dateRange.end,
+                cabana._id
+              );
+              
               return {
-                ...cabana,
-                precioCalculado: resultado.data
+                cabanaId: cabana._id,
+                success: true,
+                data: {
+                  total: precioData.precioTotal || cabana.precio || 0,
+                  precioFormateado: formatearPrecioArgentino(precioData.precioTotal || cabana.precio || 0),
+                  desglose: precioData.desglose || []
+                }
+              };
+            } catch (err) {
+              console.error(`Error calculando precio para cabaña ${cabana._id}:`, err);
+              return {
+                cabanaId: cabana._id,
+                success: false,
+                error: err.message
               };
             }
-            return cabana;
-          }));
+          });
           
-          // Marcar todas como no calculando
-          setCalculandoPrecios({});
-        }
-      }, 500); // Aumentar delay a 500ms
-    }
-  };
-
-  calcularPreciosDisponibles();
-  
-  return () => {
-    isCancelled = true;
-    if (calculationTimeout) clearTimeout(calculationTimeout);
-  };
-}, [dateRange, availableCabanas]);
-
-  // Manejador de fechas seleccionadas
-  // En HomePublico.jsx - actualiza handleDatesSelected:
-// En la función handleDatesSelected, añade estas líneas:
-const handleDatesSelected = useCallback((start, end) => {
-  if (!isMounted.current) return;
-  
-  if (!start || !end || !(start instanceof Date) || !(end instanceof Date)) {
-    console.error('Fechas inválidas recibidas:', start, end);
-    return;
-  }
-  
-  const startDate = new Date(start);
-  startDate.setHours(0, 0, 0, 0);
-  
-  const endDate = new Date(end);
-  endDate.setHours(0, 0, 0, 0);
-  
-  if (startDate >= endDate) {
-    setSearchStatus(prev => ({ 
-      ...prev, 
-      error: 'La fecha de fin debe ser posterior al inicio' 
-    }));
-    return;
-  }
-  
-  // RESET: Cuando se cambian fechas, limpiar búsqueda anterior
-  setDateRange({ start: startDate, end: endDate });
-  setSearchStatus({ loading: false, error: null, searched: false }); // ← IMPORTANTE
-  setAvailableCabanas([]);
-  setCalculandoPrecios({});
-}, [isMounted]);
-
-  const handleSearchAvailability = async () => {
-  if (!dateRange.start || !dateRange.end) {
-    setSearchStatus({
-      loading: false,
-      error: 'Por favor seleccione ambas fechas',
-      searched: false
-    });
-    return;
-  }
-
-  try {
-    setSearchStatus({ loading: true, error: null, searched: true });
-    
-    // Limpiar cálculos anteriores
-    setAvailableCabanas([]);
-    setCalculandoPrecios({});
-
-    const formatDateForAPI = (date) => {
-      const d = new Date(date);
-      d.setHours(0, 0, 0, 0);
-      return d.toISOString().split('T')[0];
+          const resultados = await Promise.all(calculosPromises);
+          
+          if (!isCancelled && isMounted.current) {
+            setAvailableCabanas(prev => prev.map(cabana => {
+              const resultado = resultados.find(r => r.cabanaId === cabana._id);
+              if (resultado?.success) {
+                return {
+                  ...cabana,
+                  precioCalculado: resultado.data
+                };
+              }
+              return cabana;
+            }));
+            
+            setCalculandoPrecios({});
+          }
+        }, 500);
+      }
     };
 
-    const fechaInicio = formatDateForAPI(dateRange.start);
-    const fechaFin = formatDateForAPI(dateRange.end);
-
-    console.log('Buscando en:', `${API_URL}/api/cabanas/disponibles`);
-    console.log('Con parámetros:', { fechaInicio, fechaFin });
-
-    // ¡IMPORTANTE! Verifica que la URL sea correcta:
-    const response = await axios.get(`${API_URL}/api/cabanas/disponibles`, {
-      params: {
-        fechaInicio,  // ← Nombre correcto
-        fechaFin      // ← Nombre correcto
-      }
-    });
-
-    console.log('Respuesta del servidor:', response.data);
-
-    if (!response.data || !response.data.success) {
-      throw new Error(response.data?.error || 'Respuesta inesperada del servidor');
-    }
-
-    const cabanasDisponibles = response.data.data || [];
+    calcularPreciosDisponibles();
     
-    console.log(`Cabañas disponibles recibidas: ${cabanasDisponibles.length}`);
+    return () => {
+      isCancelled = true;
+      if (calculationTimeout) clearTimeout(calculationTimeout);
+    };
+  }, [dateRange, availableCabanas]);
 
-    // NO procesar las imágenes aquí si el backend ya las procesó
-    const processedCabanas = cabanasDisponibles.map(cabana => ({
-      ...cabana,
-      // Solo asigna precioCalculado como null para que se calcule después
-      precioCalculado: null
-    }));
-
-    setAvailableCabanas(processedCabanas);
-    setSearchStatus(prev => ({ ...prev, loading: false }));
-
-  } catch (error) {
-    console.error('Error en búsqueda:', error);
-
-    let errorMessage = 'Error al buscar disponibilidad';
+  // Manejador de fechas seleccionadas
+  const handleDatesSelected = useCallback((start, end) => {
+    if (!isMounted.current) return;
     
-    if (error.response) {
-      console.error('Respuesta de error:', error.response.data);
-      errorMessage = error.response.data?.error || 
-                    error.response.data?.message || 
-                    'Error en el servidor';
-    } else if (error.message) {
-      errorMessage = error.message;
+    if (!start || !end || !(start instanceof Date) || !(end instanceof Date)) {
+      console.error('Fechas inválidas recibidas:', start, end);
+      return;
     }
-
-    setSearchStatus({
-      loading: false,
-      error: errorMessage,
-      searched: true
-    });
+    
+    const startDate = new Date(start);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(end);
+    endDate.setHours(0, 0, 0, 0);
+    
+    if (startDate >= endDate) {
+      setSearchStatus(prev => ({ 
+        ...prev, 
+        error: 'La fecha de fin debe ser posterior al inicio' 
+      }));
+      return;
+    }
+    
+    setDateRange({ start: startDate, end: endDate });
+    setSearchStatus({ loading: false, error: null, searched: false });
     setAvailableCabanas([]);
     setCalculandoPrecios({});
-  }
-};
+  }, [isMounted]);
+
+  const handleSearchAvailability = async () => {
+    if (!isMounted.current) return;
+    
+    if (!dateRange.start || !dateRange.end) {
+      setSearchStatus({
+        loading: false,
+        error: 'Por favor seleccione ambas fechas',
+        searched: false
+      });
+      return;
+    }
+
+    try {
+      setSearchStatus({ loading: true, error: null, searched: true });
+      
+      setAvailableCabanas([]);
+      setCalculandoPrecios({});
+
+      const formatDateForAPI = (date) => {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return d.toISOString().split('T')[0];
+      };
+
+      const fechaInicio = formatDateForAPI(dateRange.start);
+      const fechaFin = formatDateForAPI(dateRange.end);
+
+      console.log('Buscando en:', `${API_URL}/api/cabanas/disponibles`);
+      console.log('Con parámetros:', { fechaInicio, fechaFin });
+
+      const response = await axios.get(`${API_URL}/api/cabanas/disponibles`, {
+        params: {
+          fechaInicio,
+          fechaFin
+        }
+      });
+
+      console.log('Respuesta del servidor:', response.data);
+
+      if (!response.data || !response.data.success) {
+        throw new Error(response.data?.error || 'Respuesta inesperada del servidor');
+      }
+
+      const cabanasDisponibles = response.data.data || [];
+      
+      console.log(`Cabañas disponibles recibidas: ${cabanasDisponibles.length}`);
+
+      const processedCabanas = cabanasDisponibles.map(cabana => ({
+        ...cabana,
+        precioCalculado: null
+      }));
+
+      if (isMounted.current) {
+        setAvailableCabanas(processedCabanas);
+        setSearchStatus(prev => ({ ...prev, loading: false }));
+      }
+
+    } catch (error) {
+      console.error('Error en búsqueda:', error);
+
+      let errorMessage = 'Error al buscar disponibilidad';
+      
+      if (error.response) {
+        console.error('Respuesta de error:', error.response.data);
+        errorMessage = error.response.data?.error || 
+                      error.response.data?.message || 
+                      'Error en el servidor';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      if (isMounted.current) {
+        setSearchStatus({
+          loading: false,
+          error: errorMessage,
+          searched: true
+        });
+        setAvailableCabanas([]);
+        setCalculandoPrecios({});
+      }
+    }
+  };
 
   return (
     <div className="home-publico">
@@ -510,24 +534,36 @@ const handleDatesSelected = useCallback((start, end) => {
         <Container className="position-relative z-index-1">
           <h1 className="display-4 fw-bold mb-4">Complejo Los Alerces</h1>
           <p className="lead mb-4">Libertad - Pontevedra</p>
-          <Button as={Link} to="/cabanas" variant="primary" size="lg">
+          {/* BOTÓN HERO - REEMPLAZADO */}
+          <Link 
+            to="/cabanas" 
+            className="btn btn-lg"
+            style={{
+              backgroundColor: '#eaac25',
+              borderColor: '#eaac25',
+              color: 'white',
+              fontWeight: 'bold',
+              padding: '12px 30px',
+              borderRadius: '4px',
+              textDecoration: 'none',
+              display: 'inline-block'
+            }}
+          >
             Ver Cabañas Disponibles
-          </Button>
+          </Link>
         </Container>
       </section>
 
-
-       {/* Cabañas Destacadas */}
+      {/* Cabañas Destacadas */}
       <section className="py-5" style={{ backgroundColor: "#333" }}>
-
         <Container>
           <h2 className="text-center mb-5 fw-bold" style={{ color: "#ffffff" }}>
-    Nuestras Cabañas Destacadas
-  </h2>
+            Nuestras Cabañas Destacadas
+          </h2>
           {loading ? (
             <div className="text-center py-5">
-              <span className="spinner-border spinner-border-lg text-primary me-2"></span>
-              <p className="mt-2">Cargando cabañas destacadas...</p>
+              <div className="d-inline-block spinner-grow spinner-grow-lg text-warning me-2"></div>
+              <p className="mt-2 text-white">Cargando cabañas destacadas...</p>
             </div>
           ) : error ? (
             <Alert variant="danger" className="text-center my-5">
@@ -583,9 +619,10 @@ const handleDatesSelected = useCallback((start, end) => {
                   Sin nada que envidiarle a ningún otro hospedaje, contamos con los mejores servicios de Buenos Aires y del país, pero en Libertad, Merlo.
                 </p>
                 <div className="text-center">
-                  <Button 
+                  {/* BOTÓN VER FOTOS - REEMPLAZADO */}
+                  <button 
+                    className="btn"
                     onClick={() => navigate('/galeria')}
-                    variant="outline-light"
                     style={{
                       padding: '10px 25px',
                       fontWeight: 300,
@@ -593,11 +630,14 @@ const handleDatesSelected = useCallback((start, end) => {
                       borderRadius: '0',
                       textTransform: 'uppercase',
                       width: '100%',
-                      maxWidth: '200px'
+                      maxWidth: '200px',
+                      backgroundColor: 'transparent',
+                      border: '1px solid white',
+                      color: 'white'
                     }}
                   >
                     Ver fotos
-                  </Button>
+                  </button>
                 </div>
               </div>
             </Col>
@@ -616,7 +656,7 @@ const handleDatesSelected = useCallback((start, end) => {
         </Container>
       </section>
 
-       {/* Sección ¿Listo para desconectar? */}
+      {/* Sección ¿Listo para desconectar? */}
       <section style={{  
         color: 'white', 
         padding: '60px 0',
@@ -659,9 +699,10 @@ const handleDatesSelected = useCallback((start, end) => {
                   📍 7898+M4, Libertad, Provincia de Buenos Aires
                 </p>
                 <div className="text-center">
-                  <Button 
+                  {/* BOTÓN VER UBICACIÓN - REEMPLAZADO */}
+                  <button 
+                    className="btn"
                     onClick={() => navigate('/ubicacion')}
-                    variant="outline-light"
                     style={{
                       padding: '10px 25px',
                       fontWeight: 300,
@@ -669,11 +710,14 @@ const handleDatesSelected = useCallback((start, end) => {
                       borderRadius: '0',
                       textTransform: 'uppercase',
                       width: '100%',
-                      maxWidth: '200px'
+                      maxWidth: '200px',
+                      backgroundColor: 'transparent',
+                      border: '1px solid white',
+                      color: 'white'
                     }}
                   >
                     Ver ubicación
-                  </Button>
+                  </button>
                 </div>
               </div>
             </Col>
@@ -681,7 +725,7 @@ const handleDatesSelected = useCallback((start, end) => {
         </Container>
       </section>
 
-         {/* Sección Nuestros Servicios */}
+      {/* Sección Nuestros Servicios */}
       <section style={{ 
         color: 'white', 
         padding: '60px 0',
@@ -711,9 +755,10 @@ const handleDatesSelected = useCallback((start, end) => {
                   Disfrutá de la calidad que nos caracteriza, en un entorno donde cada detalle está cuidado para vos.
                 </p>
                 <div className="text-center">
-                  <Button 
+                  {/* BOTÓN VER SERVICIOS - REEMPLAZADO */}
+                  <button 
+                    className="btn"
                     onClick={() => navigate('/servicios')}
-                    variant="outline-light"
                     style={{
                       padding: '10px 25px',
                       fontWeight: 300,
@@ -721,11 +766,14 @@ const handleDatesSelected = useCallback((start, end) => {
                       borderRadius: '0',
                       textTransform: 'uppercase',
                       width: '100%',
-                      maxWidth: '200px'
+                      maxWidth: '200px',
+                      backgroundColor: 'transparent',
+                      border: '1px solid white',
+                      color: 'white'
                     }}
                   >
                     Ver servicios
-                  </Button>
+                  </button>
                 </div>
               </div>
             </Col>
@@ -744,12 +792,8 @@ const handleDatesSelected = useCallback((start, end) => {
         </Container>
       </section>
 
-
-     
-
       {/* Buscador de disponibilidad */}
       <section className="py-4" style={{ backgroundColor: "#333" }}>
-
         <Container>
           <h3 className="text-center mb-4 fw-bold" style={{ color: "#ffffff" }}>
             <FaCalendarAlt className="me-2" />
@@ -765,7 +809,6 @@ const handleDatesSelected = useCallback((start, end) => {
                   onClick={() => setShowTooltip(!showTooltip)}
                   style={{ cursor: 'pointer', color: 'white' }} 
                   aria-label="Instrucciones para seleccionar fechas"
-                  
                 >
                   <FaQuestionCircle className="me-1"  />
                   ¿Cómo seleccionar fechas?
@@ -826,31 +869,35 @@ const handleDatesSelected = useCallback((start, end) => {
           
           <Row className="justify-content-center">
             <Col md={4} className="text-center">
-              <Button 
-                variant="primary" 
+              {/* BOTÓN BUSCAR DISPONIBILIDAD - REEMPLAZADO */}
+              <button 
+                className="btn"
                 onClick={handleSearchAvailability}
                 disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
-                type='button'
+                type="button"
                 style={{
                   fontWeight: 500,
                   backgroundColor: '#eaac25',
-                  borderColor: '#eaac25',
+                  border: '1px solid #eaac25',
+                  color: 'white',
                   padding: '10px 30px',
-                  transition: 'all 0.3s ease'
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  width: '100%'
                 }}
               >
                 {searchStatus.loading ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2"></span>
+                  <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <div className="spinner-grow spinner-grow-sm me-2"></div>
                     Buscando...
-                  </>
+                  </span>
                 ) : (
-                  <>
+                  <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
                     <FaSearch className="me-2" />
                     Buscar disponibilidad
-                  </>
+                  </span>
                 )}
-              </Button>
+              </button>
             </Col>
           </Row>
           
@@ -869,74 +916,85 @@ const handleDatesSelected = useCallback((start, end) => {
             </Row>
           )}
         </Container>
-</section>
+      </section>
 
       {/* Resultados de búsqueda */}
-        {searchStatus.searched && (
-  <section className="py-5" style={{ backgroundColor: "#333" }}>
-    <Container>
-      {searchStatus.loading ? (
-        <div className="text-center py-5">
-          <div className="spinner-border text-warning" role="status">
-            <span className="visually-hidden">Cargando...</span>
-          </div>
-          <p className="mt-3 text-white">Buscando cabañas disponibles...</p>
-        </div>
-      ) : searchStatus.error ? (
-        <Alert variant="danger" className="text-center">
-          <h4>Error en la búsqueda</h4>
-          <p>{searchStatus.error}</p>
-        </Alert>
-      ) : availableCabanas.length === 0 ? (
-        <Alert variant="warning" className="text-center">
-          <h4>No hay disponibilidad para estas fechas</h4>
-          <p className="mb-3">Por favor, intenta con otras fechas</p>
-          <div className="mt-2">
-            <Button 
-              as={Link} 
-              to="/cabanas" 
-              variant="outline-warning"
-              className="me-2"
-            >
-              Ver todas las cabañas
-            </Button>
-            <Button 
-              variant="warning"
-              onClick={() => {
-                setDateRange({ start: null, end: null });
-                setSearchStatus({ loading: false, error: null, searched: false });
-                setAvailableCabanas([]);
-              }}
-            >
-              Limpiar búsqueda
-            </Button>
-          </div>
-        </Alert>
-      ) : (
-        <>
-          <h2 className="text-center mb-5 fw-bold text-white">
-            {availableCabanas.length} Cabaña{availableCabanas.length !== 1 ? 's' : ''} disponible{availableCabanas.length !== 1 ? 's' : ''}
-          </h2>
-          <p className="text-center text-muted mb-4">
-            Del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
-          </p>
-          <Row xs={1} md={2} lg={3} className="g-4 justify-content-center">
-            {availableCabanas.map(cabana => (
-              <CabanaCard 
-                key={cabana._id}
-                cabana={cabana}
-                dateRange={dateRange}
-                calculandoPrecios={calculandoPrecios}
-                navigate={navigate}
-              />
-            ))}
-          </Row>
-        </>
+      {searchStatus.searched && (
+        <section className="py-5" style={{ backgroundColor: "#333" }}>
+          <Container>
+            {searchStatus.loading ? (
+              <div className="text-center py-5">
+                <div className="d-inline-block spinner-grow spinner-grow-lg text-warning"></div>
+                <p className="mt-3 text-white">Buscando cabañas disponibles...</p>
+              </div>
+            ) : searchStatus.error ? (
+              <Alert variant="danger" className="text-center">
+                <h4>Error en la búsqueda</h4>
+                <p>{searchStatus.error}</p>
+              </Alert>
+            ) : availableCabanas.length === 0 ? (
+              <Alert variant="warning" className="text-center">
+                <h4>No hay disponibilidad para estas fechas</h4>
+                <p className="mb-3">Por favor, intenta con otras fechas</p>
+                <div className="mt-2">
+                  {/* BOTONES EN ALERTA - REEMPLAZADOS */}
+                  <Link 
+                    to="/cabanas" 
+                    className="btn me-2"
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: '1px solid #ffc107',
+                      color: '#ffc107',
+                      padding: '8px 20px',
+                      borderRadius: '4px',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    Ver todas las cabañas
+                  </Link>
+                  <button 
+                    className="btn"
+                    onClick={() => {
+                      setDateRange({ start: null, end: null });
+                      setSearchStatus({ loading: false, error: null, searched: false });
+                      setAvailableCabanas([]);
+                    }}
+                    style={{
+                      backgroundColor: '#ffc107',
+                      border: '1px solid #ffc107',
+                      color: '#000',
+                      padding: '8px 20px',
+                      borderRadius: '4px'
+                    }}
+                  >
+                    Limpiar búsqueda
+                  </button>
+                </div>
+              </Alert>
+            ) : (
+              <>
+                <h2 className="text-center mb-5 fw-bold text-white">
+                  {availableCabanas.length} Cabaña{availableCabanas.length !== 1 ? 's' : ''} disponible{availableCabanas.length !== 1 ? 's' : ''}
+                </h2>
+                <p className="text-center text-muted mb-4">
+                  Del {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
+                </p>
+                <Row xs={1} md={2} lg={3} className="g-4 justify-content-center">
+                  {availableCabanas.map(cabana => (
+                    <CabanaCard 
+                      key={cabana._id}
+                      cabana={cabana}
+                      dateRange={dateRange}
+                      calculandoPrecios={calculandoPrecios}
+                      navigate={navigate}
+                    />
+                  ))}
+                </Row>
+              </>
+            )}
+          </Container>
+        </section>
       )}
-    </Container>
-  </section>
-)}
-
 
       {/* Footer */}
       <Footer />
