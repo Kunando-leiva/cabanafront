@@ -144,7 +144,6 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
                 {cargandoLocal ? (
                   <div className="text-center py-2">
                     <div className="spinner-border spinner-border-sm text-primary me-2" role="status">
-                      <span className="visually-hidden">Calculando...</span>
                     </div>
                     <span className="text-muted">Calculando precio...</span>
                   </div>
@@ -184,6 +183,7 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
               </div>
               
               <Button 
+              data-testid={`reservar-btn-${cabana._id}`}
                 variant="primary" 
                 className="w-100 mb-2"
                 onClick={() => {
@@ -219,6 +219,7 @@ const CabanaCard = ({ cabana, dateRange, calculandoPrecios, navigate }) => {
           )}
           
           <Button 
+          data-testid={`reservar-btn-${cabana._id}`}
             as={Link}
             to={`/cabanas/${cabana._id}`}
             variant={dateRange ? "outline-primary" : "primary"}
@@ -584,6 +585,7 @@ const handleDatesSelected = useCallback((start, end) => {
                 </p>
                 <div className="text-center">
                   <Button 
+                  data-testid={`reservar-btn-${cabana._id}`}
                     onClick={() => navigate('/galeria')}
                     variant="outline-light"
                     style={{
@@ -660,6 +662,7 @@ const handleDatesSelected = useCallback((start, end) => {
                 </p>
                 <div className="text-center">
                   <Button 
+                  data-testid={`reservar-btn-${cabanas._id}`}
                     onClick={() => navigate('/ubicacion')}
                     variant="outline-light"
                     style={{
@@ -712,6 +715,7 @@ const handleDatesSelected = useCallback((start, end) => {
                 </p>
                 <div className="text-center">
                   <Button 
+                  data-testid={`reservar-btn-${cabana._id}`}
                     onClick={() => navigate('/servicios')}
                     variant="outline-light"
                     style={{
@@ -827,6 +831,8 @@ const handleDatesSelected = useCallback((start, end) => {
           <Row className="justify-content-center">
             <Col md={4} className="text-center">
               <Button 
+              
+              data-testid={`reservar-btn-${cabanas._id}`}
                 variant="primary" 
                 onClick={handleSearchAvailability}
                 disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
@@ -893,6 +899,7 @@ const handleDatesSelected = useCallback((start, end) => {
           <p className="mb-3">Por favor, intenta con otras fechas</p>
           <div className="mt-2">
             <Button 
+            data-testid={`reservar-btn-${cabanas._id}`}
               as={Link} 
               to="/cabanas" 
               variant="outline-warning"
@@ -901,6 +908,7 @@ const handleDatesSelected = useCallback((start, end) => {
               Ver todas las cabañas
             </Button>
             <Button 
+            data-testid={`reservar-btn-${cabanas._id}`}
               variant="warning"
               onClick={() => {
                 setDateRange({ start: null, end: null });
