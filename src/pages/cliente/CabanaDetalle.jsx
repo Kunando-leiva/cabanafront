@@ -58,6 +58,7 @@ export default function CabanaDetalle() {
   const [precioCalculado, setPrecioCalculado] = useState({ // ✅ NUEVO
     total: 0,
     desglose: [],
+    desgloseAgrupado: [], // ✅ NUEVO: desglose agrupado por tipo
     totalDias: 0,
     precioFormateado: '$0'
   });
@@ -76,12 +77,13 @@ export default function CabanaDetalle() {
     return Math.floor(diffTime / 86400000);
   };
 
-  // ✅ NUEVO: Función para calcular precio dinámico
+  // ✅ NUEVO: Función para calcular precio dinámico (MODIFICADA)
   const calcularPrecioDinamico = async (fechaInicio, fechaFin) => {
     if (!fechaInicio || !fechaFin || fechaInicio >= fechaFin) {
       setPrecioCalculado({
         total: 0,
         desglose: [],
+        desgloseAgrupado: [], // ✅ NUEVO: desglose agrupado por tipo
         totalDias: 0,
         precioFormateado: '$0'
       });
@@ -92,9 +94,37 @@ export default function CabanaDetalle() {
       setCalculandoPrecio(true);
       const precioData = await calcularPrecioReserva(fechaInicio, fechaFin);
       
+      // ✅ NUEVO: Agrupar desglose por tipo
+      const desgloseAgrupado = [];
+      const agrupadoPorTipo = {};
+      
+      if (precioData.desglose && precioData.desglose.length > 0) {
+        precioData.desglose.forEach(dia => {
+          const tipo = dia.tipo;
+          if (!agrupadoPorTipo[tipo]) {
+            agrupadoPorTipo[tipo] = {
+              tipo,
+              cantidad: 0,
+              precioUnitario: dia.precioUnitario || dia.precio || 0,
+              subtotal: 0
+            };
+          }
+          agrupadoPorTipo[tipo].cantidad++;
+          agrupadoPorTipo[tipo].subtotal += dia.precioUnitario || dia.precio || 0;
+        });
+        
+        // Convertir a array y solo incluir tipos con cantidad > 0
+        Object.values(agrupadoPorTipo).forEach(agrupado => {
+          if (agrupado.cantidad > 0) {
+            desgloseAgrupado.push(agrupado);
+          }
+        });
+      }
+      
       setPrecioCalculado({
         total: precioData.precioTotal || 0,
         desglose: precioData.desglose || [],
+        desgloseAgrupado, // ✅ NUEVO: incluir desglose agrupado
         totalDias: precioData.totalDias || 0,
         precioFormateado: formatearPrecioArgentino(precioData.precioTotal)
       });
@@ -105,6 +135,7 @@ export default function CabanaDetalle() {
       setPrecioCalculado({
         total: 0,
         desglose: [],
+        desgloseAgrupado: [], // ✅ NUEVO
         totalDias: 0,
         precioFormateado: '$0'
       });
@@ -375,32 +406,32 @@ export default function CabanaDetalle() {
                   Disponibilidad y Precio
                 </h5>
                 <CalendarFull 
-  cabanaId={id}
-  onDatesSelected={(start, end, calculatedTotal) => {
-    console.log('Dates selected in CabanaDetalle:', start, end);
-    
-    if (start && end) {
-      // Validación básica
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (start < today) {
-        setError('No puedes seleccionar fechas pasadas');
-        return;
-      }
-      
-      if (start >= end) {
-        setError('La fecha de fin debe ser posterior al inicio');
-        return;
-      }
-      
-      setSelectedDates({ start, end });
-      setError('');
-    }
-  }}
-  precioPorNoche={cabana?.precio || 0}
-  showTotal={false}
-/>
+                  cabanaId={id}
+                  onDatesSelected={(start, end, calculatedTotal) => {
+                    console.log('Dates selected in CabanaDetalle:', start, end);
+                    
+                    if (start && end) {
+                      // Validación básica
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      
+                      if (start < today) {
+                        setError('No puedes seleccionar fechas pasadas');
+                        return;
+                      }
+                      
+                      if (start >= end) {
+                        setError('La fecha de fin debe ser posterior al inicio');
+                        return;
+                      }
+                      
+                      setSelectedDates({ start, end });
+                      setError('');
+                    }
+                  }}
+                  precioPorNoche={cabana?.precio || 0}
+                  showTotal={false}
+                />
 
                 {selectedDates.start && selectedDates.end && (
                   <Alert variant="info" className="mt-3">
@@ -424,17 +455,15 @@ export default function CabanaDetalle() {
                           <span>Estadía:</span>
                           <span>{noches} noches</span>
                         </div>
-                        {precioCalculado.desglose.length > 0 && (
+                        {/* ✅ MODIFICADO: Solo muestra tipos de días con cantidad > 0 */}
+                        {precioCalculado.desgloseAgrupado && precioCalculado.desgloseAgrupado.length > 0 && (
                           <div className="small text-muted mb-2">
-                            <div>
-                              {precioCalculado.desglose.filter(d => d.tipo === 'semana').length} días semana ($150.000)
-                            </div>
-                            <div>
-                              {precioCalculado.desglose.filter(d => d.tipo === 'fin de semana').length} fines de semana ($180.000)
-                            </div>
-                            <div>
-                              {precioCalculado.desglose.filter(d => d.tipo === 'feriado').length} feriados ($200.000)
-                            </div>
+                            {precioCalculado.desgloseAgrupado.map((agrupado, index) => (
+                              <div key={index}>
+                                {agrupado.cantidad} {agrupado.tipo === 'semana' ? 'días semana' : agrupado.tipo === 'fin de semana' ? 'fines de semana' : 'feriados'} 
+                                ({formatearPrecioArgentino(agrupado.subtotal)})
+                              </div>
+                            ))}
                           </div>
                         )}
                         <div className="d-flex justify-content-between fw-bold mt-2 pt-2 border-top">
