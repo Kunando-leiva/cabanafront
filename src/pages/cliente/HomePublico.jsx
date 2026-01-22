@@ -15,6 +15,7 @@ import encontrarnos from '../../assets/images/frente.jpeg';
 import servicio from '../../assets/images/servicio.jpg';
 import Footer from '../../components/admin/Footer';
 import './HomePublico.css';
+import { Overlay, Tooltip } from 'react-bootstrap';
 
 // ============================================
 // COMPONENTES NATIVOS PARA REEMPLAZAR REACT-BOOTSTRAP
@@ -410,6 +411,8 @@ export default function HomePublico() {
   const [calculandoPrecios, setCalculandoPrecios] = useState({});
   const navigate = useNavigate();
   const isMounted = useRef(true);
+  const [showTooltip, setShowTooltip] = useState(false);
+const tooltipTarget = useRef(null);
 
   useEffect(() => {
     return () => {
@@ -896,20 +899,46 @@ export default function HomePublico() {
           </h3>
 
           <Row className="justify-content-center mb-3">
-            <Col lg={8} className="text-center">
-              <div className="d-inline-block position-relative">
-                <Button 
-                  variant="outline-secondary"
-                  size="sm"
-                  className="rounded-pill mb-3"
-                  style={{ color: 'white' }}
-                >
-                  <FaQuestionCircle className="me-1" />
-                  ¿Cómo seleccionar fechas?
-                </Button>
-              </div>
-            </Col>
-          </Row>
+  <Col lg={8} className="text-center">
+    <div className="d-inline-block position-relative">
+      {/* Botón wrapper que acepta ref */}
+      <div ref={tooltipTarget} style={{ display: 'inline-block' }}>
+        <Button 
+          variant="outline-secondary"
+          size="sm"
+          className="rounded-pill mb-3"
+          style={{ color: 'white' }}
+          onClick={() => setShowTooltip(!showTooltip)}
+        >
+          <FaQuestionCircle className="me-1" />
+          ¿Cómo seleccionar fechas?
+        </Button>
+      </div>
+      
+      <Overlay 
+        target={tooltipTarget.current} 
+        show={showTooltip} 
+        placement="bottom"
+        rootClose
+        onHide={() => setShowTooltip(false)}
+      >
+        {(props) => (
+          <Tooltip id="date-instructions-tooltip" {...props}>
+            <div className="text-start p-2">
+              <strong>Instrucciones:</strong>
+              <ul className="mb-0 mt-2">
+                <li>Primer click: Fecha de inicio</li>
+                <li>Segundo click: Fecha de fin</li>
+                <li>Click en fecha seleccionada: Cancelar</li>
+                <li>Click fuera del rango: Nuevo rango</li>
+              </ul>
+            </div>
+          </Tooltip>
+        )}
+      </Overlay>
+    </div>
+  </Col>
+</Row>
           
           <Row className="justify-content-center mb-3">
             <Col lg={8}>
