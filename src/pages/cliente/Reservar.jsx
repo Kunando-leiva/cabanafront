@@ -169,7 +169,7 @@ export default function Reservar() {
         </ListGroup>
         
         <div className="small text-muted mt-2">
-          <div><strong>Tarifas:</strong> Lunes a Viernes: $150.000 - Sábado/Domingo: $180.000 - Feriados: $200.000</div>
+          <div><strong>Tarifas:</strong> Lunes a Jueves: $180.000 - Viernes y Domingo: $200.000 - Sabados: $220.000 - Feriados: $250.000</div>
         </div>
       </div>
     );

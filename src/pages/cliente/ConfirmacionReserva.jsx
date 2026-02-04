@@ -45,7 +45,7 @@ export default function ConfirmacionReserva() {
           <h2>¡Tu solicitud de reserva esta generada!</h2>
           <p className="lead">Eleji el metodo por donde te queres comunicar con nosotros para finalizar: </p>
           
-          <Alert variant="info" className="text-start text-center my-4">
+          <Alert variant="info" className="text-start text-center my-4" color='black'>
             <h5>Detalles:</h5>
             <p><strong>Cabaña:</strong> {state?.cabanaNombre}</p>
             <p><strong>Fechas:</strong> {new Date(state?.fechaInicio).toLocaleDateString()} - {new Date(state?.fechaFin).toLocaleDateString()}</p>
