@@ -42,24 +42,27 @@ export default function ConfirmacionReserva() {
       <Card className="shadow text-center">
         <Card.Body>
           <FaCheckCircle size={48} className="text-success mb-3" />
-          <h2>¡Tu solicitud de reserva esta generada!</h2>
-          <p className="lead">Eleji el metodo por donde te queres comunicar con nosotros para finalizar: </p>
+          <h2 className="text-dark">¡Tu solicitud de reserva esta generada!</h2>
+          <p className="lead text-dark">Eleji el metodo por donde te queres comunicar con nosotros para finalizar: </p>
           
-          <Alert variant="info" className="text-start text-center my-4" color='black'>
-            <h5>Detalles:</h5>
-            <p><strong>Cabaña:</strong> {state?.cabanaNombre}</p>
-            <p><strong>Fechas:</strong> {new Date(state?.fechaInicio).toLocaleDateString()} - {new Date(state?.fechaFin).toLocaleDateString()}</p>
-            <p><strong>Total:</strong> ${state?.total?.toLocaleString()}</p>
-            <p><strong>Nombre:</strong> {state?.nombre}</p>
-            <p><strong>Email:</strong> {state?.email}</p>
-            <p><strong>Teléfono:</strong> {state?.telefono}</p>
-            <p><strong>DNI:</strong> {state?.dni}</p>
-            <p><strong>check-in:</strong> {"12:00 PM"}</p>
-            <p><strong>check-out:</strong> {"10:00 AM"}</p>
+          <Alert variant="info" className="my-4 text-dark">
+            <div className="text-center">
+              <h5 className="text-dark">Detalles:</h5>
+            </div>
+            <div className="text-start">
+              <p><strong>Cabaña:</strong> {state?.cabanaNombre}</p>
+              <p><strong>Fechas:</strong> {new Date(state?.fechaInicio).toLocaleDateString()} - {new Date(state?.fechaFin).toLocaleDateString()}</p>
+              <p><strong>Total:</strong> ${state?.total?.toLocaleString()}</p>
+              <p><strong>Nombre:</strong> {state?.nombre}</p>
+              <p><strong>Email:</strong> {state?.email}</p>
+              <p><strong>Teléfono:</strong> {state?.telefono}</p>
+              <p><strong>DNI:</strong> {state?.dni}</p>
+              <p><strong>check-in:</strong> {"12:00 PM"}</p>
+              <p><strong>check-out:</strong> {"10:00 AM"}</p>
+            </div>
           </Alert>
 
           <div className="mb-4">
-            
             <div className="d-flex justify-content-center gap-3 mt-3">
               <Button 
                 variant="success" 
