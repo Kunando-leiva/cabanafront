@@ -5,7 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../../config';
 import DeleteReserva from './DeleteReserva';
-import { Pagination, Form, Row, Col } from 'react-bootstrap';
+import { Pagination, Form, Row, Col, Button, Badge } from 'react-bootstrap';
+import { FaEdit, FaTrash, FaEye, FaPlus, FaSearch, FaCalendarAlt } from 'react-icons/fa';
 
 export default function ReservasAdmin() {
   const [reservas, setReservas] = useState([]);
@@ -75,124 +76,213 @@ export default function ReservasAdmin() {
     return dateString ? new Date(dateString).toLocaleDateString('es-ES') : 'N/A';
   };
 
+  // Función para limpiar filtros
+  const clearFilters = () => {
+    setFilters({ estado: '', fechaInicio: '', fechaFin: '' });
+    setCurrentPage(1);
+  };
+
   return (
     <AdminLayout>
       <div className="container-fluid mt-4">
         <div className="card shadow">
           <div className="card-header bg-primary text-white">
             <div className="d-flex justify-content-between align-items-center">
-              <h2 className="mb-0">Administrar Reservas</h2>
-              <button 
-                onClick={() => navigate('/admin/reservas/crear')} 
-                className="btn btn-success"
+              <div className="d-flex align-items-center">
+                <FaCalendarAlt size={24} className="me-3" />
+                <h2 className="mb-0">Administrar Reservas</h2>
+                <Badge bg="light" text="dark" className="ms-3">
+                  {reservas.length} reservas
+                </Badge>
+              </div>
+              <Button 
+                variant="success" 
+                onClick={() => navigate('/admin/reservas/crear')}
+                className="d-flex align-items-center"
               >
-                <i className="fas fa-plus me-2"></i>
-                Crear Reserva Manual
-              </button>
+                <FaPlus className="me-2" />
+                Crear Reserva
+              </Button>
             </div>
           </div>
           
           {/* Filtros */}
           <div className="card-body border-bottom">
-            <Row>
-              <Col md={4}>
+            <div className="d-flex align-items-center mb-3">
+              <FaSearch className="me-2" />
+              <h5 className="mb-0">Filtros de búsqueda</h5>
+              <Button 
+                variant="outline-secondary" 
+                size="sm" 
+                onClick={clearFilters}
+                className="ms-auto"
+              >
+                Limpiar filtros
+              </Button>
+            </div>
+            
+            <Row className="g-3">
+              <Col md={3}>
                 <Form.Group>
                   <Form.Label>Estado</Form.Label>
                   <Form.Select
                     name="estado"
                     value={filters.estado}
                     onChange={handleFilterChange}
+                    className="form-select"
                   >
-                    <option value="">Todos</option>
+                    <option value="">Todos los estados</option>
                     <option value="pendiente">Pendientes</option>
                     <option value="confirmada">Confirmadas</option>
                     <option value="cancelada">Canceladas</option>
                   </Form.Select>
                 </Form.Group>
               </Col>
-              <Col md={4}>
+              <Col md={3}>
                 <Form.Group>
-                  <Form.Label>Desde</Form.Label>
+                  <Form.Label>Fecha desde</Form.Label>
                   <Form.Control
                     type="date"
                     name="fechaInicio"
                     value={filters.fechaInicio}
                     onChange={handleFilterChange}
+                    className="form-control"
                   />
                 </Form.Group>
               </Col>
-              <Col md={4}>
+              <Col md={3}>
                 <Form.Group>
-                  <Form.Label>Hasta</Form.Label>
+                  <Form.Label>Fecha hasta</Form.Label>
                   <Form.Control
                     type="date"
                     name="fechaFin"
                     value={filters.fechaFin}
                     onChange={handleFilterChange}
                     min={filters.fechaInicio}
+                    className="form-control"
                   />
                 </Form.Group>
+              </Col>
+              <Col md={3} className="d-flex align-items-end">
+                <Button 
+                  variant="info" 
+                  onClick={fetchReservas}
+                  className="w-100 d-flex align-items-center justify-content-center"
+                >
+                  <FaSearch className="me-2" />
+                  Buscar
+                </Button>
               </Col>
             </Row>
           </div>
 
           <div className="card-body">
-            {error && <div className="alert alert-danger">{error}</div>}
+            {error && (
+              <div className="alert alert-danger alert-dismissible fade show" role="alert">
+                {error}
+                <button type="button" className="btn-close" onClick={() => setError('')}></button>
+              </div>
+            )}
             
             {loading ? (
-              <div className="text-center py-4">
-                <div className="spinner-border text-primary" role="status">
-                  <span className="visually-hidden">Cargando...</span>
+              <div className="text-center py-5">
+                <div className="spinner-border text-primary" style={{width: '3rem', height: '3rem'}} role="status">
+                  <span className="visually-hidden">Cargando reservas...</span>
                 </div>
+                <p className="mt-3">Cargando reservas...</p>
               </div>
             ) : (
               <>
                 <div className="table-responsive">
-                  <table className="table table-striped">
-                    <thead>
+                  <table className="table table-hover align-middle">
+                    <thead className="table-dark">
                       <tr>
                         <th>ID</th>
                         <th>Cabaña</th>
-                        <th>Usuario</th>
+                        <th>Huésped</th>
                         <th>Fechas</th>
-                        <th>Precio Total</th>
+                        <th>Precio</th>
                         <th>Estado</th>
-                        <th>Acciones</th>
+                        <th className="text-center">Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
                       {reservas.length > 0 ? (
                         reservas.map((reserva) => (
-                          <tr key={reserva._id}>
-                            <td>{reserva._id.slice(0, 6)}...</td>
-                            <td>{reserva.cabana?.nombre || 'N/A'}</td>
-                            <td>{reserva.usuario?.nombre || 'N/A'}</td>
+                          <tr key={reserva._id} className={reserva.estado === 'cancelada' ? 'table-secondary' : ''}>
                             <td>
-                              {formatDate(reserva.fechaInicio)} - {formatDate(reserva.fechaFin)}
-                            </td>
-                            <td>${reserva.precioTotal?.toFixed(2)}</td>
-                            <td>
-                              <span className={`badge ${
-                                reserva.estado === 'confirmada' ? 'bg-success' : 
-                                reserva.estado === 'cancelada' ? 'bg-danger' : 'bg-warning'
-                              }`}>
-                                {reserva.estado}
-                              </span>
+                              <code className="text-primary">{reserva._id.slice(0, 8)}</code>
                             </td>
                             <td>
-                              <div className="d-flex gap-2">
-                                <button
-                                  className="btn btn-sm btn-info"
-                                  onClick={() => navigate(`/admin/reservas/editar/${reserva._id}`)}
-                                  title="Editar"
+                              <div className="fw-bold">{reserva.cabana?.nombre || 'Sin cabaña'}</div>
+                              <small className="text-muted">{reserva.cabana?.tipo || ''}</small>
+                            </td>
+                            <td>
+                              <div className="fw-bold">{reserva.huesped?.nombre || reserva.usuario?.nombre || 'N/A'}</div>
+                              <small className="text-muted">{reserva.huesped?.dni || ''}</small>
+                            </td>
+                            <td>
+                              <div className="fw-bold">
+                                {formatDate(reserva.fechaInicio)}
+                              </div>
+                              <div className="text-muted">
+                                al {formatDate(reserva.fechaFin)}
+                              </div>
+                              <small className="text-info">
+                                {Math.ceil((new Date(reserva.fechaFin) - new Date(reserva.fechaInicio)) / (1000 * 60 * 60 * 24))} noches
+                              </small>
+                            </td>
+                            <td>
+                              <div className="fw-bold text-success">
+                                ${reserva.precioTotal?.toLocaleString('es-AR')}
+                              </div>
+                              {reserva.senia > 0 && (
+                                <small className="text-muted">
+                                  Seña: ${reserva.senia?.toLocaleString('es-AR')}
+                                </small>
+                              )}
+                            </td>
+                            <td>
+                              <Badge 
+                                bg={
+                                  reserva.estado === 'confirmada' ? 'success' : 
+                                  reserva.estado === 'cancelada' ? 'danger' : 
+                                  reserva.estado === 'pendiente' ? 'warning' : 'secondary'
+                                }
+                                className="px-3 py-2"
+                              >
+                                {reserva.estado?.toUpperCase()}
+                              </Badge>
+                            </td>
+                            <td>
+                              <div className="d-flex justify-content-center gap-2">
+                                <Button 
+                                  variant="info" 
+                                  size="sm"
+                                  onClick={() => navigate(`/admin/reservas/${reserva._id}`)}
+                                  title="Ver detalles"
+                                  className="d-flex align-items-center"
                                 >
-                                  <i className="fas fa-edit"></i>
-                                </button>
+                                  <FaEye />
+                                </Button>
+                                
+                                <Button 
+                                  variant="warning" 
+                                  size="sm"
+                                  onClick={() => navigate(`/admin/reservas/editar/${reserva._id}`)}
+                                  title="Editar reserva"
+                                  className="d-flex align-items-center"
+                                >
+                                  <FaEdit />
+                                </Button>
+                                
                                 <DeleteReserva 
                                   reservaId={reserva._id}
                                   onSuccess={(deletedId) => {
                                     setReservas(reservas.filter(r => r._id !== deletedId));
                                   }}
+                                  variant="danger"
+                                  size="sm"
                                 />
                               </div>
                             </td>
@@ -200,8 +290,19 @@ export default function ReservasAdmin() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="7" className="text-center py-4">
-                            No se encontraron reservas
+                          <td colSpan="7" className="text-center py-5">
+                            <div className="text-muted">
+                              <FaCalendarAlt size={48} className="mb-3" />
+                              <h4>No se encontraron reservas</h4>
+                              <p>Intenta ajustar los filtros o crear una nueva reserva</p>
+                              <Button 
+                                variant="outline-primary" 
+                                onClick={() => navigate('/admin/reservas/crear')}
+                              >
+                                <FaPlus className="me-2" />
+                                Crear nueva reserva
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       )}
@@ -211,24 +312,51 @@ export default function ReservasAdmin() {
 
                 {/* Paginación */}
                 {totalPages > 1 && (
-                  <div className="d-flex justify-content-center mt-4">
+                  <div className="d-flex justify-content-between align-items-center mt-4">
+                    <div className="text-muted">
+                      Página {currentPage} de {totalPages} • Total: {reservas.length} reservas
+                    </div>
                     <Pagination>
+                      <Pagination.First 
+                        disabled={currentPage === 1} 
+                        onClick={() => setCurrentPage(1)} 
+                      />
                       <Pagination.Prev 
                         disabled={currentPage === 1} 
                         onClick={() => setCurrentPage(p => p - 1)} 
                       />
-                      {[...Array(totalPages).keys()].map(page => (
-                        <Pagination.Item
-                          key={page + 1}
-                          active={page + 1 === currentPage}
-                          onClick={() => setCurrentPage(page + 1)}
-                        >
-                          {page + 1}
-                        </Pagination.Item>
-                      ))}
+                      
+                      {/* Mostrar máximo 5 páginas */}
+                      {[...Array(Math.min(5, totalPages)).keys()].map(page => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = page + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = page + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + page;
+                        } else {
+                          pageNum = currentPage - 2 + page;
+                        }
+                        
+                        return (
+                          <Pagination.Item
+                            key={pageNum}
+                            active={pageNum === currentPage}
+                            onClick={() => setCurrentPage(pageNum)}
+                          >
+                            {pageNum}
+                          </Pagination.Item>
+                        );
+                      })}
+                      
                       <Pagination.Next 
                         disabled={currentPage === totalPages} 
                         onClick={() => setCurrentPage(p => p + 1)} 
+                      />
+                      <Pagination.Last 
+                        disabled={currentPage === totalPages} 
+                        onClick={() => setCurrentPage(totalPages)} 
                       />
                     </Pagination>
                   </div>
