@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Container, Row, Col, Card, Button, Alert, Badge, Carousel, Spinner
@@ -14,7 +14,7 @@ import { IoIosBonfire } from "react-icons/io";
 import axios from 'axios';
 import CalendarFull from '../../components/CalendarFull';
 import { API_URL } from '../../config';
-import { calcularPrecioReserva, formatearPrecioArgentino } from '../../config'; // ✅ AGREGAR IMPORT
+import { calcularPrecioReserva, formatearPrecioArgentino, getOccupiedDates } from '../../config';
 import "./CabanaDetalle.css";
 
 const SERVICIOS = [
@@ -51,19 +51,21 @@ export default function CabanaDetalle() {
   const navigate = useNavigate();
   const [cabana, setCabana] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [calculandoPrecio, setCalculandoPrecio] = useState(false); // ✅ NUEVO
+  const [calculandoPrecio, setCalculandoPrecio] = useState(false);
   const [error, setError] = useState('');
   const [selectedDates, setSelectedDates] = useState({ start: null, end: null });
   const [activeImgIndex, setActiveImgIndex] = useState(0);
-  const [precioCalculado, setPrecioCalculado] = useState({ // ✅ NUEVO
+  const [precioCalculado, setPrecioCalculado] = useState({
     total: 0,
     desglose: [],
-    desgloseAgrupado: [], // ✅ NUEVO: desglose agrupado por tipo
+    desgloseAgrupado: [],
     totalDias: 0,
     precioFormateado: '$0'
   });
 
-  // ✅ MODIFICADO: Función para calcular noches
+  const [occupiedDates, setOccupiedDates] = useState([]);
+  const [loadingOccupiedDates, setLoadingOccupiedDates] = useState(true);
+
   const calcularNoches = (start, end) => {
     if (!start || !end || start >= end) return 0;
     
@@ -77,13 +79,12 @@ export default function CabanaDetalle() {
     return Math.floor(diffTime / 86400000);
   };
 
-  // ✅ NUEVO: Función para calcular precio dinámico (MODIFICADA)
   const calcularPrecioDinamico = async (fechaInicio, fechaFin) => {
     if (!fechaInicio || !fechaFin || fechaInicio >= fechaFin) {
       setPrecioCalculado({
         total: 0,
         desglose: [],
-        desgloseAgrupado: [], // ✅ NUEVO: desglose agrupado por tipo
+        desgloseAgrupado: [],
         totalDias: 0,
         precioFormateado: '$0'
       });
@@ -92,9 +93,13 @@ export default function CabanaDetalle() {
 
     try {
       setCalculandoPrecio(true);
+      console.log('🧮 Calculando precio para:', {
+        fechaInicio: new Date(fechaInicio).toISOString().split('T')[0],
+        fechaFin: new Date(fechaFin).toISOString().split('T')[0]
+      });
+      
       const precioData = await calcularPrecioReserva(fechaInicio, fechaFin);
       
-      // ✅ NUEVO: Agrupar desglose por tipo
       const desgloseAgrupado = [];
       const agrupadoPorTipo = {};
       
@@ -113,7 +118,6 @@ export default function CabanaDetalle() {
           agrupadoPorTipo[tipo].subtotal += dia.precioUnitario || dia.precio || 0;
         });
         
-        // Convertir a array y solo incluir tipos con cantidad > 0
         Object.values(agrupadoPorTipo).forEach(agrupado => {
           if (agrupado.cantidad > 0) {
             desgloseAgrupado.push(agrupado);
@@ -121,21 +125,27 @@ export default function CabanaDetalle() {
         });
       }
       
+      console.log('✅ Precio calculado:', {
+        total: precioData.precioTotal,
+        noches: precioData.totalNoches,
+        desglose: desgloseAgrupado
+      });
+      
       setPrecioCalculado({
         total: precioData.precioTotal || 0,
         desglose: precioData.desglose || [],
-        desgloseAgrupado, // ✅ NUEVO: incluir desglose agrupado
-        totalDias: precioData.totalDias || 0,
+        desgloseAgrupado,
+        totalDias: precioData.totalNoches || 0,
         precioFormateado: formatearPrecioArgentino(precioData.precioTotal)
       });
       
       setError('');
     } catch (err) {
-      console.error('Error calculando precio:', err);
+      console.error('❌ Error calculando precio:', err);
       setPrecioCalculado({
         total: 0,
         desglose: [],
-        desgloseAgrupado: [], // ✅ NUEVO
+        desgloseAgrupado: [],
         totalDias: 0,
         precioFormateado: '$0'
       });
@@ -144,12 +154,41 @@ export default function CabanaDetalle() {
     }
   };
 
-  // ✅ MODIFICADO: Calcular precio cuando cambian las fechas
+  useEffect(() => {
+    const fetchOccupiedDates = async () => {
+      if (!id) return;
+      
+      try {
+        setLoadingOccupiedDates(true);
+        console.log(`📡 Obteniendo fechas ocupadas para cabaña: ${id}`);
+        
+        const dates = await getOccupiedDates(id);
+        
+        console.log(`📊 Fechas ocupadas recibidas: ${dates.length} días`);
+        console.log('📋 Lista de fechas ocupadas:', dates);
+        
+        setOccupiedDates(dates);
+        
+        // Verificar que el día de check-out no esté marcado como ocupado
+        dates.forEach(date => {
+          console.log(`🛌 Noche ocupada (check-in esta fecha): ${date}`);
+        });
+        
+      } catch (error) {
+        console.error('❌ Error obteniendo fechas ocupadas:', error);
+        setOccupiedDates([]);
+      } finally {
+        setLoadingOccupiedDates(false);
+      }
+    };
+    
+    fetchOccupiedDates();
+  }, [id]);
+
   useEffect(() => {
     calcularPrecioDinamico(selectedDates.start, selectedDates.end);
   }, [selectedDates.start, selectedDates.end]);
 
-  // Cargar datos de la cabaña
   useEffect(() => {
     const fetchCabana = async () => {
       try {
@@ -160,6 +199,8 @@ export default function CabanaDetalle() {
           throw new Error('ID de cabaña no válido');
         }
 
+        console.log(`📡 Cargando cabaña ID: ${id}`);
+        
         const cabanaResponse = await axios.get(`${API_URL}/api/cabanas/${id}`);
         
         if (!cabanaResponse.data?.success) {
@@ -176,7 +217,7 @@ export default function CabanaDetalle() {
               imagenes = imagesResponse.data.data;
             }
           } catch (imgError) {
-            console.warn('Error obteniendo imágenes adicionales:', imgError.message);
+            console.warn('⚠️ Error obteniendo imágenes adicionales:', imgError.message);
           }
         }
 
@@ -196,8 +237,10 @@ export default function CabanaDetalle() {
           imagenPrincipal: formatImageUrl(cabanaData.imagenPrincipal || imagenes[0])
         });
 
+        console.log('✅ Cabaña cargada:', cabanaData.nombre);
+
       } catch (err) {
-        console.error('Error al cargar cabaña:', {
+        console.error('❌ Error al cargar cabaña:', {
           message: err.message,
           response: err.response?.data,
           config: err.config
@@ -211,14 +254,29 @@ export default function CabanaDetalle() {
     fetchCabana();
   }, [id]);
 
-  // ✅ MODIFICADO: Manejar reserva con precio dinámico
   const handleReservar = () => {
     if (!selectedDates.start || !selectedDates.end) {
       setError('Selecciona un rango de fechas válido');
       return;
     }
     
-    if (new Date(selectedDates.start) < new Date()) {
+    const startDate = new Date(selectedDates.start);
+    const endDate = new Date(selectedDates.end);
+    
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    console.log('🔄 Validando reserva:', {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0],
+      today: today.toISOString().split('T')[0],
+      noches: calcularNoches(startDate, endDate)
+    });
+    
+    if (startDate < today) {
       setError('No puedes reservar fechas pasadas');
       return;
     }
@@ -228,36 +286,70 @@ export default function CabanaDetalle() {
       return;
     }
 
+    // 🔥 VALIDACIÓN DETALLADA DE DISPONIBILIDAD
+    console.log('🔍 Validando disponibilidad contra fechas ocupadas:', occupiedDates);
+    
+    let tieneConflicto = false;
+    let fechaConflicto = null;
+    const current = new Date(startDate);
+    
+    while (current < endDate) {
+      const dateStr = current.toISOString().split('T')[0];
+      
+      if (occupiedDates.includes(dateStr)) {
+        tieneConflicto = true;
+        fechaConflicto = dateStr;
+        console.log(`❌ Conflicto encontrado: ${dateStr} está ocupado`);
+        break;
+      }
+      
+      console.log(`✅ ${dateStr} está disponible`);
+      current.setDate(current.getDate() + 1);
+    }
+    
+    if (tieneConflicto) {
+      setError(`El ${fechaConflicto} ya está reservado. Selecciona otras fechas.`);
+      return;
+    }
+
+    console.log('✅ Todas las fechas están disponibles para reserva');
+    
     navigate(`/reservar/${id}`, {
       state: {
         cabanaId: id,
         cabanaNombre: cabana.nombre,
         fechaInicio: selectedDates.start,
         fechaFin: selectedDates.end,
-        precioTotal: precioCalculado.total, // ✅ Usa precio dinámico
-        precioDesglose: precioCalculado.desglose, // ✅ Envía desglose
+        precioTotal: precioCalculado.total,
+        precioDesglose: precioCalculado.desglose,
         imagenPrincipal: cabana.imagenPrincipal
       }
     });
   };
 
-  if (loading) return (
-    <div className="text-center my-5">
-      <Spinner animation="border" variant="primary" />
-      <p className="text-carga mt-2">Cargando información de la cabaña...</p>
-    </div>
-  );
+  if (loading || loadingOccupiedDates) {
+    return (
+      <div className="text-center my-5">
+        <Spinner animation="border" variant="primary" />
+        <p className="text-carga mt-2">Cargando información de la cabaña...</p>
+      </div>
+    );
+  }
 
   if (error || !cabana) return (
     <Container className="my-5">
       <Alert variant="danger" className="text-center">
-        <Alert.Heading>ups cabaña ya reservada para esa fecha</Alert.Heading>
+        <Alert.Heading>Error al cargar la cabaña</Alert.Heading>
         <p>{error}</p>
         <div className="mt-3">
           <Button 
             variant="primary" 
             onClick={() => navigate('/cabanas')}
             className="me-2"
+            style={{
+              backgroundColor: '#eaac25',
+              borderColor: '#eaac25'
+            }}
           >
             Ver cabañas disponibles
           </Button>
@@ -291,11 +383,11 @@ export default function CabanaDetalle() {
         <FaArrowLeft className="me-2" /> Volver
       </Button>
       
-      <h1 className="text-center mb-4">Detalles de la Cabaña</h1>
+      <h1 className="text-center mb-4" style={{ color: '#fff' }}>{cabana.nombre}</h1>
       
       <Row className="g-4">
         <Col lg={6}>
-          <Card className="shadow-sm">
+          <Card className="shadow-sm" style={{ backgroundColor: '#444', color: '#fff' }}>
             <Carousel 
               activeIndex={activeImgIndex} 
               onSelect={setActiveImgIndex}
@@ -321,16 +413,21 @@ export default function CabanaDetalle() {
             </Carousel>
 
             {cabana.imagenes.length > 1 && (
-              <Card.Footer className="p-3 bg-light">
+              <Card.Footer className="p-3" style={{ backgroundColor: '#555' }}>
                 <Row className="g-2">
                   {cabana.imagenes.map((img, index) => (
                     <Col xs={3} key={`thumb-${index}`}>
                       <img
                         src={img.url}
                         alt={`Miniatura ${index + 1}`}
-                        className={`img-thumbnail cursor-pointer ${activeImgIndex === index ? 'border-primary border-2' : 'opacity-75'}`}
+                        className={`img-thumbnail cursor-pointer ${activeImgIndex === index ? 'border-warning border-2' : 'opacity-75'}`}
                         onClick={() => setActiveImgIndex(index)}
-                        style={{ height: '80px', objectFit: 'cover', width: '100%' }}
+                        style={{ 
+                          height: '80px', 
+                          objectFit: 'cover', 
+                          width: '100%',
+                          backgroundColor: '#666'
+                        }}
                         onError={(e) => {
                           e.target.onerror = null;
                           e.target.src = `${API_URL}/default-cabana-thumb.jpg`;
@@ -341,43 +438,16 @@ export default function CabanaDetalle() {
                 </Row>
               </Card.Footer>
             )}
-          </Card>
-        </Col>
-
-        <Col lg={6}>
-          <Card className="shadow-sm h-100">
-            <Card.Body className="d-flex flex-column">
-              <Card.Title as="h1" className="mb-3">{cabana.nombre}</Card.Title>
-              <Card.Text className="text-muted mb-4">{cabana.descripcion}</Card.Text>
-
-              <Row className="mb-4 g-3">
-                <Col md={6}>
-                  <div className="d-flex align-items-center p-3 bg-light rounded h-100">
-                    <FaUsers className="text-primary me-3 fs-4" />
-                    <div>
-                      <small className="text-muted">Capacidad</small>
-                      <div className="fs-5"><strong>{cabana.capacidad} personas</strong></div>
-                    </div>
-                  </div>
-                </Col>
-                <Col md={6}>
-                  <div className="d-flex align-items-center p-3 bg-light rounded h-100">
-                    <FaMoneyBillWave className="text-success me-3 fs-4" />
-                    <div>
-                      <small className="text-muted">Precio por noche desde</small>
-                      <div className="fs-5">
-                        <strong>{formatearPrecioArgentino(cabana.precio || 0)}</strong>
-                      </div>
-                      {/* <small className="text-muted">*Varía según tipo de día</small> */}
-                    </div>
-                  </div>
-                </Col>
-              </Row>
-
+            
+            <Card.Body>
+              <Card.Text className="text-white" style={{ fontWeight: 300 }}>
+                {cabana.descripcion}
+              </Card.Text>
+              
               {cabana.servicios?.length > 0 && (
-                <div className="mb-4">
-                  <h5 className="d-flex align-items-center mb-3">
-                    <FaWifi className="me-2 text-primary" />
+                <div className="mt-4">
+                  <h5 className="d-flex align-items-center mb-3" style={{ color: '#eaac25' }}>
+                    <FaWifi className="me-2" />
                     Servicios incluidos
                   </h5>
                   <div className="d-flex flex-wrap gap-2">
@@ -387,11 +457,17 @@ export default function CabanaDetalle() {
                         <Badge 
                           key={`servicio-${i}`} 
                           pill 
-                          bg="light" 
-                          text="dark" 
-                          className="border d-flex align-items-center"
+                          style={{ 
+                            backgroundColor: '#666',
+                            color: '#fff',
+                            border: '1px solid #888'
+                          }} 
+                          className="d-flex align-items-center"
                         >
-                          {servicioInfo.icono && React.cloneElement(servicioInfo.icono, { className: 'me-1' })}
+                          {servicioInfo.icono && React.cloneElement(servicioInfo.icono, { 
+                            className: 'me-1',
+                            style: { color: '#eaac25' }
+                          })}
                           {servicioInfo.nombre}
                         </Badge>
                       );
@@ -399,76 +475,143 @@ export default function CabanaDetalle() {
                   </div>
                 </div>
               )}
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col lg={6}>
+          <Card className="shadow-sm h-100" style={{ backgroundColor: '#444', color: '#fff' }}>
+            <Card.Body className="d-flex flex-column">
+              <div className="mb-4">
+                <h4 style={{ color: '#eaac25' }}>Detalles de la cabaña</h4>
+                <Row className="g-3">
+                  <Col md={6}>
+                    <div className="d-flex align-items-center p-3 rounded h-100" style={{ backgroundColor: '#555' }}>
+                      <FaUsers className="text-warning me-3 fs-4" />
+                      <div>
+                        <small className="text-muted">Capacidad</small>
+                        <div className="fs-5"><strong>{cabana.capacidad} personas</strong></div>
+                      </div>
+                    </div>
+                  </Col>
+                  <Col md={6}>
+                    <div className="d-flex align-items-center p-3 rounded h-100" style={{ backgroundColor: '#555' }}>
+                      <FaMoneyBillWave className="text-success me-3 fs-4" />
+                      <div>
+                        <small className="text-muted">Precio por noche desde</small>
+                        <div className="fs-5">
+                          <strong style={{ color: '#eaac25' }}>
+                            {formatearPrecioArgentino(cabana.precio || 0)}
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </div>
 
               <div className="mb-4">
-                <h5 className="d-flex align-items-center mb-3">
-                  <FaCalendarAlt className="me-2 text-primary" />
-                  Disponibilidad y Precio
+                <h5 className="d-flex align-items-center mb-3" style={{ color: '#eaac25' }}>
+                  <FaCalendarAlt className="me-2" />
+                  Disponibilidad y Reserva
                 </h5>
-                <CalendarFull 
-                  cabanaId={id}
-                  onDatesSelected={(start, end, calculatedTotal) => {
-                    console.log('Dates selected in CabanaDetalle:', start, end);
-                    
-                    if (start && end) {
-                      // Validación básica
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
+                
+                <div className="mb-3">
+                  <CalendarFull 
+                    cabanaId={id}
+                    onDatesSelected={(start, end) => {
+                      console.log('📅 Fechas seleccionadas en calendario:', {
+                        start: start ? new Date(start).toISOString().split('T')[0] : null,
+                        end: end ? new Date(end).toISOString().split('T')[0] : null
+                      });
                       
-                      if (start < today) {
-                        setError('No puedes seleccionar fechas pasadas');
-                        return;
+                      if (start && end) {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        
+                        if (start < today) {
+                          setError('No puedes seleccionar fechas pasadas');
+                          return;
+                        }
+                        
+                        if (start >= end) {
+                          setError('La fecha de fin debe ser posterior al inicio');
+                          return;
+                        }
+                        
+                        setSelectedDates({ start, end });
+                        setError('');
                       }
-                      
-                      if (start >= end) {
-                        setError('La fecha de fin debe ser posterior al inicio');
-                        return;
-                      }
-                      
-                      setSelectedDates({ start, end });
-                      setError('');
-                    }
-                  }}
-                  precioPorNoche={cabana?.precio || 0}
-                  showTotal={false}
-                />
+                    }}
+                    precioPorNoche={cabana?.precio || 0}
+                    showTotal={false}
+                  />
+                </div>
+                
+                <div className="calendar-legend mt-3">
+                  <div className="legend-item">
+                    <div className="legend-color legend-occupied"></div>
+                    <span>Días reservados</span>
+                  </div>
+                  <div className="legend-item">
+                    <div className="legend-color legend-selected"></div>
+                    <span>Días seleccionados</span>
+                  </div>
+                  <div className="legend-item">
+                    <div className="legend-color legend-today"></div>
+                    <span>Hoy</span>
+                  </div>
+                </div>
 
                 {selectedDates.start && selectedDates.end && (
-                  <Alert variant="info" className="mt-3">
+                  <Alert variant="info" className="mt-3" style={{ backgroundColor: '#555', borderColor: '#666' }}>
                     {calculandoPrecio ? (
                       <div className="text-center">
-                        <Spinner size="sm" animation="border" className="me-2" />
-                        Calculando precio...
+                        <Spinner size="sm" animation="border" className="me-2" style={{ color: '#eaac25' }} />
+                        <span className="text-white">Calculando precio...</span>
                       </div>
                     ) : (
                       <>
                         <div className="d-flex justify-content-between mb-2">
-                          <span>Desde:</span>
-                          <span>{new Date(selectedDates.start).toLocaleDateString('es-ES')}</span>
+                          <span className="text-white">Desde:</span>
+                          <span className="text-white">
+                            {new Date(selectedDates.start).toLocaleDateString('es-ES', {
+                              weekday: 'short',
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </span>
                         </div>
                         <div className="d-flex justify-content-between mb-2">
-                          <span>Hasta:</span>
-                          <span>{new Date(selectedDates.end).toLocaleDateString('es-ES')}</span>
+                          <span className="text-white">Hasta:</span>
+                          <span className="text-white">
+                            {new Date(selectedDates.end).toLocaleDateString('es-ES', {
+                              weekday: 'short',
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </span>
                         </div>
-                        <hr className="my-2" />
+                        <hr className="my-2" style={{ borderColor: '#666' }} />
                         <div className="d-flex justify-content-between mb-2">
-                          <span>Estadía:</span>
-                          <span>{noches} noches</span>
+                          <span className="text-white">Estadía:</span>
+                          <span className="text-white">{noches} noche{noches !== 1 ? 's' : ''}</span>
                         </div>
-                        {/* ✅ MODIFICADO: Solo muestra tipos de días con cantidad > 0 */}
                         {precioCalculado.desgloseAgrupado && precioCalculado.desgloseAgrupado.length > 0 && (
-                          <div className="small text-muted mb-2">
+                          <div className="small mb-2">
                             {precioCalculado.desgloseAgrupado.map((agrupado, index) => (
-                              <div key={index}>
-                                {agrupado.cantidad} {agrupado.tipo === 'semana' ? 'días semana' : agrupado.tipo === 'fin de semana' ? 'fines de semana' : 'feriados'} 
-                                ({formatearPrecioArgentino(agrupado.subtotal)})
+                              <div key={index} className="text-white d-flex justify-content-between">
+                                <span>{agrupado.cantidad} {agrupado.tipo === 'semana' ? 'días semana' : agrupado.tipo === 'fin de semana' ? 'fines de semana' : 'feriados'}</span>
+                                <span>{formatearPrecioArgentino(agrupado.subtotal)}</span>
                               </div>
                             ))}
                           </div>
                         )}
-                        <div className="d-flex justify-content-between fw-bold mt-2 pt-2 border-top">
-                          <span>Total:</span>
-                          <span className="fs-5 text-success">{precioCalculado.precioFormateado}</span>
+                        <div className="d-flex justify-content-between fw-bold mt-2 pt-2 border-top" style={{ borderColor: '#666' }}>
+                          <span className="text-white">Total:</span>
+                          <span className="fs-5" style={{ color: '#eaac25' }}>{precioCalculado.precioFormateado}</span>
                         </div>
                       </>
                     )}
@@ -496,10 +639,19 @@ export default function CabanaDetalle() {
                     marginBottom: '1.5rem',
                     backgroundColor: '#eaac25',
                     borderColor: '#eaac25',
+                    color: '#333'
                   }}
                 >
                   {calculandoPrecio ? 'Calculando precio...' : 'Reservar ahora'}
                 </Button>
+                
+                {occupiedDates.length > 0 && (
+                  <div className="text-center mt-2">
+                    <small className="text-muted">
+                      {occupiedDates.length} día{occupiedDates.length !== 1 ? 's' : ''} ocupado{occupiedDates.length !== 1 ? 's' : ''} en el calendario
+                    </small>
+                  </div>
+                )}
               </div>
             </Card.Body>
           </Card>

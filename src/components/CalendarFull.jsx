@@ -1,3 +1,4 @@
+// src/components/CalendarFull.jsx - VERSIÓN CORREGIDA CON LÓGICA HOTELERA
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -6,7 +7,6 @@ import { Spinner, Alert, Badge } from 'react-bootstrap';
 import { FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
 import { getOccupiedDates } from '../config';
 
-// Componente optimizado y seguro
 const CalendarFull = ({ 
   cabanaId, 
   onDatesSelected, 
@@ -14,19 +14,16 @@ const CalendarFull = ({
   showInline = false,
   showTotal = true
 }) => {
-  // Estados básicos
   const [dateRange, setDateRange] = useState([null, null]);
   const [occupiedDates, setOccupiedDates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   
-  // Refs para control de montaje y timeout
   const isMounted = useRef(true);
   const calendarRef = useRef(null);
   const timeoutRef = useRef(null);
 
-  // Efecto de montaje/desmontaje
   useEffect(() => {
     isMounted.current = true;
     
@@ -38,7 +35,6 @@ const CalendarFull = ({
     };
   }, []);
 
-  // Función SEGURA para normalizar fechas
   const normalizeDate = useCallback((date) => {
     if (!date) return null;
     try {
@@ -51,13 +47,71 @@ const CalendarFull = ({
     }
   }, []);
 
-  // Función SEGURA para convertir a YMD
   const dateToYMD = useCallback((date) => {
     const d = normalizeDate(date);
     return d ? d.toISOString().split('T')[0] : '';
   }, [normalizeDate]);
 
-  // Obtener fechas ocupadas - VERSIÓN SEGURA
+  // 🔥 NUEVA FUNCIÓN: Verificar disponibilidad con lógica hotelera
+  const checkAvailabilityWithTimes = useCallback((startDate, endDate) => {
+    try {
+      console.log('🏨 Frontend: Verificando disponibilidad con lógica hotelera');
+      
+      const today = normalizeDate(new Date());
+      const start = normalizeDate(startDate);
+      const end = normalizeDate(endDate);
+      
+      if (!start || !end) {
+        return { available: false, error: 'Fechas inválidas' };
+      }
+      
+      if (start >= end) {
+        return { available: false, error: 'La fecha de fin debe ser posterior a la de inicio' };
+      }
+      
+      if (start < today) {
+        return { available: false, error: 'No puedes seleccionar fechas pasadas' };
+      }
+      
+      // Lógica hotelera: check-out 10:00 AM, check-in 12:00 PM
+      // El backend NO incluye el día de check-out en occupiedDates
+      const occupiedSet = new Set(occupiedDates);
+      let hasConflict = false;
+      let conflictedDate = null;
+      
+      // Solo verificar las noches que realmente estarán ocupadas
+      const current = new Date(start);
+      current.setHours(0, 0, 0, 0);
+      
+      while (current < end) {
+        const dateStr = dateToYMD(current);
+        
+        // Si está en occupiedSet, realmente está ocupada (noche no disponible)
+        if (occupiedSet.has(dateStr)) {
+          hasConflict = true;
+          conflictedDate = dateStr;
+          console.log(`❌ Frontend: Conflicto real en ${dateStr}`);
+          break;
+        }
+        
+        console.log(`✅ Frontend: ${dateStr} disponible`);
+        current.setDate(current.getDate() + 1);
+      }
+      
+      if (hasConflict) {
+        return { 
+          available: false, 
+          error: `El ${conflictedDate} ya está reservado` 
+        };
+      }
+      
+      return { available: true, error: null };
+    } catch (err) {
+      console.error('Error en checkAvailabilityWithTimes:', err);
+      return { available: false, error: 'Error al verificar disponibilidad' };
+    }
+  }, [occupiedDates, normalizeDate, dateToYMD]);
+
   useEffect(() => {
     if (!isMounted.current) return;
 
@@ -66,58 +120,33 @@ const CalendarFull = ({
         setLoading(true);
         setError(null);
         
+        console.log(`📅 CalendarFull: Obteniendo ocupadas para cabaña ${cabanaId || 'todas'}`);
+        
         const occupiedData = await getOccupiedDates(cabanaId);
         
         if (!isMounted.current) return;
         
         if (Array.isArray(occupiedData)) {
-          const occupiedSet = new Set();
-          
-          occupiedData.forEach((item) => {
-            try {
-              let startDate, endDate;
-              
-              // Manejar diferentes formatos del backend
-              if (item && typeof item === 'object') {
-                if (item.fechaInicio && item.fechaFin) {
-                  startDate = normalizeDate(item.fechaInicio);
-                  endDate = normalizeDate(item.fechaFin);
-                } else if (item.start && item.end) {
-                  startDate = normalizeDate(item.start);
-                  endDate = normalizeDate(item.end);
-                }
-              }
-              
-              if (startDate && endDate && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-                const current = new Date(startDate);
-                const end = new Date(endDate);
-                
-                while (current <= end) {
-                  const dateStr = dateToYMD(current);
-                  occupiedSet.add(dateStr);
-                  current.setDate(current.getDate() + 1);
-                }
-              }
-            } catch (err) {
-              console.warn('Error procesando fecha ocupada:', err);
-            }
-          });
-          
-          setOccupiedDates(Array.from(occupiedSet));
+          setOccupiedDates(occupiedData);
+          console.log(`📊 CalendarFull: ${occupiedData.length} fechas ocupadas recibidas`);
+          console.log('📅 Fechas ocupadas:', occupiedData);
+        } else {
+          console.warn('⚠️ CalendarFull: Formato de datos inesperado:', occupiedData);
+          setOccupiedDates([]);
         }
         
       } catch (err) {
         if (!isMounted.current) return;
         
-        console.error('Error al obtener fechas ocupadas:', err);
+        console.error('❌ CalendarFull: Error al obtener fechas ocupadas:', err);
         setError('Error al cargar disponibilidad. Intenta nuevamente.');
         setOccupiedDates([]);
       } finally {
         if (isMounted.current) {
-          // Delay para asegurar que React ha terminado de renderizar
           timeoutRef.current = setTimeout(() => {
             if (isMounted.current) {
               setLoading(false);
+              console.log('✅ CalendarFull: Carga completada');
             }
           }, 100);
         }
@@ -131,20 +160,23 @@ const CalendarFull = ({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [cabanaId, normalizeDate, dateToYMD]);
+  }, [cabanaId]);
 
-  // Handler de fechas - VERSIÓN SEGURA (sin re-renderizaciones)
+  // 🔥 handleDateChange MODIFICADO
   const handleDateChange = useCallback((newDateRange) => {
     if (!isMounted.current) return;
     
     const [start, end] = newDateRange;
     
-    // Limpiar timeout previo
+    console.log('📅 CalendarFull: Cambio de fechas', {
+      start: start ? dateToYMD(start) : null,
+      end: end ? dateToYMD(end) : null
+    });
+    
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
     
-    // Actualizar estado inmediato
     setDateRange(newDateRange);
     setError(null);
     setSuccess(null);
@@ -154,64 +186,31 @@ const CalendarFull = ({
       return;
     }
     
-    // Usar timeout para separar el cálculo del render
     timeoutRef.current = setTimeout(() => {
       if (!isMounted.current) return;
       
       try {
-        const today = normalizeDate(new Date());
-        const startDate = normalizeDate(start);
-        const endDate = normalizeDate(end);
+        const result = checkAvailabilityWithTimes(start, end);
         
-        // Validaciones
-        if (!startDate || !endDate) {
-          setError('Fechas inválidas');
+        if (!result.available) {
+          setError(result.error);
           return;
         }
         
-        if (startDate >= endDate) {
-          setError('La fecha de fin debe ser posterior a la de inicio');
-          return;
-        }
-        
-        if (startDate < today) {
-          setError('No puedes seleccionar fechas pasadas');
-          return;
-        }
-        
-        // Verificar disponibilidad de forma segura
-        const occupiedSet = new Set(occupiedDates);
-        const current = new Date(startDate);
-        let hasConflict = false;
-        
-        while (current < endDate) {
-          if (occupiedSet.has(dateToYMD(current))) {
-            hasConflict = true;
-            break;
-          }
-          current.setDate(current.getDate() + 1);
-        }
-        
-        if (hasConflict) {
-          setError('Las fechas seleccionadas incluyen días ocupados');
-          return;
-        }
-        
+        console.log('✅ CalendarFull: Fechas válidas y disponibles');
         setSuccess('Fechas disponibles para reserva');
         
-        // Llamar callback después de validar
         if (onDatesSelected) {
-          onDatesSelected(startDate, endDate);
+          onDatesSelected(start, end);
         }
         
       } catch (err) {
-        console.error('Error en handleDateChange:', err);
+        console.error('❌ CalendarFull: Error en handleDateChange:', err);
         setError('Error al procesar fechas');
       }
-    }, 50); // Pequeño delay
-  }, [occupiedDates, onDatesSelected, normalizeDate, dateToYMD]);
+    }, 50);
+  }, [checkAvailabilityWithTimes, onDatesSelected]);
 
-  // Funciones de tile MEMOIZADAS y SEGURAS
   const tileDisabled = useMemo(() => {
     return ({ date, view }) => {
       if (view !== 'month') return false;
@@ -220,15 +219,20 @@ const CalendarFull = ({
         const today = normalizeDate(new Date());
         const currentDate = normalizeDate(date);
         
-        if (!currentDate || currentDate < today) return true;
+        if (!currentDate || currentDate < today) {
+          return true;
+        }
         
-        return occupiedDates.includes(dateToYMD(date));
+        // Solo deshabilitar si realmente está ocupada
+        const isOccupied = occupiedDates.includes(dateToYMD(date));
+        return isOccupied;
       } catch {
         return false;
       }
     };
   }, [occupiedDates, normalizeDate, dateToYMD]);
 
+  // Resto del código se mantiene igual...
   const tileClassName = useMemo(() => {
     return ({ date, view }) => {
       if (view !== 'month') return '';
@@ -266,7 +270,6 @@ const CalendarFull = ({
     };
   }, [occupiedDates, dateRange, normalizeDate, dateToYMD]);
 
-  // Calcular noches de forma segura
   const noches = useMemo(() => {
     if (!dateRange[0] || !dateRange[1]) return 0;
     
@@ -283,7 +286,6 @@ const CalendarFull = ({
     }
   }, [dateRange, normalizeDate]);
 
-  // Mostrar estado de carga
   if (loading) {
     return (
       <div className="text-center my-3" style={{ minHeight: '350px' }}>
@@ -323,7 +325,6 @@ const CalendarFull = ({
         }
         showNeighboringMonth={false}
         showFixedNumberOfWeeks={true}
-        // Propiedades críticas para evitar errores
         tileKey={({ date }) => date.toISOString()}
       />
       
@@ -352,9 +353,23 @@ const CalendarFull = ({
           </Alert>
         )}
       </div>
+      
+      {showTotal && dateRange[0] && dateRange[1] && (
+        <div className="calendar-summary mt-3 p-3 bg-light rounded">
+          <div className="d-flex justify-content-between">
+            <span>Estadía:</span>
+            <strong>{noches} noche{noches !== 1 ? 's' : ''}</strong>
+          </div>
+          {precioPorNoche && (
+            <div className="d-flex justify-content-between mt-2">
+              <span>Precio estimado:</span>
+              <strong>${(precioPorNoche * noches).toLocaleString('es-AR')}</strong>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
-// Exportar con memo pero sin comparación profunda
-export default React.memo(CalendarFull, () => true);
+export default React.memo(CalendarFull);

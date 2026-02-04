@@ -196,20 +196,38 @@ const calcularNoches = (start, end) => {
 const getImageUrl = (imageData) => {
   if (!imageData) return `${API_URL}/default-cabana.jpg`;
   
+  // Si es un string, puede ser URL completa o ruta relativa
   if (typeof imageData === 'string') {
     if (imageData.startsWith('http')) return imageData;
     if (imageData.startsWith('/')) return `${API_URL}${imageData}`;
     return `${API_URL}/${imageData}`;
   }
   
+  // Si es un objeto con URL (nueva estructura del backend)
   if (imageData.url) {
     if (imageData.url.startsWith('http')) return imageData.url;
     if (imageData.url.startsWith('/')) return `${API_URL}${imageData.url}`;
     return `${API_URL}/${imageData.url}`;
   }
   
-  if (imageData._id || imageData.fileId) {
-    return `${API_URL}/api/images/${imageData._id || imageData.fileId}`;
+  // Si tiene _id (referencia de imagen)
+  if (imageData._id) {
+    return `${API_URL}/api/images/${imageData._id}`;
+  }
+  
+  // Si es un array (imágenes múltiples)
+  if (Array.isArray(imageData) && imageData.length > 0) {
+    // Tomar la primera imagen
+    const primeraImagen = imageData[0];
+    if (typeof primeraImagen === 'string') {
+      return getImageUrl(primeraImagen);
+    }
+    if (primeraImagen.url) {
+      return getImageUrl(primeraImagen);
+    }
+    if (primeraImagen._id) {
+      return `${API_URL}/api/images/${primeraImagen._id}`;
+    }
   }
   
   return `${API_URL}/default-cabana.jpg`;
@@ -222,55 +240,48 @@ const getImageUrl = (imageData) => {
 const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate }) => {
   const [precioLocal, setPrecioLocal] = useState(null);
   const [cargandoLocal, setCargandoLocal] = useState(false);
-  const prevDateRange = useRef(null);
   const isMounted = useRef(true);
   
+  // 🔥 MEMOIZAR NOCHEs
+  const noches = React.useMemo(() => {
+    if (!dateRange || !dateRange.start || !dateRange.end) return 0;
+    return calcularNoches(dateRange.start, dateRange.end);
+  }, [dateRange]);
+  
+  // 🔥 EFFECT PARA ACTUALIZAR PRECIO LOCAL
+  useEffect(() => {
+    if (!isMounted.current) return;
+    
+    const estaCalculando = calculandoPrecios[cabana._id];
+    const tienePrecio = cabana.precioCalculado;
+    
+    if (estaCalculando) {
+      if (!cargandoLocal) {
+        setCargandoLocal(true);
+        setPrecioLocal(null);
+      }
+    } else if (tienePrecio) {
+      if (cargandoLocal || !precioLocal || precioLocal.total !== tienePrecio.total) {
+        setCargandoLocal(false);
+        setPrecioLocal(tienePrecio);
+      }
+    } else {
+      if (cargandoLocal || precioLocal) {
+        setCargandoLocal(false);
+        setPrecioLocal(null);
+      }
+    }
+  }, [cabana.precioCalculado, calculandoPrecios, cabana._id, cargandoLocal, precioLocal]);
+
+  // 🔥 CLEANUP
   useEffect(() => {
     return () => {
       isMounted.current = false;
     };
   }, []);
-  
-  const noches = React.useMemo(() => {
-    if (!dateRange || !dateRange.start || !dateRange.end) return 0;
-    return calcularNoches(dateRange.start, dateRange.end);
-  }, [dateRange]);
 
-  useEffect(() => {
-    if (!isMounted.current) return;
-    
-    if (!dateRange || !dateRange.start || !dateRange.end) {
-      if (precioLocal || cargandoLocal) {
-        setPrecioLocal(null);
-        setCargandoLocal(false);
-      }
-      return;
-    }
-
-    const dateRangeKey = dateRange.start?.toISOString() + dateRange.end?.toISOString();
-    const prevDateRangeKey = prevDateRange.current?.start?.toISOString() + prevDateRange.current?.end?.toISOString();
-    
-    if (dateRangeKey === prevDateRangeKey && precioLocal !== null) {
-      return;
-    }
-    
-    prevDateRange.current = dateRange;
-
-    const estaCalculando = calculandoPrecios[cabana._id];
-    
-    if (estaCalculando) {
-      setCargandoLocal(true);
-      setPrecioLocal(null);
-    } else if (cabana.precioCalculado) {
-      setCargandoLocal(false);
-      setPrecioLocal(cabana.precioCalculado);
-    } else {
-      setCargandoLocal(false);
-      setPrecioLocal(null);
-    }
-  }, [cabana.precioCalculado, calculandoPrecios, cabana._id, dateRange, precioLocal, cargandoLocal]);
-
-  const handleReservarClick = () => {
+  // 🔥 HANDLER MEMOIZADO
+  const handleReservarClick = useCallback(() => {
     if (!isMounted.current || !precioLocal || cargandoLocal) return;
     
     navigate(`/reservar/${cabana._id}`, {
@@ -284,7 +295,19 @@ const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate 
         imagenPrincipal: cabana.imagenPrincipal
       }
     });
-  };
+  }, [cabana, dateRange, navigate, precioLocal, cargandoLocal]);
+
+  // 🔥 VERIFICAR SI ESTÁ HABILITADO PARA RESERVAR
+  const puedeReservar = React.useMemo(() => {
+    return precioLocal && !cargandoLocal && (precioLocal.total || 0) > 0;
+  }, [precioLocal, cargandoLocal]);
+
+  console.log(`🎯 CabanaCard ${cabana.nombre}:`, {
+    cargando: cargandoLocal,
+    tienePrecio: !!precioLocal,
+    puedeReservar,
+    precio: precioLocal?.total
+  });
 
   return (
     <Col xs={12} md={6} lg={4}>
@@ -354,11 +377,12 @@ const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate 
                 variant="primary" 
                 className="w-100 mb-2"
                 onClick={handleReservarClick}
-                disabled={!precioLocal || cargandoLocal || (precioLocal.total || 0) <= 0}
+                disabled={!puedeReservar}
                 style={{
                   fontWeight: 500,
                   backgroundColor: '#eaac25',
                   borderColor: '#eaac25',
+                  opacity: puedeReservar ? 1 : 0.65
                 }}
               >
                 {cargandoLocal ? '⌛ Calculando...' : '✅ Reservar ahora'}
@@ -389,9 +413,19 @@ const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate 
       </Card>
     </Col>
   );
+}, (prevProps, nextProps) => {
+  // 🔥 COMPARACIÓN PERSONALIZADA PARA EVITAR RE-RENDERS INNECESARIOS
+  return (
+    prevProps.cabana._id === nextProps.cabana._id &&
+    prevProps.cabana.precioCalculado === nextProps.cabana.precioCalculado &&
+    prevProps.dateRange?.start?.getTime() === nextProps.dateRange?.start?.getTime() &&
+    prevProps.dateRange?.end?.getTime() === nextProps.dateRange?.end?.getTime() &&
+    prevProps.calculandoPrecios[prevProps.cabana._id] === nextProps.calculandoPrecios[nextProps.cabana._id]
+  );
 });
 
 CabanaCard.displayName = 'CabanaCard';
+
 
 // ============================================
 // COMPONENTE PRINCIPAL HomePublico
@@ -412,7 +446,7 @@ export default function HomePublico() {
   const navigate = useNavigate();
   const isMounted = useRef(true);
   const [showTooltip, setShowTooltip] = useState(false);
-const tooltipTarget = useRef(null);
+  const tooltipTarget = useRef(null);
 
   useEffect(() => {
     return () => {
@@ -432,14 +466,29 @@ const tooltipTarget = useRef(null);
             throw new Error('Formato de respuesta inválido');
           }
 
-          const processedCabanas = cabanasData.map(cabana => ({
-            ...cabana,
-            imagenPrincipal: getImageUrl(cabana.imagenPrincipal || cabana.imagenes?.[0]),
-            imagenes: (cabana.imagenes || []).map(img => ({
-              ...img,
-              url: getImageUrl(img)
-            }))
-          }));
+          const processedCabanas = cabanasData.map(cabana => {
+            // NUEVA LÓGICA: Priorizar imagenPrincipal del backend
+            let imagenPrincipalUrl = `${API_URL}/default-cabana.jpg`;
+            
+            if (cabana.imagenPrincipal) {
+              imagenPrincipalUrl = getImageUrl(cabana.imagenPrincipal);
+            } else if (cabana.imagenes && cabana.imagenes.length > 0) {
+              // Si no hay imagenPrincipal, usar la primera de las imágenes
+              imagenPrincipalUrl = getImageUrl(cabana.imagenes[0]);
+            }
+            
+            return {
+              ...cabana,
+              imagenPrincipal: imagenPrincipalUrl,
+              // Asegurar que imagenes sea un array procesado
+              imagenes: Array.isArray(cabana.imagenes) 
+                ? cabana.imagenes.map(img => ({
+                    ...img,
+                    url: getImageUrl(img)
+                  }))
+                : []
+            };
+          });
 
           setCabanas(processedCabanas);
           setError(null);
@@ -464,6 +513,7 @@ const tooltipTarget = useRef(null);
     };
   }, []);
 
+  // REEMPLAZA TODO ESTE useEffect (el que causa el bucle):
   useEffect(() => {
     let isCancelled = false;
     let calculationTimeout = null;
@@ -471,20 +521,52 @@ const tooltipTarget = useRef(null);
     const calcularPreciosDisponibles = async () => {
       if (!isMounted.current) return;
       
-      if (dateRange.start && dateRange.end && availableCabanas.length > 0) {
-        if (calculationTimeout) clearTimeout(calculationTimeout);
+      // 🔥 CONDICIÓN MÁS ESTRICTA
+      if (!dateRange.start || !dateRange.end || availableCabanas.length === 0) {
+        return;
+      }
+      
+      // 🔥 VERIFICAR SI YA TENEMOS TODOS LOS PRECIOS
+      const todasConPrecio = availableCabanas.every(c => c.precioCalculado);
+      if (todasConPrecio) {
+        console.log('✅ Ya tenemos todos los precios calculados, no recalcular');
+        return;
+      }
+      
+      // 🔥 IDENTIFICAR CABANAS SIN PRECIO
+      const cabanasSinPrecio = availableCabanas.filter(c => !c.precioCalculado);
+      if (cabanasSinPrecio.length === 0) {
+        console.log('✅ No hay cabañas sin precio');
+        return;
+      }
+      
+      console.log(`🧮 Calculando precios para ${cabanasSinPrecio.length} cabañas...`);
+      
+      // 🔥 LIMPIAR TIMEOUT ANTERIOR
+      if (calculationTimeout) {
+        clearTimeout(calculationTimeout);
+      }
+      
+      calculationTimeout = setTimeout(async () => {
+        if (isCancelled || !isMounted.current) {
+          console.log('🛑 Cálculo cancelado');
+          return;
+        }
         
-        calculationTimeout = setTimeout(async () => {
-          if (isCancelled || !isMounted.current) return;
-          
-          const calculandoInicial = {};
-          availableCabanas.forEach(cabana => {
-            calculandoInicial[cabana._id] = true;
+        try {
+          // 🔥 MARCAR SOLO LAS QUE VAMOS A CALCULAR
+          const nuevoCalculandoPrecios = {};
+          cabanasSinPrecio.forEach(cabana => {
+            nuevoCalculandoPrecios[cabana._id] = true;
           });
-          setCalculandoPrecios(calculandoInicial);
           
-          const calculosPromises = availableCabanas.map(async (cabana) => {
+          console.log('📊 Marcando como calculando:', Object.keys(nuevoCalculandoPrecios));
+          setCalculandoPrecios(nuevoCalculandoPrecios);
+          
+          // 🔥 CALCULAR PRECIOS EN PARALELO
+          const calculosPromises = cabanasSinPrecio.map(async (cabana) => {
             try {
+              console.log(`🧮 Calculando para ${cabana.nombre}...`);
               const precioData = await calcularPrecioReserva(
                 dateRange.start,
                 dateRange.end,
@@ -501,7 +583,7 @@ const tooltipTarget = useRef(null);
                 }
               };
             } catch (err) {
-              console.error(`Error calculando precio para cabaña ${cabana._id}:`, err);
+              console.error(`❌ Error calculando precio para ${cabana.nombre}:`, err);
               return {
                 cabanaId: cabana._id,
                 success: false,
@@ -513,9 +595,13 @@ const tooltipTarget = useRef(null);
           const resultados = await Promise.all(calculosPromises);
           
           if (!isCancelled && isMounted.current) {
+            console.log(`✅ ${resultados.filter(r => r.success).length} precios calculados exitosamente`);
+            
+            // 🔥 ACTUALIZAR SOLO LAS CABANAS CALCULADAS
             setAvailableCabanas(prev => prev.map(cabana => {
               const resultado = resultados.find(r => r.cabanaId === cabana._id);
               if (resultado?.success) {
+                console.log(`💾 Guardando precio para ${cabana.nombre}: ${resultado.data.total}`);
                 return {
                   ...cabana,
                   precioCalculado: resultado.data
@@ -524,17 +610,26 @@ const tooltipTarget = useRef(null);
               return cabana;
             }));
             
+            // 🔥 LIMPIAR ESTADO DE CÁLCULO
+            setCalculandoPrecios({});
+            console.log('✅ Cálculo de precios completado');
+          }
+        } catch (error) {
+          console.error('❌ Error en cálculo de precios:', error);
+          if (!isCancelled && isMounted.current) {
             setCalculandoPrecios({});
           }
-        }, 500);
-      }
+        }
+      }, 1000); // 🔥 AUMENTAR DELAY PARA EVITAR BUCLE
     };
 
     calcularPreciosDisponibles();
     
     return () => {
       isCancelled = true;
-      if (calculationTimeout) clearTimeout(calculationTimeout);
+      if (calculationTimeout) {
+        clearTimeout(calculationTimeout);
+      }
     };
   }, [dateRange, availableCabanas]);
 
@@ -593,10 +688,10 @@ const tooltipTarget = useRef(null);
       const fechaInicio = formatDateForAPI(dateRange.start);
       const fechaFin = formatDateForAPI(dateRange.end);
 
-      console.log('Buscando en:', `${API_URL}/api/cabanas/disponibles`);
+      console.log('Buscando en:', `${API_URL}/api/reservas/disponibles`);
       console.log('Con parámetros:', { fechaInicio, fechaFin });
 
-      const response = await axios.get(`${API_URL}/api/cabanas/disponibles`, {
+      const response = await axios.get(`${API_URL}/api/reservas/disponibles`, {
         params: {
           fechaInicio,
           fechaFin
@@ -613,10 +708,30 @@ const tooltipTarget = useRef(null);
       
       console.log(`Cabañas disponibles recibidas: ${cabanasDisponibles.length}`);
 
-      const processedCabanas = cabanasDisponibles.map(cabana => ({
-        ...cabana,
-        precioCalculado: null
-      }));
+      const processedCabanas = cabanasDisponibles.map(cabana => {
+        // NUEVA LÓGICA: Usar la imagenPrincipal que viene del backend
+        let imagenPrincipalUrl = `${API_URL}/default-cabana.jpg`;
+        
+        if (cabana.imagenPrincipal) {
+          imagenPrincipalUrl = getImageUrl(cabana.imagenPrincipal);
+        } else if (cabana.imagenes && cabana.imagenes.length > 0) {
+          // Si no hay imagenPrincipal, usar la primera de las imágenes
+          imagenPrincipalUrl = getImageUrl(cabana.imagenes[0]);
+        }
+        
+        return {
+          ...cabana,
+          imagenPrincipal: imagenPrincipalUrl,
+          // Procesar todas las imágenes si existen
+          imagenes: Array.isArray(cabana.imagenes) 
+            ? cabana.imagenes.map(img => ({
+                ...img,
+                url: getImageUrl(img)
+              }))
+            : [],
+          precioCalculado: null
+        };
+      });
 
       if (isMounted.current) {
         setAvailableCabanas(processedCabanas);
@@ -646,6 +761,7 @@ const tooltipTarget = useRef(null);
         setAvailableCabanas([]);
         setCalculandoPrecios({});
       }
+      console.log('🔍 RESPUESTA COMPLETA DEL BACKEND:', JSON.stringify(response.data, null, 2));
     }
   };
 
@@ -899,46 +1015,46 @@ const tooltipTarget = useRef(null);
           </h3>
 
           <Row className="justify-content-center mb-3">
-  <Col lg={8} className="text-center">
-    <div className="d-inline-block position-relative">
-      {/* Botón wrapper que acepta ref */}
-      <div ref={tooltipTarget} style={{ display: 'inline-block' }}>
-        <Button 
-          variant="outline-secondary"
-          size="sm"
-          className="rounded-pill mb-3"
-          style={{ color: 'white' }}
-          onClick={() => setShowTooltip(!showTooltip)}
-        >
-          <FaQuestionCircle className="me-1" />
-          ¿Cómo seleccionar fechas?
-        </Button>
-      </div>
-      
-      <Overlay 
-        target={tooltipTarget.current} 
-        show={showTooltip} 
-        placement="bottom"
-        rootClose
-        onHide={() => setShowTooltip(false)}
-      >
-        {(props) => (
-          <Tooltip id="date-instructions-tooltip" {...props}>
-            <div className="text-start p-2">
-              <strong>Instrucciones:</strong>
-              <ul className="mb-0 mt-2">
-                <li>Primer click: Fecha de inicio</li>
-                <li>Segundo click: Fecha de fin</li>
-                <li>Click en fecha seleccionada: Cancelar</li>
-                <li>Click fuera del rango: Nuevo rango</li>
-              </ul>
-            </div>
-          </Tooltip>
-        )}
-      </Overlay>
-    </div>
-  </Col>
-</Row>
+            <Col lg={8} className="text-center">
+              <div className="d-inline-block position-relative">
+                {/* Botón wrapper que acepta ref */}
+                <div ref={tooltipTarget} style={{ display: 'inline-block' }}>
+                  <Button 
+                    variant="outline-secondary"
+                    size="sm"
+                    className="rounded-pill mb-3"
+                    style={{ color: 'white' }}
+                    onClick={() => setShowTooltip(!showTooltip)}
+                  >
+                    <FaQuestionCircle className="me-1" />
+                    ¿Cómo seleccionar fechas?
+                  </Button>
+                </div>
+                
+                <Overlay 
+                  target={tooltipTarget.current} 
+                  show={showTooltip} 
+                  placement="bottom"
+                  rootClose
+                  onHide={() => setShowTooltip(false)}
+                >
+                  {(props) => (
+                    <Tooltip id="date-instructions-tooltip" {...props}>
+                      <div className="text-start p-2">
+                        <strong>Instrucciones:</strong>
+                        <ul className="mb-0 mt-2">
+                          <li>Primer click: Fecha de inicio</li>
+                          <li>Segundo click: Fecha de fin</li>
+                          <li>Click en fecha seleccionada: Cancelar</li>
+                          <li>Click fuera del rango: Nuevo rango</li>
+                        </ul>
+                      </div>
+                    </Tooltip>
+                  )}
+                </Overlay>
+              </div>
+            </Col>
+          </Row>
           
           <Row className="justify-content-center mb-3">
             <Col lg={8}>

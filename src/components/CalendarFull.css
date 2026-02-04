@@ -122,3 +122,179 @@
 .selected-range-middle {
   background-color: #e7f1ff !important;
 }
+
+/* Día actual - Mejorado */
+.react-calendar__tile--now {
+  background-color: #d1e7ff !important;
+  color: #000 !important;
+  font-weight: bold;
+}
+
+/* Días pasados (no seleccionables) */
+.react-calendar__tile:disabled {
+  color: #ccc !important;
+  background-color: #f8f9fa !important;
+  cursor: not-allowed;
+}
+
+/* Estilos específicos para CabanaDetalle (fondo oscuro) */
+.cabanas-detalle .react-calendar {
+  background: #444 !important;
+  border: 1px solid #555 !important;
+  color: #fff;
+}
+
+.cabanas-detalle .react-calendar__navigation button {
+  color: #fff;
+  background-color: #555;
+  border: 1px solid #666;
+}
+
+.cabanas-detalle .react-calendar__navigation button:hover {
+  background-color: #666;
+}
+
+.cabanas-detalle .react-calendar__month-view__weekdays {
+  color: #eaac25;
+}
+
+.cabanas-detalle .react-calendar__tile {
+  color: #fff;
+}
+
+.cabanas-detalle .react-calendar__tile:enabled:hover {
+  background-color: #555 !important;
+}
+
+.cabanas-detalle .react-calendar__tile--now {
+  background-color: #666 !important;
+  color: #fff !important;
+}
+
+/* En CabanaDetalle, cambiar el azul por verde para mejor contraste */
+.cabanas-detalle .selected-range-start,
+.cabanas-detalle .selected-range-end {
+  background-color: #4caf50 !important; /* Verde en lugar de azul */
+  color: white !important;
+}
+
+.cabanas-detalle .selected-range-middle {
+  background-color: #388e3c !important; /* Verde más oscuro */
+  color: white !important;
+}
+
+/* Leyenda visual para calendario */
+.calendar-legend {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.cabanas-detalle .calendar-legend {
+  background-color: #555;
+  color: #fff;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-color {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.legend-occupied {
+  background-color: #ff6b6b;
+}
+
+.legend-selected {
+  background-color: #0d6efd;
+}
+
+.cabanas-detalle .legend-selected {
+  background-color: #4caf50; /* Verde para CabanaDetalle */
+}
+
+.legend-today {
+  background-color: #d1e7ff;
+}
+
+.cabanas-detalle .legend-today {
+  background-color: #666;
+}
+
+/* Estados adicionales para mejor claridad */
+.weekend-date {
+  color: #dc3545 !important; /* Rojo para fines de semana */
+  font-weight: 500;
+}
+
+.cabanas-detalle .weekend-date {
+  color: #ff9800 !important; /* Naranja en fondo oscuro */
+}
+
+.holiday-date {
+  color: #28a745 !important; /* Verde para feriados */
+  font-weight: bold;
+}
+
+.cabanas-detalle .holiday-date {
+  color: #00bcd4 !important; /* Cyan en fondo oscuro */
+}
+
+/* Mejorar la visualización en móviles */
+@media (max-width: 768px) {
+  .react-calendar__tile {
+    padding: 8px 4px;
+    font-size: 14px;
+  }
+  
+  .calendar-legend {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+  
+  .legend-item {
+    font-size: 11px;
+  }
+}
+
+/* Tooltip para información de días ocupados */
+.calendar-tooltip {
+  position: absolute;
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border: 1px solid #555;
+  max-width: 200px;
+  pointer-events: none;
+}
+
+/* Animación suave para cambios de estado */
+.react-calendar__tile {
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+}
+
+.react-calendar__tile:active {
+  transform: scale(0.95);
+}
+
+/* Para cuando el calendario está en modo de solo lectura */
+.calendar-readonly .react-calendar__tile:enabled:hover {
+  background-color: transparent !important;
+  cursor: default;
+}

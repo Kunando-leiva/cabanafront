@@ -1,20 +1,188 @@
+/* CabanaDetalle.css - Versión Mejorada */
 html, body {
     background-color: #333;
 }
+
 .cabanas-detalle {
     background-color: #333;
     color: #fff;
     padding: 20px;
+    min-height: 100vh;
 }
 
-
-.boton-detalle{
-    background-color: #333;
-
+.boton-detalle {
+    background-color: #eaac25;
+    border-color: #eaac25;
+    color: #333;
+    transition: all 0.3s ease;
 }
-.text-carga{
+
+.boton-detalle:hover {
+    background-color: #d99a20;
+    border-color: #d99a20;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(234, 172, 37, 0.3);
+}
+
+.boton-detalle:disabled {
+    background-color: #666;
+    border-color: #666;
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.text-carga {
     color: #fff;
-   
 }
 
+/* Estilos para el calendario en CabanaDetalle */
+.calendar-container {
+    background-color: #444;
+    border-radius: 8px;
+    padding: 15px;
+}
 
+.react-calendar {
+    background-color: #444 !important;
+    border: 1px solid #555 !important;
+    border-radius: 8px;
+    color: #fff;
+}
+
+.react-calendar__navigation button {
+    color: #fff;
+    background-color: #555;
+    border: 1px solid #666;
+}
+
+.react-calendar__navigation button:hover {
+    background-color: #666;
+}
+
+.react-calendar__navigation button:disabled {
+    background-color: #333;
+    color: #888;
+}
+
+.react-calendar__month-view__weekdays {
+    color: #eaac25;
+}
+
+.react-calendar__month-view__weekdays__weekday {
+    padding: 10px;
+}
+
+.react-calendar__tile {
+    color: #fff;
+    background-color: transparent;
+}
+
+.react-calendar__tile:enabled:hover {
+    background-color: #555;
+}
+
+.react-calendar__tile--now {
+    background-color: #666 !important;
+}
+
+.react-calendar__tile--active {
+    background-color: #eaac25 !important;
+    color: #333 !important;
+}
+
+.react-calendar__tile--hasActive {
+    background-color: #d99a20 !important;
+}
+
+/* Días ocupados - Rojo para indicar NO disponible */
+.occupied-date {
+    background-color: #ff6b6b !important;
+    color: white !important;
+    border-radius: 4px;
+}
+
+.occupied-date:hover {
+    background-color: #ff5252 !important;
+    cursor: not-allowed;
+}
+
+/* Rango seleccionado - Verde para indicar disponible */
+.selected-range-start,
+.selected-range-end {
+    background-color: #4caf50 !important;
+    color: white !important;
+    border-radius: 4px;
+}
+
+.selected-range-middle {
+    background-color: #388e3c !important;
+    color: white !important;
+}
+
+/* Estilos para tarjetas */
+.card {
+    border: 1px solid #555;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    background-color: rgba(234, 172, 37, 0.8);
+    border-radius: 50%;
+    padding: 10px;
+}
+
+/* Badges personalizados */
+.badge {
+    transition: all 0.2s ease;
+}
+
+.badge:hover {
+    transform: scale(1.05);
+}
+
+/* Alertas personalizadas */
+.alert {
+    border: 1px solid;
+}
+
+.alert-info {
+    background-color: rgba(234, 172, 37, 0.1);
+    border-color: #eaac25;
+    color: #fff;
+}
+
+.alert-danger {
+    background-color: rgba(255, 107, 107, 0.1);
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+}
+
+.alert-success {
+    background-color: rgba(76, 175, 80, 0.1);
+    border-color: #4caf50;
+    color: #4caf50;
+}
+
+/* Estilos para los iconos de servicios */
+.fa-icon {
+    color: #eaac25;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .cabanas-detalle {
+        padding: 10px;
+    }
+    
+    .calendar-container {
+        padding: 10px;
+    }
+}
