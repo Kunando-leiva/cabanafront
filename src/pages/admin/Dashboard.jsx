@@ -24,7 +24,11 @@ import {
   FaSyncAlt,
   FaExclamationTriangle,
   FaTemperatureHigh,
-  FaTint
+  FaTint,
+  FaArrowUp,
+  FaArrowDown,
+  FaChartLine,
+  FaExchangeAlt
 } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -38,11 +42,16 @@ export default function Dashboard() {
   const [loadingClima, setLoadingClima] = useState(false);
   const [errorClima, setErrorClima] = useState(null);
   const [ciudad, setCiudad] = useState('Buenos Aires');
-  const [dolar, setDolar] = useState(null);
+  const [dolarData, setDolarData] = useState(null);
+  const [loadingDolar, setLoadingDolar] = useState(false);
+  const [errorDolar, setErrorDolar] = useState(null);
   const [noticias, setNoticias] = useState([]);
 
-  // TU API KEY REAL DE OPENWEATHERMAP
+  // API Key OpenWeatherMap (mañana revisamos si ya funciona)
   const API_KEY = '22347c6e54b5d4167b420870fe929910';
+  
+  // API GRATIS de Dólar Argentina - SIN API KEY NECESARIO
+  const DOLLAR_API_URL = 'https://dolarapi.com/v1/dolares';
   
   const navItems = [
     { path: '/admin/Dashboard', name: 'Inicio', icon: <FaTachometerAlt /> },
@@ -85,13 +94,88 @@ export default function Dashboard() {
     return result;
   };
 
+  // Función para obtener datos del dólar EN TIEMPO REAL (API GRATIS)
+  const fetchDolarData = async () => {
+    try {
+      setLoadingDolar(true);
+      setErrorDolar(null);
+
+      console.log('Obteniendo datos del dólar desde API...');
+      const response = await axios.get(DOLLAR_API_URL, {
+        timeout: 5000 // 5 segundos timeout
+      });
+      
+      const data = response.data;
+      console.log('Datos de dólar recibidos:', data);
+      
+      // Buscar los diferentes tipos de dólar en la respuesta
+      const dolarBlue = data.find(d => d.nombre === 'Blue' || d.casa === 'blue');
+      const dolarOficial = data.find(d => d.nombre === 'Oficial' || d.casa === 'oficial');
+      const dolarBolsa = data.find(d => d.nombre === 'Bolsa' || d.casa === 'bolsa');
+      const dolarContadoLiqui = data.find(d => d.nombre === 'Contado con liqui' || d.casa === 'contadoliqui');
+      
+      if (dolarBlue && dolarOficial) {
+        // Calcular la brecha cambiaria
+        const brecha = ((dolarBlue.venta / dolarOficial.venta - 1) * 100).toFixed(1);
+        const diferencia = (dolarBlue.venta - dolarOficial.venta).toFixed(2);
+        
+        setDolarData({
+          blue_compra: dolarBlue.compra,
+          blue_venta: dolarBlue.venta,
+          oficial_compra: dolarOficial.compra,
+          oficial_venta: dolarOficial.venta,
+          bolsa: dolarBolsa?.venta || 0,
+          contado_liqui: dolarContadoLiqui?.venta || 0,
+          fecha_actualizacion: dolarBlue.fechaActualizacion,
+          actualizado: new Date().toLocaleTimeString('es-ES'),
+          variacion: `+${brecha}%`,
+          brecha: `${brecha}%`,
+          diferencia: diferencia,
+          fuente: 'DolarAPI'
+        });
+        
+        console.log('Dólar blue actualizado:', dolarBlue.venta);
+      } else {
+        throw new Error('No se encontraron datos del dólar blue en la respuesta');
+      }
+
+    } catch (error) {
+      console.error('Error obteniendo dólar:', error);
+      setErrorDolar('Error temporal obteniendo datos del dólar. Reintentando...');
+      
+      // Datos simulados como respaldo temporal
+      const datosSimulados = {
+        blue_compra: 980,
+        blue_venta: 1000,
+        oficial_compra: 850,
+        oficial_venta: 900,
+        bolsa: 950,
+        contado_liqui: 970,
+        actualizado: new Date().toLocaleTimeString('es-ES'),
+        variacion: '+11.1%',
+        brecha: '11.1%',
+        diferencia: '100.00',
+        fuente: 'Datos simulados'
+      };
+      
+      setDolarData(datosSimulados);
+      
+      // Reintentar en 30 segundos si hay error
+      setTimeout(() => {
+        fetchDolarData();
+      }, 30000);
+    } finally {
+      setLoadingDolar(false);
+    }
+  };
+
   // Función para obtener clima real
   const fetchClimaReal = async (ciudadNombre = 'Buenos Aires') => {
     try {
       setLoadingClima(true);
       setErrorClima(null);
 
-      // API de OpenWeatherMap con TU KEY
+      // API de OpenWeatherMap
       const response = await axios.get(
         `https://api.openweathermap.org/data/2.5/weather?q=${ciudadNombre}&appid=${API_KEY}&units=metric&lang=es`
       );
@@ -198,26 +282,14 @@ export default function Dashboard() {
     }
   };
 
-  // Función para obtener dólar (simulado por ahora)
-  const fetchDolar = () => {
-    // Datos simulados del dólar
-    const dolarSimulado = {
-      oficial_compra: 850,
-      oficial_venta: 900,
-      blue_compra: 980,
-      blue_venta: 1000,
-      variacion_blue: '+1.5%',
-      actualizado: new Date().toLocaleTimeString('es-ES')
-    };
-    setDolar(dolarSimulado);
-  };
-
-  // Datos de noticias simuladas
+  // Datos de noticias simuladas (económicas realistas)
   const cargarNoticias = () => {
     const noticiasSimuladas = [
-      { id: 1, titulo: 'Mercado en alza', fuente: 'Económico', hora: '10:30', cambio: '+2.5%' },
-      { id: 2, titulo: 'Nuevas medidas económicas', fuente: 'Finanzas', hora: '09:15', cambio: 'Análisis' },
-      { id: 3, titulo: 'Sector turístico crece 15%', fuente: 'Turismo', hora: '08:45', cambio: 'Turismo' }
+      { id: 1, titulo: 'BCRA anuncia nuevas medidas monetarias', fuente: 'Ámbito Financiero', hora: '10:30', cambio: '+2.5%', color: 'success' },
+      { id: 2, titulo: 'Dólar blue sube $5 tras anuncio económico', fuente: 'Infobae', hora: '09:15', cambio: 'Análisis', color: 'warning' },
+      { id: 3, titulo: 'Sector turístico crece 15% este trimestre', fuente: 'Clarín', hora: '08:45', cambio: 'Turismo', color: 'info' },
+      { id: 4, titulo: 'Mercados reaccionan positivamente a reformas', fuente: 'La Nación', hora: '07:30', cambio: 'Alza', color: 'success' },
+      { id: 5, titulo: 'Reservas del BCRA muestran recuperación', fuente: 'Reuters', hora: '06:20', cambio: 'Estable', color: 'secondary' }
     ];
     setNoticias(noticiasSimuladas);
   };
@@ -230,7 +302,12 @@ export default function Dashboard() {
     }
   };
 
-  // Recargar clima automáticamente cada 10 minutos
+  // Refrescar datos del dólar
+  const handleRefreshDolar = () => {
+    fetchDolarData();
+  };
+
+  // Recargar datos automáticamente
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -238,7 +315,7 @@ export default function Dashboard() {
 
     // Cargar datos iniciales
     obtenerUbicacionAuto();
-    fetchDolar();
+    fetchDolarData(); // ¡ESTA ES LA API GRATIS DEL DÓLAR!
     cargarNoticias();
 
     // Recargar clima cada 10 minutos
@@ -248,9 +325,15 @@ export default function Dashboard() {
       }
     }, 600000);
 
+    // Recargar dólar cada 5 minutos
+    const dolarTimer = setInterval(() => {
+      fetchDolarData();
+    }, 300000);
+
     return () => {
       clearInterval(timer);
       clearInterval(climaTimer);
+      clearInterval(dolarTimer);
     };
   }, []);
 
@@ -308,6 +391,217 @@ export default function Dashboard() {
         <div className="row">
           {/* Columna izquierda - Widgets */}
           <div className="col-lg-4">
+            {/* Widget Dólar Argentina EN TIEMPO REAL */}
+           {/* Widget Dólar Argentina - Visualización Mejorada */}
+<div className="card mb-3 border shadow-sm">
+  <div className="card-header bg-white d-flex justify-content-between align-items-center">
+    <div className="d-flex align-items-center">
+      <FaDollarSign className="me-2 text-success fs-5" />
+      <h5 className="card-title mb-0 fw-bold">Dólar Hoy</h5>
+      {loadingDolar && (
+        <span className="spinner-border spinner-border-sm ms-2 text-success"></span>
+      )}
+    </div>
+    <div className="d-flex align-items-center gap-2">
+      <span className="badge bg-secondary fs-6">
+        {dolarData?.actualizado || '--:--'}
+      </span>
+      <button 
+        onClick={handleRefreshDolar}
+        className="btn btn-sm btn-outline-success"
+        disabled={loadingDolar}
+        title="Actualizar"
+      >
+        <FaSyncAlt className={loadingDolar ? 'fa-spin' : ''} />
+      </button>
+    </div>
+  </div>
+  
+  <div className="card-body p-0">
+    {errorDolar && (
+      <div className="alert alert-warning m-3 py-2 d-flex align-items-center">
+        <FaExclamationTriangle className="me-2" />
+        <small className="flex-grow-1">{errorDolar}</small>
+      </div>
+    )}
+
+    {dolarData ? (
+      <div className="p-3">
+        {/* CABECERA PRINCIPAL - Dólar Blue */}
+        <div className="text-center mb-4">
+          <div className="position-relative d-inline-block">
+            {/* Círculo con valor principal */}
+            <div 
+               className="rounded mb-3 d-flex align-items-center justify-content-center shadow"
+      style={{ 
+        width: '200px', 
+        height: '100px',
+        background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)'
+      }}
+            >
+              <div className="text-center text-white">
+                <div className="display-3 fw-bold">${dolarData.blue_venta}</div>
+                <div className="small opacity-90 mt-1">Blue Venta</div>
+              </div>
+            </div>
+            
+            {/* Badge de variación */}
+            <div className="position-absolute top-0 end-0 translate-middle">
+              <span className={`badge ${dolarData.variacion?.includes('+') ? 'bg-danger' : 'bg-success'} fs-6 px-3 py-2`}>
+                {dolarData.variacion || '+0.0%'}
+              </span>
+            </div>
+          </div>
+          
+          {/* Compra/Venta Blue */}
+          <div className="d-flex justify-content-center gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-muted small mb-1">Compra</div>
+              <div className="fs-4 fw-bold text-dark">${dolarData.blue_compra}</div>
+              <small className="text-muted">Blue</small>
+            </div>
+            <div className="vr"></div>
+            <div className="text-center">
+              <div className="text-muted small mb-1">Venta</div>
+              <div className="fs-4 fw-bold text-success">${dolarData.blue_venta}</div>
+              <small className="text-muted">Blue</small>
+            </div>
+          </div>
+        </div>
+
+        {/* COMPARACIÓN DE TIPOS DE DÓLAR - Grid de 3 columnas */}
+        <div className="row g-3 mb-4">
+          {/* Dólar Oficial */}
+          <div className="col-md-4">
+            <div className="card border h-100">
+              <div className="card-header bg-white py-2">
+                <h6 className="mb-0 d-flex align-items-center">
+                  <FaDollarSign className="me-2 text-primary" />
+                  Dólar Oficial
+                </h6>
+              </div>
+              <div className="card-body text-center py-3">
+                <div className="fs-2 fw-bold text-primary mb-2">${dolarData.oficial_venta}</div>
+                <div className="text-muted small mb-3">Venta</div>
+                <div className="d-flex justify-content-around">
+                  <div>
+                    <div className="text-muted small">Compra</div>
+                    <div className="fw-bold">${dolarData.oficial_compra}</div>
+                  </div>
+                  <div className="vr"></div>
+                  <div>
+                    <div className="text-muted small">Dif.</div>
+                    <div className={`fw-bold ${dolarData.diferencia > 0 ? 'text-danger' : 'text-success'}`}>
+                      ${dolarData.diferencia}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Dólar MEP / Bolsa */}
+          <div className="col-md-4">
+            <div className="card border h-100">
+              <div className="card-header bg-white py-2">
+                <h6 className="mb-0 d-flex align-items-center">
+                  <FaChartLine className="me-2 text-warning" />
+                  Dólar MEP
+                </h6>
+              </div>
+              <div className="card-body text-center py-3">
+                <div className="fs-2 fw-bold text-warning mb-2">${dolarData.bolsa}</div>
+                <div className="text-muted small mb-3">Bolsa</div>
+                <div className="d-flex justify-content-around">
+                  <div>
+                    <div className="text-muted small">Brecha</div>
+                    <div className="fw-bold text-warning">{dolarData.brecha}</div>
+                  </div>
+                  <div className="vr"></div>
+                  <div>
+                    <div className="text-muted small">Vs. Oficial</div>
+                    <div className={`fw-bold ${dolarData.variacion?.includes('+') ? 'text-danger' : 'text-success'}`}>
+                      {dolarData.variacion}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Dólar CCL */}
+          <div className="col-md-4">
+            <div className="card border h-100">
+              <div className="card-header bg-white py-2">
+                <h6 className="mb-0 d-flex align-items-center">
+                  <FaExchangeAlt className="me-2 text-info" />
+                  Dólar CCL
+                </h6>
+              </div>
+              <div className="card-body text-center py-3">
+                <div className="fs-2 fw-bold text-info mb-2">${dolarData.contado_liqui}</div>
+                <div className="text-muted small mb-3">Contado con Liqui</div>
+                <div className="d-flex justify-content-around">
+                  <div>
+                    <div className="text-muted small">Tipo</div>
+                    <div className="fw-bold">CCL</div>
+                  </div>
+                  <div className="vr"></div>
+                  <div>
+                    <div className="text-muted small">Mercado</div>
+                    <div className="fw-bold text-info">Capitales</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RESUMEN DE COMPARACIÓN */}
+        <div className="card border">
+          <div className="card-body p-3">
+            <div className="row text-center">
+              <div className="col-4 border-end">
+                <div className="text-muted small mb-1">Blue vs. Oficial</div>
+                <div className="h5 fw-bold text-warning">{dolarData.brecha}</div>
+                <div className="small text-muted">Brecha</div>
+              </div>
+              <div className="col-4 border-end">
+                <div className="text-muted small mb-1">Diferencia</div>
+                <div className="h5 fw-bold text-danger">${dolarData.diferencia}</div>
+                <div className="small text-muted">Entre Blue y Oficial</div>
+              </div>
+              <div className="col-4">
+                <div className="text-muted small mb-1">Variación</div>
+                <div className="h5 fw-bold text-success">{dolarData.variacion}</div>
+                <div className="small text-muted">Último movimiento</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* INFORMACIÓN DE ACTUALIZACIÓN */}
+        <div className="mt-3 text-center">
+          <div className="d-flex justify-content-center align-items-center text-muted small">
+            <FaClock className="me-2" />
+            <span>Actualizado: {dolarData.actualizado}</span>
+          </div>
+          <div className="mt-1">
+            <small className={`badge ${dolarData.fuente?.includes('simulados') ? 'bg-warning' : 'bg-success'}`}>
+              Fuente: {dolarData.fuente}
+            </small>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div className="text-center py-5">
+        <div className="spinner-border text-success mb-3" style={{width: '3rem', height: '3rem'}}></div>
+        <p className="text-muted mb-0">Cargando cotizaciones...</p>
+      </div>
+    )}
+  </div>
+</div>
+
             {/* Widget Clima Actual */}
             <div className="card mb-3 border shadow-sm">
               <div className="card-header bg-white d-flex justify-content-between align-items-center">
@@ -447,7 +741,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Widget Noticias y Dólar */}
+            {/* Widget Noticias Económicas */}
             <div className="card mb-3 border shadow-sm">
               <div className="card-header bg-white">
                 <h5 className="card-title mb-0 d-flex align-items-center">
@@ -464,49 +758,13 @@ export default function Dashboard() {
                           <h6 className="mb-1 text-dark">{noticia.titulo}</h6>
                           <small className="text-muted">{noticia.fuente} • {noticia.hora}</small>
                         </div>
-                        <span className={`badge ${
-                          noticia.cambio === '+2.5%' ? 'bg-success' :
-                          noticia.cambio === 'Análisis' ? 'bg-warning' : 'bg-info'
-                        }`}>
+                        <span className={`badge bg-${noticia.color}`}>
                           {noticia.cambio}
                         </span>
                       </div>
                     </div>
                   ))}
                 </div>
-                
-                {/* Sección Dólar */}
-                {dolar && (
-                  <div className="p-3 border-top">
-                    <h6 className="d-flex align-items-center mb-3 text-dark">
-                      <FaDollarSign className="me-2 text-success" />
-                      Dólar Hoy
-                      <small className="text-muted ms-2">({dolar.actualizado})</small>
-                    </h6>
-                    <div className="row g-2">
-                      <div className="col-6">
-                        <div className="p-2 border rounded text-center">
-                          <small className="text-muted d-block">Blue Compra</small>
-                          <h5 className="fw-bold mt-1 text-dark">${dolar.blue_compra}</h5>
-                        </div>
-                      </div>
-                      <div className="col-6">
-                        <div className="p-2 border rounded text-center">
-                          <small className="text-muted d-block">Blue Venta</small>
-                          <h5 className="fw-bold mt-1 text-dark">${dolar.blue_venta}</h5>
-                        </div>
-                      </div>
-                      <div className="col-12 mt-2">
-                        <div className={`p-2 border rounded text-center ${dolar.variacion_blue.startsWith('+') ? 'border-success' : 'border-danger'}`}>
-                          <small className="text-muted d-block">Variación Blue</small>
-                          <h6 className={`fw-bold mt-1 ${dolar.variacion_blue.startsWith('+') ? 'text-success' : 'text-danger'}`}>
-                            {dolar.variacion_blue}
-                          </h6>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -609,42 +867,9 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-
-            {/* Estadísticas rápidas */}
-            <div className="card border shadow-sm mt-3">
-              <div className="card-body">
-                <h5 className="card-title mb-3">Estadísticas</h5>
-                <div className="row text-center">
-                  <div className="col-md-3 col-6 mb-3 mb-md-0">
-                    <div className="p-2 border rounded bg-white">
-                      <div className="fs-2 fw-bold text-primary">12</div>
-                      <div className="text-muted">Cabañas</div>
-                    </div>
-                  </div>
-                  <div className="col-md-3 col-6 mb-3 mb-md-0">
-                    <div className="p-2 border rounded bg-white">
-                      <div className="fs-2 fw-bold text-success">8</div>
-                      <div className="text-muted">Reservas Hoy</div>
-                    </div>
-                  </div>
-                  <div className="col-md-3 col-6">
-                    <div className="p-2 border rounded bg-white">
-                      <div className="fs-2 fw-bold text-warning">24</div>
-                      <div className="text-muted">Total Reservas</div>
-                    </div>
-                  </div>
-                  <div className="col-md-3 col-6">
-                    <div className="p-2 border rounded bg-white">
-                      <div className="fs-2 fw-bold text-info">95%</div>
-                      <div className="text-muted">Ocupación</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
     </div>
   );
-}
+} 
