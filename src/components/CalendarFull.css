@@ -1,4 +1,4 @@
-/* Añade al final de tu CalendarFull.css */
+/* CalendarFull.css */
 
 /* Prevenir conflictos con react-calendar */
 .react-calendar,
@@ -78,7 +78,7 @@
 /* Calendar month label */
 .calendar-month-label {
   font-weight: 600;
-  color: #333;
+  color: #eaac25;
 }
 
 /* src/components/CalendarFull.css - AGREGAR: */
@@ -86,18 +86,22 @@
   isolation: isolate; /* Previene conflictos de stacking context */
 }
 
+/* ===== OPCIÓN 2 APLICADA: BORDE BLANCO PARA TODOS LOS CALENDARIOS ===== */
 .react-calendar {
   width: 100% !important;
   max-width: 100% !important;
-  background: white;
-  border: 1px solid #dee2e6;
+  background: rgb(0, 0, 0);
+  border: 1px solid rgb(0, 0, 0) !important;  /* Borde blanco agregado aquí */
   border-radius: 0.375rem;
   font-family: system-ui, -apple-system, sans-serif;
+  box-shadow: 0 0 0 2px #ffffff; /* Borde gris interno para mantener separación visual */
 }
+/* ===================================================================== */
 
 /* Para el admin calendar */
 .admin-calendar .react-calendar {
-  border: 1px solid #dee2e6;
+  border: 2px solid rgb(255, 255, 255) !important;  /* Borde blanco también para admin */
+  box-shadow: 0 0 0 1px #dee2e6 !important;
 }
 
 /* Fechas ocupadas */
@@ -132,7 +136,7 @@
 
 /* Días pasados (no seleccionables) */
 .react-calendar__tile:disabled {
-  color: #ccc !important;
+  color: #727070 !important;
   background-color: #f8f9fa !important;
   cursor: not-allowed;
 }
@@ -140,7 +144,8 @@
 /* Estilos específicos para CabanaDetalle (fondo oscuro) */
 .cabanas-detalle .react-calendar {
   background: #444 !important;
-  border: 1px solid #555 !important;
+  border: 1.5px solid rgb(0, 0, 0) !important;  /* Borde blanco también para CabañaDetalle */
+  box-shadow: 0 0 0 1px #000000 !important; /* Borde interno oscuro */
   color: #fff;
 }
 

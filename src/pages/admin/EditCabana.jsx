@@ -188,101 +188,113 @@ export default function EditCabana() {
   };
 
   // Subir nuevas imágenes
-  const handleImageUpload = async (file) => {
-    try {
-      setUploading(true);
+  // const handleImageUpload = async (file) => {
+  //   try {
+  //     setUploading(true);
       
-      const formData = new FormData();
-      formData.append('images', file);
+  //     const formData = new FormData();
+  //     formData.append('images', file);
       
-      // ✅ SOLUCIÓN CRÍTICA: Enviar imagesToKeep como string JSON válido
-      const imagesToKeepIds = cabanaData.imagenes
-        .filter(img => img._id && !img.isNew && !img._id.startsWith('temp-'))
-        .map(img => img._id);
+  //     // ✅ SOLUCIÓN CRÍTICA: Enviar imagesToKeep como string JSON válido
+  //     const imagesToKeepIds = cabanaData.imagenes
+  //       .filter(img => img._id && !img.isNew && !img._id.startsWith('temp-'))
+  //       .map(img => img._id);
       
-      formData.append('imagesToKeep', JSON.stringify(imagesToKeepIds));
+  //     formData.append('imagesToKeep', JSON.stringify(imagesToKeepIds));
 
-      console.log('📤 Subiendo imagen con datos:', {
-        imagesToKeep: imagesToKeepIds.length,
-        fileName: file.name,
-        fileSize: file.size
-      });
+  //     console.log('📤 Subiendo imagen con datos:', {
+  //       imagesToKeep: imagesToKeepIds.length,
+  //       fileName: file.name,
+  //       fileSize: file.size
+  //     });
 
-      const response = await axios.post(
-        `${API_URL}/api/cabanas/${id}/agregar-imagenes`,
-        formData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            // NOTA: No establecer 'Content-Type', axios lo maneja automáticamente para FormData
-          },
-          timeout: 30000
-        }
-      );
+  //     const response = await axios.post(
+  //       `${API_URL}/api/cabanas/${id}/agregar-imagenes`,
+  //       formData,
+  //       {
+  //         headers: {
+  //           'Authorization': `Bearer ${token}`,
+  //           // NOTA: No establecer 'Content-Type', axios lo maneja automáticamente para FormData
+  //         },
+  //         timeout: 30000
+  //       }
+  //     );
 
-      if (response.data.success) {
-        // Actualizar las imágenes en el estado
-        const nuevasImagenes = response.data.data.imagenes || [];
-        setCabanaData(prev => ({
-          ...prev,
-          imagenes: nuevasImagenes.map(img => ({
-            _id: img._id,
-            fileId: img.fileId,
-            url: img.url,
-            filename: img.filename,
-            isNew: img.isNew || false
-          }))
-        }));
+  //     if (response.data.success) {
+  //       // Actualizar las imágenes en el estado
+  //       const nuevasImagenes = response.data.data.imagenes || [];
+  //       setCabanaData(prev => ({
+  //         ...prev,
+  //         imagenes: nuevasImagenes.map(img => ({
+  //           _id: img._id,
+  //           fileId: img.fileId,
+  //           url: img.url,
+  //           filename: img.filename,
+  //           isNew: img.isNew || false
+  //         }))
+  //       }));
         
-        message.success(`Imagen agregada correctamente`);
-        setSuccess('Imagen agregada correctamente');
-      }
-    } catch (error) {
-      console.error('Error al subir imagen:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      message.error(error.response?.data?.error || 'Error al subir imagen');
-      setError('Error al subir imagen');
-    } finally {
-      setUploading(false);
-    }
-    return false;
-  };
+  //       message.success(`Imagen agregada correctamente`);
+  //       setSuccess('Imagen agregada correctamente');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error al subir imagen:', {
+  //       message: error.message,
+  //       response: error.response?.data,
+  //       status: error.response?.status
+  //     });
+  //     message.error(error.response?.data?.error || 'Error al subir imagen');
+  //     setError('Error al subir imagen');
+  //   } finally {
+  //     setUploading(false);
+  //   }
+  //   return false;
+  // };
 
   // Manejar selección de archivos
   const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
+  const files = Array.from(e.target.files);
+  if (files.length === 0) return;
 
-    // Limitar a 10 imágenes máximo
-    const totalImages = cabanaData.imagenes.length + files.length;
-    if (totalImages > 10) {
-      message.error(`Máximo 10 imágenes permitidas. Ya tienes ${cabanaData.imagenes.length}`);
-      return;
-    }
+  // Limitar a 10 imágenes máximo
+  const totalImages = cabanaData.imagenes.length + files.length;
+  if (totalImages > 10) {
+    message.error(`Máximo 10 imágenes permitidas. Ya tienes ${cabanaData.imagenes.length}`);
+    return;
+  }
 
-    // Subir cada archivo
-    files.forEach(file => {
-      // Validar tipo de archivo
-      if (!file.type.startsWith('image/')) {
-        message.error(`${file.name} no es una imagen válida`);
-        return;
-      }
+  // Crear objetos para vista previa - ¡MANTENER EL ARCHIVO ORIGINAL!
+  const nuevasImagenes = files.map((file, index) => {
+    // Usar el archivo original directamente
+    return {
+      _id: `temp-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+      url: URL.createObjectURL(file), // URL temporal para vista previa
+      filename: file.name,
+      file: file, // ← USAR EL ARCHIVO ORIGINAL
+      isNew: true,
+      size: file.size,
+      type: file.type
+    };
+  });
 
-      // Validar tamaño (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        message.error(`${file.name} es muy grande (máximo 10MB)`);
-        return;
-      }
+  // Agregar al estado
+  setCabanaData(prev => ({
+    ...prev,
+    imagenes: [...prev.imagenes, ...nuevasImagenes]
+  }));
 
-      handleImageUpload(file);
-    });
-
-    // Limpiar input
-    e.target.value = '';
-  };
+  // Limpiar input
+  e.target.value = '';
+  message.info(`${files.length} imagen(es) agregada(s). Se guardarán al actualizar.`);
+  
+  // Debug
+  console.log('📁 Archivos seleccionados:', {
+    cantidad: files.length,
+    nombres: files.map(f => f.name),
+    tamaños: files.map(f => f.size),
+    totalImagenes: cabanaData.imagenes.length + files.length
+  });
+};
 
   // Reordenar imágenes
   const moveImage = (index, direction) => {
@@ -326,126 +338,140 @@ export default function EditCabana() {
   };
 
   // ✅✅✅ SOLUCIÓN DEFINITIVA: Enviar formulario completo
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading({ initial: false, saving: true, deleting: false });
-      setError('');
-      setSuccess('');
+// ✅✅✅ SOLUCIÓN DEFINITIVA: Enviar formulario completo CON ARCHIVOS
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    setLoading({ initial: false, saving: true, deleting: false });
+    setError('');
+    setSuccess('');
 
-      // ============================================
-      // 1. PREPARAR FORM DATA - SOLUCIÓN CRÍTICA
-      // ============================================
-      const formData = new FormData();
-      
-      // Datos básicos como strings
-      const camposTexto = {
-        nombre: cabanaData.nombre,
-        descripcion: cabanaData.descripcion,
-        capacidad: cabanaData.capacidad.toString(),
-        precio: cabanaData.precio.toString(),
-        servicios: JSON.stringify(cabanaData.servicios || []),
-        isFeatured: cabanaData.isFeatured.toString(),
-        disponibilidad: cabanaData.disponibilidad.toString(),
-        reglas: cabanaData.reglas || '',
-        dimensiones: cabanaData.dimensiones || '',
-        habitaciones: cabanaData.habitaciones.toString(),
-        // ✅✅✅ ENVIAR SIEMPRE COMO STRING JSON VÁLIDO
-        imagesToDelete: '[]', // Array vacío si no hay imágenes para eliminar
-        imagesToKeep: JSON.stringify(
-          cabanaData.imagenes
-            .filter(img => img._id && !img._id.startsWith('temp-'))
-            .map(img => img._id)
-        )
-      };
-      
-      // Agregar cada campo al FormData
-      Object.entries(camposTexto).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-      
-      // Agregar nuevas imágenes si las hay
-      cabanaData.imagenes
-        .filter(img => img.isNew && img.file)
-        .forEach((img, index) => {
-          formData.append('newImages', img.file);
-        });
-      
-      console.log('📤 Datos a enviar para actualizar:', {
-        imagesToKeep: JSON.parse(camposTexto.imagesToKeep).length,
-        imagesToDelete: 0,
-        nuevasImagenes: cabanaData.imagenes.filter(img => img.isNew && img.file).length,
-        totalCampos: Object.keys(camposTexto).length
-      });
-      
-      // ============================================
-      // 2. ENVIAR AL BACKEND
-      // ============================================
-      const response = await axios.put(
-        `${API_URL}/api/cabanas/${id}`,
-        formData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-            // ✅ NO establecer 'Content-Type' - axios lo hace automáticamente para FormData
-          },
-          timeout: 30000
-        }
-      );
-      
-      // ============================================
-      // 3. MANEJAR RESPUESTA
-      // ============================================
-      if (response.data.success) {
-        message.success(response.data.message || '¡Cabaña actualizada correctamente!');
-        
-        // Mostrar resumen si viene en la respuesta
-        if (response.data.summary) {
-          console.log('📊 Resumen de actualización:', response.data.summary);
-        }
-        
-        // Redirigir después de mostrar el mensaje
-        setTimeout(() => {
-          navigate('/admin/cabanas');
-        }, 2000);
+    // ============================================
+    // 1. PREPARAR FORM DATA - CON ARCHIVOS
+    // ============================================
+    const formData = new FormData();
+    
+    // Datos básicos como strings
+    const camposTexto = {
+      nombre: cabanaData.nombre,
+      descripcion: cabanaData.descripcion,
+      capacidad: cabanaData.capacidad.toString(),
+      precio: cabanaData.precio.toString(),
+      servicios: JSON.stringify(cabanaData.servicios || []),
+      isFeatured: cabanaData.isFeatured.toString(),
+      disponibilidad: cabanaData.disponibilidad.toString(),
+      reglas: cabanaData.reglas || '',
+      dimensiones: cabanaData.dimensiones || '',
+      habitaciones: cabanaData.habitaciones.toString(),
+      // ✅✅✅ ENVIAR COMO STRING JSON VÁLIDO
+      imagesToDelete: '[]', // Array vacío
+      // Enviar TODAS las imágenes que queremos conservar
+      imagesToKeep: JSON.stringify(
+        cabanaData.imagenes
+          .filter(img => img._id && !img._id.startsWith('temp-'))
+          .map(img => img._id)
+      )
+    };
+    
+    // Agregar cada campo al FormData
+    Object.entries(camposTexto).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
+    
+    // ✅✅✅ CRÍTICO: AGREGAR LOS ARCHIVOS DE LAS IMÁGENES NUEVAS
+    const imagenesNuevas = cabanaData.imagenes.filter(img => img._id.startsWith('temp-'));
+    
+    console.log('📤 Archivos a enviar:', {
+      imagenesExistentes: cabanaData.imagenes.filter(img => !img._id.startsWith('temp-')).length,
+      imagenesNuevas: imagenesNuevas.length,
+      totalImagenes: cabanaData.imagenes.length
+    });
+    
+    // Agregar cada archivo nuevo al FormData
+    imagenesNuevas.forEach((img, index) => {
+      if (img.file && img.file instanceof File) {
+        formData.append('images', img.file); // 'images' en plural
+        console.log(`✅ Añadiendo archivo ${index}: ${img.filename} (${img.file.size} bytes)`);
       } else {
-        throw new Error(response.data.error || 'Error desconocido');
+        console.warn(`⚠️ Imagen ${img.filename} no tiene archivo válido`);
       }
-      
-    } catch (error) {
-      console.error('🔥 ERROR en handleSubmit:', {
-        mensaje: error.message,
-        respuesta: error.response?.data,
-        estado: error.response?.status,
-        configuracion: {
-          url: error.config?.url,
-          method: error.config?.method,
-          headers: error.config?.headers
-        }
-      });
-      
-      // Mensajes de error amigables
-      let mensajeError = 'Error al guardar los cambios';
-      
-      if (error.response?.data?.error) {
-        mensajeError = error.response.data.error;
-      } else if (error.message?.includes('timeout')) {
-        mensajeError = 'La operación tardó demasiado. Intenta con menos imágenes.';
-      } else if (error.response?.status === 400) {
-        mensajeError = 'Datos inválidos. Verifica la información.';
-      } else if (error.response?.status === 401) {
-        mensajeError = 'No autorizado. Inicia sesión nuevamente.';
-      } else if (error.response?.status === 404) {
-        mensajeError = 'Cabaña no encontrada.';
+    });
+    
+    // Debug: Ver qué se está enviando
+    console.log('📦 FormData preparado. Contenido:');
+    for (let [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`   ${key}: File - ${value.name} (${value.size} bytes)`);
+      } else {
+        console.log(`   ${key}: ${value}`);
       }
-      
-      message.error(mensajeError);
-      setError(mensajeError);
-      
-    } finally {
-      setLoading({ initial: false, saving: false, deleting: false });
     }
-  };
+
+    // ============================================
+    // 2. ENVIAR AL BACKEND
+    // ============================================
+    const response = await axios.put(
+      `${API_URL}/api/cabanas/${id}`,
+      formData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // ✅ NO establecer 'Content-Type' - axios lo hace automáticamente para FormData
+        },
+        timeout: 60000 // 60 segundos para imágenes grandes
+      }
+    );
+    
+    // ============================================
+    // 3. MANEJAR RESPUESTA
+    // ============================================
+    if (response.data.success) {
+      message.success(response.data.message || '¡Cabaña actualizada correctamente!');
+      
+      // Mostrar resumen si viene en la respuesta
+      if (response.data.summary) {
+        console.log('📊 Resumen de actualización:', response.data.summary);
+      }
+      
+      // Redirigir después de mostrar el mensaje
+      setTimeout(() => {
+        navigate('/admin/cabanas');
+      }, 2000);
+    } else {
+      throw new Error(response.data.error || 'Error desconocido');
+    }
+    
+  } catch (error) {
+    console.error('🔥 ERROR en handleSubmit:', {
+      mensaje: error.message,
+      respuesta: error.response?.data,
+      estado: error.response?.status
+    });
+    
+    // Mensajes de error amigables
+    let mensajeError = 'Error al guardar los cambios';
+    
+    if (error.response?.data?.error) {
+      mensajeError = error.response.data.error;
+    } else if (error.message?.includes('timeout')) {
+      mensajeError = 'La operación tardó demasiado. Intenta con menos imágenes.';
+    } else if (error.response?.status === 400) {
+      mensajeError = 'Datos inválidos. Verifica la información.';
+    } else if (error.response?.status === 401) {
+      mensajeError = 'No autorizado. Inicia sesión nuevamente.';
+    } else if (error.response?.status === 404) {
+      mensajeError = 'Cabaña no encontrada.';
+    } else if (error.response?.status === 413) {
+      mensajeError = 'Las imágenes son demasiado grandes. Reduce el tamaño.';
+    }
+    
+    message.error(mensajeError);
+    setError(mensajeError);
+    
+  } finally {
+    setLoading({ initial: false, saving: false, deleting: false });
+  }
+};
 
   if (loading.initial) {
     return (
@@ -715,11 +741,11 @@ export default function EditCabana() {
                         />
                         
                         {/* Indicador de nueva imagen */}
-                        {img.isNew && (
-                          <span className="position-absolute top-0 start-0 badge bg-success m-2">
-                            Nueva
-                          </span>
-                        )}
+                        {img._id.startsWith('temp-') && (
+  <span className="position-absolute top-0 start-0 badge bg-success m-2">
+    Nueva
+  </span>
+)}
                         
                         {/* Indicador de imagen principal */}
                         {index === 0 && (
@@ -764,12 +790,12 @@ export default function EditCabana() {
                       
                       <Card.Body className="p-2">
                         <small className="text-muted d-block text-truncate" title={img.filename}>
-                          {img.filename}
-                        </small>
-                        {img.isNew && (
-                          <small className="text-success d-block">
-                            (Se guardará al actualizar)
-                          </small>
+  {img.filename}
+</small>
+{img._id.startsWith('temp-') && (
+  <small className="text-success d-block">
+    (Se guardará al actualizar)
+  </small>
                         )}
                       </Card.Body>
                     </Card>

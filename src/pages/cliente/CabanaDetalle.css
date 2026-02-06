@@ -10,40 +10,170 @@ html, body {
     min-height: 100vh;
 }
 
+/* ============= BORDES BLANCOS PARA LOS ELEMENTOS MARCADOS ============= */
+
+/* 1. Borde blanco para toda la sección principal */
+.cabanas-detalle > .container {
+    border: 2px solid rgb(168, 38, 38) !important;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+/* 2. Borde blanco para el Card de la izquierda (imágenes + descripción) */
+/* .cabanas-detalle .card:first-of-type {
+    border: 2px solid white !important;
+    border-radius: 10px;
+    overflow: hidden;
+} */
+
+/* 3. Borde blanco para el Card de la derecha (detalles + calendario + reserva) */
+/* .cabanas-detalle .card:last-of-type {
+    border: 2px solid white !important;
+    border-radius: 10px;
+    overflow: hidden;
+} */
+
+/* 4. Borde blanco para el calendario */
+/* .cabanas-detalle .calendar-container {
+    border: 2px solid rgb(189, 30, 30) !important;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #444;
+    margin-top: 10px;
+} */
+
+/* 5. Borde blanco para la sección de detalles (capacidad + precio) */
+/* .cabanas-detalle .card-body > div:first-child {
+    border: 2px solid white !important;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background-color: #555;
+} */
+
+/* 6. Borde blanco para la sección de disponibilidad y reserva */
+/* .cabanas-detalle .card-body > div:nth-child(2) {
+    border: 2px solid white !important;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background-color: #555;
+} */
+
+/* 7. Borde blanco para el alert de fechas seleccionadas */
+.cabanas-detalle .alert-info {
+    border: 2px solid #000000 !important;
+    border-radius: 8px;
+    background-color: #555;
+    margin-top: 15px;
+}
+
+/* ============= BOTONES BLANCOS CON LETRA NEGRA ============= */
+
+/* Botón "Volver" */
+.cabanas-detalle .btn-outline-primary {
+    background-color: #eaac25 !important;
+    border-color: rgb(0, 0, 0) !important;
+    color: #000000 !important;
+    font-weight: 600;
+}
+
+.cabanas-detalle .btn-outline-primary:hover {
+    background-color: #eaac25 !important;
+    border-color: #f0f0f0 !important;
+    color: #333 !important;
+    transform: translateY(-2px);
+}
+
+/* Botón "Reservar ahora" */
 .boton-detalle {
-    background-color: #eaac25;
-    border-color: #eaac25;
-    color: #333;
+    background-color: #eaac25 !important;
+    border-color: rgb(0, 0, 0) !important;
+    color: #333 !important;
+    font-weight: 600;
     transition: all 0.3s ease;
 }
 
 .boton-detalle:hover {
-    background-color: #d99a20;
-    border-color: #d99a20;
+    background-color: #f0f0f0 !important;
+    border-color: #f0f0f0 !important;
+    color: #333 !important;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(234, 172, 37, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
 }
 
 .boton-detalle:disabled {
-    background-color: #666;
-    border-color: #666;
+    background-color: #666 !important;
+    border-color: #666 !important;
+    color: #888 !important;
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
 
+/* Borde blanco para las cajas de detalles (Capacidad y Precio) */
+.cabanas-detalle .d-flex.align-items-center.p-3.rounded.h-100 {
+    border: 2px solid rgb(0, 0, 0) !important;
+    background-color: #555 !important;
+    border-radius: 8px !important;
+}
+
+/* Opcional: Mejorar el contraste del icono */
+.cabanas-detalle .d-flex.align-items-center.p-3.rounded.h-100 .text-success {
+    color: #05bb1d !important; /* Cambiar el verde por el color principal */
+}
+
+/* Estilos para el texto dentro de las cajas */
+.cabanas-detalle .d-flex.align-items-center.p-3.rounded.h-100 small.text-muted {
+    color: #ccc !important; /* Mejorar visibilidad del texto pequeño */
+}
+
+.cabanas-detalle .d-flex.align-items-center.p-3.rounded.h-100 .fs-5 {
+    color: white !important; /* Asegurar que el precio sea blanco */
+}
+
+.cabanas-detalle .d-flex.align-items-center.p-3.rounded.h-100 .fs-5 strong {
+    color: #eaac25 !important; /* Color dorado para el precio */
+}
+
+
+/* Borde blanco para la leyenda del calendario */
+.cabanas-detalle .calendar-legend {
+    border: 2px solid rgb(0, 0, 0) !important;
+    border-radius: 8px !important;
+    padding: 15px !important;
+    background-color: #555 !important;
+    margin-top: 15px;
+}
+
+/* Mejorar los items de la leyenda */
+.cabanas-detalle .calendar-legend .legend-item {
+    color: rgb(0, 0, 0) !important;
+}
+
+/* Asegurar que los cuadros de color se vean bien */
+.cabanas-detalle .calendar-legend .legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Específico para los textos */
+.cabanas-detalle .calendar-legend span {
+    color: rgb(243, 243, 243) !important;
+    font-weight: 500;
+}
+
+/* ============= ESTILOS EXISTENTES MANTENIDOS ============= */
+
 .text-carga {
     color: #fff;
 }
 
 /* Estilos para el calendario en CabanaDetalle */
-.calendar-container {
-    background-color: #444;
-    border-radius: 8px;
-    padding: 15px;
-}
-
 .react-calendar {
     background-color: #444 !important;
     border: 1px solid #555 !important;
@@ -123,7 +253,6 @@ html, body {
 
 /* Estilos para tarjetas */
 .card {
-    border: 1px solid #555;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -134,9 +263,10 @@ html, body {
 
 .carousel-control-prev-icon,
 .carousel-control-next-icon {
-    background-color: rgba(234, 172, 37, 0.8);
+    background-color: rgba(255, 255, 255, 0.8);
     border-radius: 50%;
     padding: 10px;
+    filter: invert(1); /* Hacer las flechas negras para contraste */
 }
 
 /* Badges personalizados */
@@ -149,16 +279,6 @@ html, body {
 }
 
 /* Alertas personalizadas */
-.alert {
-    border: 1px solid;
-}
-
-.alert-info {
-    background-color: rgba(234, 172, 37, 0.1);
-    border-color: #eaac25;
-    color: #fff;
-}
-
 .alert-danger {
     background-color: rgba(255, 107, 107, 0.1);
     border-color: #ff6b6b;
@@ -176,13 +296,66 @@ html, body {
     color: #eaac25;
 }
 
+/* Mejorar contraste del texto */
+.cabanas-detalle h1,
+.cabanas-detalle h4,
+.cabanas-detalle h5,
+.cabanas-detalle .card-text {
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .cabanas-detalle {
         padding: 10px;
     }
     
+    .cabanas-detalle > .container {
+        padding: 15px;
+    }
+    
+    .cabanas-detalle .card-body > div:first-child,
+    .cabanas-detalle .card-body > div:nth-child(2) {
+        padding: 15px;
+    }
+    
     .calendar-container {
         padding: 10px;
     }
+}
+
+.cabanas-detalle .card:first-of-type .d-flex.flex-wrap.gap-2 .badge {
+    background-color: white !important;
+    color: #333 !important;
+    border: 2px solid #ccc !important;
+    border-radius: 20px !important;
+    padding: 8px 15px !important;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+/* Hover effect */
+.cabanas-detalle .card:first-of-type .d-flex.flex-wrap.gap-2 .badge:hover {
+    background-color: #f8f9fa !important;
+    border-color: #888 !important;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Iconos dentro de los badges */
+.cabanas-detalle .card:first-of-type .d-flex.flex-wrap.gap-2 .badge svg {
+    color: #333 !important;
+    font-size: 16px;
+    margin-right: 6px;
+}
+
+/* Asegurar que el texto sea negro */
+.cabanas-detalle .card:first-of-type .d-flex.flex-wrap.gap-2 .badge span {
+    color: #333 !important;
+    font-weight: 500;
 }
