@@ -28,7 +28,11 @@ import {
   FaArrowUp,
   FaArrowDown,
   FaChartLine,
-  FaExchangeAlt
+  FaExchangeAlt,
+  FaMoon,
+  FaCloudMoon,
+  FaBolt,
+  FaSmog,
 } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -46,11 +50,14 @@ export default function Dashboard() {
   const [loadingDolar, setLoadingDolar] = useState(false);
   const [errorDolar, setErrorDolar] = useState(null);
   const [noticias, setNoticias] = useState([]);
+  const [pronostico, setPronostico] = useState([]);
+  const [loadingPronostico, setLoadingPronostico] = useState(false);
+  const [errorPronostico, setErrorPronostico] = useState(null);
 
-  // API Key OpenWeatherMap (mañana revisamos si ya funciona)
+  // API Key OpenWeatherMap
   const API_KEY = '22347c6e54b5d4167b420870fe929910';
   
-  // API GRATIS de Dólar Argentina - SIN API KEY NECESARIO
+  // API GRATIS de Dólar Argentina
   const DOLLAR_API_URL = 'https://dolarapi.com/v1/dolares';
   
   const navItems = [
@@ -60,62 +67,172 @@ export default function Dashboard() {
     { path: '/admin/imagenes', name: 'Imágenes', icon: <FaImages /> }
   ];
 
-  // Función para obtener ícono según código de OpenWeatherMap
-  const getWeatherIcon = (iconCode, temp) => {
+  // Función para obtener ícono según código de OpenWeatherMap y hora del día
+  const getWeatherIcon = (iconCode, temp, horaActual = null) => {
+    // Determinar si es de noche basado en la hora actual (si se proporciona)
+    const esNoche = horaActual ? 
+      (horaActual.getHours() >= 20 || horaActual.getHours() < 6) : 
+      iconCode.includes('n');
+    
     const iconMap = {
-      '01d': { icon: <FaSun className="text-warning" />, color: 'bg-warning' },
-      '01n': { icon: <FaSun className="text-warning" />, color: 'bg-warning' },
-      '02d': { icon: <FaCloudSun className="text-warning" />, color: 'bg-warning' },
-      '02n': { icon: <FaCloudSun className="text-warning" />, color: 'bg-warning' },
-      '03d': { icon: <FaCloud className="text-secondary" />, color: 'bg-secondary' },
-      '03n': { icon: <FaCloud className="text-secondary" />, color: 'bg-secondary' },
-      '04d': { icon: <FaCloud className="text-secondary" />, color: 'bg-secondary' },
-      '04n': { icon: <FaCloud className="text-secondary" />, color: 'bg-secondary' },
-      '09d': { icon: <FaCloudRain className="text-info" />, color: 'bg-info' },
-      '09n': { icon: <FaCloudRain className="text-info" />, color: 'bg-info' },
-      '10d': { icon: <FaCloudShowersHeavy className="text-info" />, color: 'bg-info' },
-      '10n': { icon: <FaCloudShowersHeavy className="text-info" />, color: 'bg-info' },
-      '11d': { icon: <FaCloudShowersHeavy className="text-danger" />, color: 'bg-danger' },
-      '11n': { icon: <FaCloudShowersHeavy className="text-danger" />, color: 'bg-danger' },
-      '13d': { icon: <FaSnowflake className="text-info" />, color: 'bg-info' },
-      '13n': { icon: <FaSnowflake className="text-info" />, color: 'bg-info' },
-      '50d': { icon: <FaCloud className="text-secondary" />, color: 'bg-secondary' },
-      '50n': { icon: <FaCloud className="text-secondary" />, color: 'bg-secondary' },
+      '01d': { icon: <FaSun className="text-warning" />, color: 'bg-warning', desc: 'Soleado' },
+      '01n': { icon: <FaMoon className="text-secondary" />, color: 'bg-secondary', desc: 'Despejado' },
+      '02d': { icon: <FaCloudSun className="text-warning" />, color: 'bg-warning', desc: 'Parcialmente nublado' },
+      '02n': { icon: <FaCloudMoon className="text-secondary" />, color: 'bg-secondary', desc: 'Parcialmente nublado' },
+      '03d': { icon: <FaCloud className="text-secondary" />, color: 'bg-secondary', desc: 'Nublado' },
+      '03n': { icon: <FaCloud className="text-secondary" />, color: 'bg-secondary', desc: 'Nublado' },
+      '04d': { icon: <FaCloud className="text-secondary" />, color: 'bg-secondary', desc: 'Muy nublado' },
+      '04n': { icon: <FaCloud className="text-secondary" />, color: 'bg-secondary', desc: 'Muy nublado' },
+      '09d': { icon: <FaCloudRain className="text-info" />, color: 'bg-info', desc: 'Lluvia ligera' },
+      '09n': { icon: <FaCloudRain className="text-info" />, color: 'bg-info', desc: 'Lluvia ligera' },
+      '10d': { icon: <FaCloudShowersHeavy className="text-info" />, color: 'bg-info', desc: 'Lluvia' },
+      '10n': { icon: <FaCloudShowersHeavy className="text-info" />, color: 'bg-info', desc: 'Lluvia' },
+      '11d': { icon: <FaBolt className="text-danger" />, color: 'bg-danger', desc: 'Tormenta' },
+      '11n': { icon: <FaBolt className="text-danger" />, color: 'bg-danger', desc: 'Tormenta' },
+      '13d': { icon: <FaSnowflake className="text-info" />, color: 'bg-info', desc: 'Nieve' },
+      '13n': { icon: <FaSnowflake className="text-info" />, color: 'bg-info', desc: 'Nieve' },
+      '50d': { icon: <FaSmog className="text-secondary" />, color: 'bg-secondary', desc: 'Niebla' },
+      '50n': { icon: <FaSmog className="text-secondary" />, color: 'bg-secondary', desc: 'Niebla' },
     };
     
-    const result = iconMap[iconCode] || { icon: <FaCloudSun className="text-warning" />, color: 'bg-warning' };
+    let result = iconMap[iconCode];
     
-    // Color basado en temperatura
-    if (temp > 30) result.color = 'bg-danger';
-    else if (temp > 20) result.color = 'bg-warning';
-    else if (temp > 10) result.color = 'bg-success';
-    else result.color = 'bg-info';
+    if (!result) {
+      if (esNoche) {
+        result = { 
+          icon: <FaMoon className="text-secondary" />, 
+          color: 'bg-secondary', 
+          desc: 'Despejado' 
+        };
+      } else {
+        result = { 
+          icon: <FaSun className="text-warning" />, 
+          color: 'bg-warning', 
+          desc: 'Soleado' 
+        };
+      }
+    }
+    
+    // Ajustar color basado en temperatura
+    if (esNoche) {
+      if (temp > 25) result.color = 'bg-info';
+      else if (temp > 15) result.color = 'bg-primary';
+      else if (temp > 5) result.color = 'bg-secondary';
+      else result.color = 'bg-dark';
+    } else {
+      if (temp > 30) result.color = 'bg-danger';
+      else if (temp > 20) result.color = 'bg-warning';
+      else if (temp > 10) result.color = 'bg-success';
+      else result.color = 'bg-info';
+    }
     
     return result;
   };
 
-  // Función para obtener datos del dólar EN TIEMPO REAL (API GRATIS)
+  // Función para obtener pronóstico semanal
+  const fetchPronosticoSemanal = async (ciudadNombre = 'Buenos Aires') => {
+    try {
+      setLoadingPronostico(true);
+      setErrorPronostico(null);
+
+      const response = await axios.get(
+        `https://api.openweathermap.org/data/2.5/forecast?q=${ciudadNombre}&appid=${API_KEY}&units=metric&lang=es&cnt=40`
+      );
+
+      const data = response.data;
+      const pronosticoPorDia = [];
+      const diasProcesados = new Set();
+      
+      data.list.forEach(item => {
+        const fecha = new Date(item.dt * 1000);
+        const dia = fecha.toLocaleDateString('es-ES', { weekday: 'short' });
+        const diaCompleto = fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' });
+        const hora = fecha.getHours();
+        
+        if (hora >= 11 && hora <= 14 && !diasProcesados.has(diaCompleto)) {
+          const weatherIcon = getWeatherIcon(item.weather[0].icon, item.main.temp, fecha);
+          
+          pronosticoPorDia.push({
+            dia: dia,
+            diaCompleto: diaCompleto,
+            fecha: fecha,
+            temperatura: Math.round(item.main.temp),
+            temp_min: Math.round(item.main.temp_min),
+            temp_max: Math.round(item.main.temp_max),
+            descripcion: item.weather[0].description,
+            icono: weatherIcon.icon,
+            iconColor: weatherIcon.color,
+            humedad: item.main.humidity,
+            viento: `${Math.round(item.wind.speed * 3.6)} km/h`,
+          });
+          
+          diasProcesados.add(diaCompleto);
+        }
+      });
+      
+      setPronostico(pronosticoPorDia.slice(0, 5));
+
+    } catch (error) {
+      console.error('Error obteniendo pronóstico:', error);
+      setErrorPronostico('Error al obtener pronóstico semanal');
+      setPronostico(generarPronosticoSimulado());
+    } finally {
+      setLoadingPronostico(false);
+    }
+  };
+
+  // Generar pronóstico simulado
+  const generarPronosticoSimulado = () => {
+    const descripciones = [
+      'Soleado', 'Parcialmente nublado', 'Nublado', 'Lluvias ligeras', 'Lluvias intensas'
+    ];
+    
+    const pronosticoSimulado = [];
+    const hoy = new Date();
+    
+    for (let i = 1; i <= 5; i++) {
+      const fecha = new Date(hoy);
+      fecha.setDate(hoy.getDate() + i);
+      
+      const temp = 20 + Math.floor(Math.random() * 15);
+      const descIndex = Math.floor(Math.random() * descripciones.length);
+      
+      pronosticoSimulado.push({
+        dia: fecha.toLocaleDateString('es-ES', { weekday: 'short' }),
+        diaCompleto: fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' }),
+        fecha: fecha,
+        temperatura: temp,
+        temp_min: temp - 3,
+        temp_max: temp + 5,
+        descripcion: descripciones[descIndex],
+        icono: descIndex === 0 ? <FaSun className="text-warning" /> : 
+               descIndex <= 2 ? <FaCloudSun className="text-warning" /> : 
+               <FaCloudRain className="text-info" />,
+        iconColor: temp > 25 ? 'bg-warning' : 'bg-info',
+      });
+    }
+    
+    return pronosticoSimulado;
+  };
+
+  // Función para obtener datos del dólar
   const fetchDolarData = async () => {
     try {
       setLoadingDolar(true);
       setErrorDolar(null);
 
-      console.log('Obteniendo datos del dólar desde API...');
       const response = await axios.get(DOLLAR_API_URL, {
-        timeout: 5000 // 5 segundos timeout
+        timeout: 5000
       });
       
       const data = response.data;
-      console.log('Datos de dólar recibidos:', data);
       
-      // Buscar los diferentes tipos de dólar en la respuesta
       const dolarBlue = data.find(d => d.nombre === 'Blue' || d.casa === 'blue');
       const dolarOficial = data.find(d => d.nombre === 'Oficial' || d.casa === 'oficial');
       const dolarBolsa = data.find(d => d.nombre === 'Bolsa' || d.casa === 'bolsa');
       const dolarContadoLiqui = data.find(d => d.nombre === 'Contado con liqui' || d.casa === 'contadoliqui');
       
       if (dolarBlue && dolarOficial) {
-        // Calcular la brecha cambiaria
         const brecha = ((dolarBlue.venta / dolarOficial.venta - 1) * 100).toFixed(1);
         const diferencia = (dolarBlue.venta - dolarOficial.venta).toFixed(2);
         
@@ -133,17 +250,14 @@ export default function Dashboard() {
           diferencia: diferencia,
           fuente: 'DolarAPI'
         });
-        
-        console.log('Dólar blue actualizado:', dolarBlue.venta);
       } else {
-        throw new Error('No se encontraron datos del dólar blue en la respuesta');
+        throw new Error('No se encontraron datos del dólar blue');
       }
 
     } catch (error) {
       console.error('Error obteniendo dólar:', error);
       setErrorDolar('Error temporal obteniendo datos del dólar. Reintentando...');
       
-      // Datos simulados como respaldo temporal
       const datosSimulados = {
         blue_compra: 980,
         blue_venta: 1000,
@@ -160,7 +274,6 @@ export default function Dashboard() {
       
       setDolarData(datosSimulados);
       
-      // Reintentar en 30 segundos si hay error
       setTimeout(() => {
         fetchDolarData();
       }, 30000);
@@ -175,13 +288,14 @@ export default function Dashboard() {
       setLoadingClima(true);
       setErrorClima(null);
 
-      // API de OpenWeatherMap
       const response = await axios.get(
         `https://api.openweathermap.org/data/2.5/weather?q=${ciudadNombre}&appid=${API_KEY}&units=metric&lang=es`
       );
 
       const data = response.data;
-      const weatherIcon = getWeatherIcon(data.weather[0].icon, data.main.temp);
+      const weatherIcon = getWeatherIcon(data.weather[0].icon, data.main.temp, new Date());
+      const ahora = new Date();
+      const esNoche = ahora.getHours() >= 20 || ahora.getHours() < 6;
       
       setClima({
         temperatura: Math.round(data.main.temp),
@@ -189,6 +303,7 @@ export default function Dashboard() {
         humedad: data.main.humidity,
         viento: `${Math.round(data.wind.speed * 3.6)} km/h`,
         ciudad: data.name,
+        esNoche: esNoche,
         pais: data.sys.country,
         icono: weatherIcon.icon,
         iconColor: weatherIcon.color,
@@ -204,7 +319,6 @@ export default function Dashboard() {
         atardecer: new Date(data.sys.sunset * 1000).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})
       });
 
-      // Actualizar ciudad si es diferente
       if (ciudadNombre !== ciudad) {
         setCiudad(data.name);
       }
@@ -222,7 +336,6 @@ export default function Dashboard() {
         setErrorClima('Error al conectar con el servicio del clima');
       }
       
-      // Datos de respaldo
       setClima(getClimaSimulado(ciudadNombre));
     } finally {
       setLoadingClima(false);
@@ -256,7 +369,6 @@ export default function Dashboard() {
           try {
             const { latitude, longitude } = position.coords;
             
-            // Reverse geocoding para obtener ciudad
             const geoResponse = await axios.get(
               `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${API_KEY}`
             );
@@ -265,24 +377,28 @@ export default function Dashboard() {
               const ciudadEncontrada = geoResponse.data[0].name;
               setCiudad(ciudadEncontrada);
               fetchClimaReal(ciudadEncontrada);
+              fetchPronosticoSemanal(ciudadEncontrada);
             }
           } catch (error) {
             console.log('Usando ciudad por defecto');
             fetchClimaReal();
+            fetchPronosticoSemanal();
           }
         },
         (error) => {
           console.log('Permiso de ubicación denegado');
           fetchClimaReal();
+          fetchPronosticoSemanal();
         },
         { timeout: 5000 }
       );
     } else {
       fetchClimaReal();
+      fetchPronosticoSemanal();
     }
   };
 
-  // Datos de noticias simuladas (económicas realistas)
+  // Datos de noticias simuladas
   const cargarNoticias = () => {
     const noticiasSimuladas = [
       { id: 1, titulo: 'BCRA anuncia nuevas medidas monetarias', fuente: 'Ámbito Financiero', hora: '10:30', cambio: '+2.5%', color: 'success' },
@@ -299,6 +415,7 @@ export default function Dashboard() {
     e.preventDefault();
     if (ciudad.trim()) {
       fetchClimaReal(ciudad);
+      fetchPronosticoSemanal(ciudad);
     }
   };
 
@@ -307,33 +424,42 @@ export default function Dashboard() {
     fetchDolarData();
   };
 
+  // Refrescar pronóstico
+  const handleRefreshPronostico = () => {
+    fetchPronosticoSemanal(ciudad);
+  };
+
   // Recargar datos automáticamente
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000);
 
-    // Cargar datos iniciales
     obtenerUbicacionAuto();
-    fetchDolarData(); // ¡ESTA ES LA API GRATIS DEL DÓLAR!
+    fetchDolarData();
     cargarNoticias();
 
-    // Recargar clima cada 10 minutos
     const climaTimer = setInterval(() => {
       if (ciudad) {
         fetchClimaReal(ciudad);
       }
     }, 600000);
 
-    // Recargar dólar cada 5 minutos
     const dolarTimer = setInterval(() => {
       fetchDolarData();
     }, 300000);
+
+    const pronosticoTimer = setInterval(() => {
+      if (ciudad) {
+        fetchPronosticoSemanal(ciudad);
+      }
+    }, 600000);
 
     return () => {
       clearInterval(timer);
       clearInterval(climaTimer);
       clearInterval(dolarTimer);
+      clearInterval(pronosticoTimer);
     };
   }, []);
 
@@ -391,216 +517,214 @@ export default function Dashboard() {
         <div className="row">
           {/* Columna izquierda - Widgets */}
           <div className="col-lg-4">
-            {/* Widget Dólar Argentina EN TIEMPO REAL */}
-           {/* Widget Dólar Argentina - Visualización Mejorada */}
-<div className="card mb-3 border shadow-sm">
-  <div className="card-header bg-white d-flex justify-content-between align-items-center">
-    <div className="d-flex align-items-center">
-      <FaDollarSign className="me-2 text-success fs-5" />
-      <h5 className="card-title mb-0 fw-bold">Dólar Hoy</h5>
-      {loadingDolar && (
-        <span className="spinner-border spinner-border-sm ms-2 text-success"></span>
-      )}
-    </div>
-    <div className="d-flex align-items-center gap-2">
-      <span className="badge bg-secondary fs-6">
-        {dolarData?.actualizado || '--:--'}
-      </span>
-      <button 
-        onClick={handleRefreshDolar}
-        className="btn btn-sm btn-outline-success"
-        disabled={loadingDolar}
-        title="Actualizar"
-      >
-        <FaSyncAlt className={loadingDolar ? 'fa-spin' : ''} />
-      </button>
-    </div>
-  </div>
-  
-  <div className="card-body p-0">
-    {errorDolar && (
-      <div className="alert alert-warning m-3 py-2 d-flex align-items-center">
-        <FaExclamationTriangle className="me-2" />
-        <small className="flex-grow-1">{errorDolar}</small>
-      </div>
-    )}
-
-    {dolarData ? (
-      <div className="p-3">
-        {/* CABECERA PRINCIPAL - Dólar Blue */}
-        <div className="text-center mb-4">
-          <div className="position-relative d-inline-block">
-            {/* Círculo con valor principal */}
-            <div 
-               className="rounded mb-3 d-flex align-items-center justify-content-center shadow"
-      style={{ 
-        width: '200px', 
-        height: '100px',
-        background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)'
-      }}
-            >
-              <div className="text-center text-white">
-                <div className="display-3 fw-bold">${dolarData.blue_venta}</div>
-                <div className="small opacity-90 mt-1">Blue Venta</div>
+            {/* Widget Dólar Argentina */}
+            <div className="card mb-3 border shadow-sm">
+              <div className="card-header bg-white d-flex justify-content-between align-items-center">
+                <div className="d-flex align-items-center">
+                  <FaDollarSign className="me-2 text-success fs-5" />
+                  <h5 className="card-title mb-0 fw-bold">Dólar Hoy</h5>
+                  {loadingDolar && (
+                    <span className="spinner-border spinner-border-sm ms-2 text-success"></span>
+                  )}
+                </div>
+                <div className="d-flex align-items-center gap-2">
+                  <span className="badge bg-secondary fs-6">
+                    {dolarData?.actualizado || '--:--'}
+                  </span>
+                  <button 
+                    onClick={handleRefreshDolar}
+                    className="btn btn-sm btn-outline-success"
+                    disabled={loadingDolar}
+                    title="Actualizar"
+                  >
+                    <FaSyncAlt className={loadingDolar ? 'fa-spin' : ''} />
+                  </button>
+                </div>
               </div>
-            </div>
-            
-            {/* Badge de variación */}
-            <div className="position-absolute top-0 end-0 translate-middle">
-              <span className={`badge ${dolarData.variacion?.includes('+') ? 'bg-danger' : 'bg-success'} fs-6 px-3 py-2`}>
-                {dolarData.variacion || '+0.0%'}
-              </span>
-            </div>
-          </div>
-          
-          {/* Compra/Venta Blue */}
-          <div className="d-flex justify-content-center gap-4 mb-4">
-            <div className="text-center">
-              <div className="text-muted small mb-1">Compra</div>
-              <div className="fs-4 fw-bold text-dark">${dolarData.blue_compra}</div>
-              <small className="text-muted">Blue</small>
-            </div>
-            <div className="vr"></div>
-            <div className="text-center">
-              <div className="text-muted small mb-1">Venta</div>
-              <div className="fs-4 fw-bold text-success">${dolarData.blue_venta}</div>
-              <small className="text-muted">Blue</small>
-            </div>
-          </div>
-        </div>
-
-        {/* COMPARACIÓN DE TIPOS DE DÓLAR - Grid de 3 columnas */}
-        <div className="row g-3 mb-4">
-          {/* Dólar Oficial */}
-          <div className="col-md-4">
-            <div className="card border h-100">
-              <div className="card-header bg-white py-2">
-                <h6 className="mb-0 d-flex align-items-center">
-                  <FaDollarSign className="me-2 text-primary" />
-                  Dólar Oficial
-                </h6>
-              </div>
-              <div className="card-body text-center py-3">
-                <div className="fs-2 fw-bold text-primary mb-2">${dolarData.oficial_venta}</div>
-                <div className="text-muted small mb-3">Venta</div>
-                <div className="d-flex justify-content-around">
-                  <div>
-                    <div className="text-muted small">Compra</div>
-                    <div className="fw-bold">${dolarData.oficial_compra}</div>
+              
+              <div className="card-body p-0">
+                {errorDolar && (
+                  <div className="alert alert-warning m-3 py-2 d-flex align-items-center">
+                    <FaExclamationTriangle className="me-2" />
+                    <small className="flex-grow-1">{errorDolar}</small>
                   </div>
-                  <div className="vr"></div>
-                  <div>
-                    <div className="text-muted small">Dif.</div>
-                    <div className={`fw-bold ${dolarData.diferencia > 0 ? 'text-danger' : 'text-success'}`}>
-                      ${dolarData.diferencia}
+                )}
+
+                {dolarData ? (
+                  <div className="p-3">
+                    {/* CABECERA PRINCIPAL - Dólar Blue */}
+                    <div className="text-center mb-4">
+                      <div className="position-relative d-inline-block">
+                        <div 
+                          className="rounded mb-3 d-flex align-items-center justify-content-center shadow"
+                          style={{ 
+                            width: '200px', 
+                            height: '100px',
+                            background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)'
+                          }}
+                        >
+                          <div className="text-center text-white">
+                            <div className="display-3 fw-bold">${dolarData.blue_venta}</div>
+                            <div className="small opacity-90 mt-1">Blue Venta</div>
+                          </div>
+                        </div>
+                        
+                        {/* Badge de variación */}
+                        <div className="position-absolute top-0 end-0 translate-middle">
+                          <span className={`badge ${dolarData.variacion?.includes('+') ? 'bg-danger' : 'bg-success'} fs-6 px-3 py-2`}>
+                            {dolarData.variacion || '+0.0%'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Compra/Venta Blue */}
+                      <div className="d-flex justify-content-center gap-4 mb-4">
+                        <div className="text-center">
+                          <div className="text-muted small mb-1">Compra</div>
+                          <div className="fs-4 fw-bold text-dark">${dolarData.blue_compra}</div>
+                          <small className="text-muted">Blue</small>
+                        </div>
+                        <div className="vr"></div>
+                        <div className="text-center">
+                          <div className="text-muted small mb-1">Venta</div>
+                          <div className="fs-4 fw-bold text-success">${dolarData.blue_venta}</div>
+                          <small className="text-muted">Blue</small>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* COMPARACIÓN DE TIPOS DE DÓLAR */}
+                    <div className="row g-3 mb-4">
+                      {/* Dólar Oficial */}
+                      <div className="col-md-4">
+                        <div className="card border h-100">
+                          <div className="card-header bg-white py-2">
+                            <h6 className="mb-0 d-flex align-items-center">
+                              <FaDollarSign className="me-2 text-primary" />
+                              Dólar Oficial
+                            </h6>
+                          </div>
+                          <div className="card-body text-center py-3">
+                            <div className="fs-2 fw-bold text-primary mb-2">${dolarData.oficial_venta}</div>
+                            <div className="text-muted small mb-3">Venta</div>
+                            <div className="d-flex justify-content-around">
+                              <div>
+                                <div className="text-muted small">Compra</div>
+                                <div className="fw-bold">${dolarData.oficial_compra}</div>
+                              </div>
+                              <div className="vr"></div>
+                              <div>
+                                <div className="text-muted small">Dif.</div>
+                                <div className={`fw-bold ${dolarData.diferencia > 0 ? 'text-danger' : 'text-success'}`}>
+                                  ${dolarData.diferencia}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Dólar MEP */}
+                      <div className="col-md-4">
+                        <div className="card border h-100">
+                          <div className="card-header bg-white py-2">
+                            <h6 className="mb-0 d-flex align-items-center">
+                              <FaChartLine className="me-2 text-warning" />
+                              Dólar MEP
+                            </h6>
+                          </div>
+                          <div className="card-body text-center py-3">
+                            <div className="fs-2 fw-bold text-warning mb-2">${dolarData.bolsa}</div>
+                            <div className="text-muted small mb-3">Bolsa</div>
+                            <div className="d-flex justify-content-around">
+                              <div>
+                                <div className="text-muted small">Brecha</div>
+                                <div className="fw-bold text-warning">{dolarData.brecha}</div>
+                              </div>
+                              <div className="vr"></div>
+                              <div>
+                                <div className="text-muted small">Vs. Oficial</div>
+                                <div className={`fw-bold ${dolarData.variacion?.includes('+') ? 'text-danger' : 'text-success'}`}>
+                                  {dolarData.variacion}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Dólar CCL */}
+                      <div className="col-md-4">
+                        <div className="card border h-100">
+                          <div className="card-header bg-white py-2">
+                            <h6 className="mb-0 d-flex align-items-center">
+                              <FaExchangeAlt className="me-2 text-info" />
+                              Dólar CCL
+                            </h6>
+                          </div>
+                          <div className="card-body text-center py-3">
+                            <div className="fs-2 fw-bold text-info mb-2">${dolarData.contado_liqui}</div>
+                            <div className="text-muted small mb-3">Contado con Liqui</div>
+                            <div className="d-flex justify-content-around">
+                              <div>
+                                <div className="text-muted small">Tipo</div>
+                                <div className="fw-bold">CCL</div>
+                              </div>
+                              <div className="vr"></div>
+                              <div>
+                                <div className="text-muted small">Mercado</div>
+                                <div className="fw-bold text-info">Capitales</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* RESUMEN DE COMPARACIÓN */}
+                    <div className="card border">
+                      <div className="card-body p-3">
+                        <div className="row text-center">
+                          <div className="col-4 border-end">
+                            <div className="text-muted small mb-1">Blue vs. Oficial</div>
+                            <div className="h5 fw-bold text-warning">{dolarData.brecha}</div>
+                            <div className="small text-muted">Brecha</div>
+                          </div>
+                          <div className="col-4 border-end">
+                            <div className="text-muted small mb-1">Diferencia</div>
+                            <div className="h5 fw-bold text-danger">${dolarData.diferencia}</div>
+                            <div className="small text-muted">Entre Blue y Oficial</div>
+                          </div>
+                          <div className="col-4">
+                            <div className="text-muted small mb-1">Variación</div>
+                            <div className="h5 fw-bold text-success">{dolarData.variacion}</div>
+                            <div className="small text-muted">Último movimiento</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* INFORMACIÓN DE ACTUALIZACIÓN */}
+                    <div className="mt-3 text-center">
+                      <div className="d-flex justify-content-center align-items-center text-muted small">
+                        <FaClock className="me-2" />
+                        <span>Actualizado: {dolarData.actualizado}</span>
+                      </div>
+                      <div className="mt-1">
+                        <small className={`badge ${dolarData.fuente?.includes('simulados') ? 'bg-warning' : 'bg-success'}`}>
+                          Fuente: {dolarData.fuente}
+                        </small>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="text-center py-5">
+                    <div className="spinner-border text-success mb-3" style={{width: '3rem', height: '3rem'}}></div>
+                    <p className="text-muted mb-0">Cargando cotizaciones...</p>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-
-          {/* Dólar MEP / Bolsa */}
-          <div className="col-md-4">
-            <div className="card border h-100">
-              <div className="card-header bg-white py-2">
-                <h6 className="mb-0 d-flex align-items-center">
-                  <FaChartLine className="me-2 text-warning" />
-                  Dólar MEP
-                </h6>
-              </div>
-              <div className="card-body text-center py-3">
-                <div className="fs-2 fw-bold text-warning mb-2">${dolarData.bolsa}</div>
-                <div className="text-muted small mb-3">Bolsa</div>
-                <div className="d-flex justify-content-around">
-                  <div>
-                    <div className="text-muted small">Brecha</div>
-                    <div className="fw-bold text-warning">{dolarData.brecha}</div>
-                  </div>
-                  <div className="vr"></div>
-                  <div>
-                    <div className="text-muted small">Vs. Oficial</div>
-                    <div className={`fw-bold ${dolarData.variacion?.includes('+') ? 'text-danger' : 'text-success'}`}>
-                      {dolarData.variacion}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Dólar CCL */}
-          <div className="col-md-4">
-            <div className="card border h-100">
-              <div className="card-header bg-white py-2">
-                <h6 className="mb-0 d-flex align-items-center">
-                  <FaExchangeAlt className="me-2 text-info" />
-                  Dólar CCL
-                </h6>
-              </div>
-              <div className="card-body text-center py-3">
-                <div className="fs-2 fw-bold text-info mb-2">${dolarData.contado_liqui}</div>
-                <div className="text-muted small mb-3">Contado con Liqui</div>
-                <div className="d-flex justify-content-around">
-                  <div>
-                    <div className="text-muted small">Tipo</div>
-                    <div className="fw-bold">CCL</div>
-                  </div>
-                  <div className="vr"></div>
-                  <div>
-                    <div className="text-muted small">Mercado</div>
-                    <div className="fw-bold text-info">Capitales</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* RESUMEN DE COMPARACIÓN */}
-        <div className="card border">
-          <div className="card-body p-3">
-            <div className="row text-center">
-              <div className="col-4 border-end">
-                <div className="text-muted small mb-1">Blue vs. Oficial</div>
-                <div className="h5 fw-bold text-warning">{dolarData.brecha}</div>
-                <div className="small text-muted">Brecha</div>
-              </div>
-              <div className="col-4 border-end">
-                <div className="text-muted small mb-1">Diferencia</div>
-                <div className="h5 fw-bold text-danger">${dolarData.diferencia}</div>
-                <div className="small text-muted">Entre Blue y Oficial</div>
-              </div>
-              <div className="col-4">
-                <div className="text-muted small mb-1">Variación</div>
-                <div className="h5 fw-bold text-success">{dolarData.variacion}</div>
-                <div className="small text-muted">Último movimiento</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* INFORMACIÓN DE ACTUALIZACIÓN */}
-        <div className="mt-3 text-center">
-          <div className="d-flex justify-content-center align-items-center text-muted small">
-            <FaClock className="me-2" />
-            <span>Actualizado: {dolarData.actualizado}</span>
-          </div>
-          <div className="mt-1">
-            <small className={`badge ${dolarData.fuente?.includes('simulados') ? 'bg-warning' : 'bg-success'}`}>
-              Fuente: {dolarData.fuente}
-            </small>
-          </div>
-        </div>
-      </div>
-    ) : (
-      <div className="text-center py-5">
-        <div className="spinner-border text-success mb-3" style={{width: '3rem', height: '3rem'}}></div>
-        <p className="text-muted mb-0">Cargando cotizaciones...</p>
-      </div>
-    )}
-  </div>
-</div>
 
             {/* Widget Clima Actual */}
             <div className="card mb-3 border shadow-sm">
@@ -611,12 +735,15 @@ export default function Dashboard() {
                   {loadingClima && <span className="spinner-border spinner-border-sm ms-2 text-primary"></span>}
                 </h5>
                 <button 
-                  onClick={() => fetchClimaReal(ciudad)}
+                  onClick={() => {
+                    fetchClimaReal(ciudad);
+                    fetchPronosticoSemanal(ciudad);
+                  }}
                   className="btn btn-sm btn-outline-primary"
-                  disabled={loadingClima}
+                  disabled={loadingClima || loadingPronostico}
                   title="Actualizar"
                 >
-                  <FaSyncAlt className={loadingClima ? 'fa-spin' : ''} />
+                  <FaSyncAlt className={loadingClima || loadingPronostico ? 'fa-spin' : ''} />
                 </button>
               </div>
               
@@ -654,14 +781,33 @@ export default function Dashboard() {
 
                 {clima && (
                   <>
-                    {/* Temperatura principal */}
+                    {/* Temperatura principal - CON INDICADOR DÍA/NOCHE */}
                     <div className="text-center mb-4">
-                      <div className={`d-inline-flex align-items-center justify-content-center ${clima.iconColor} text-white rounded-circle mb-3`} 
-                           style={{ width: '120px', height: '120px' }}>
-                        <div className="text-center">
-                          <div className="display-4 fw-bold">{clima.temperatura}°</div>
-                          <div className="small">C</div>
+                      <div className="position-relative">
+                        <div className={`d-inline-flex align-items-center justify-content-center ${clima.iconColor} text-white rounded-circle mb-3`} 
+                             style={{ width: '120px', height: '120px' }}>
+                          <div className="text-center">
+                            <div className="display-4 fw-bold">{clima.temperatura}°</div>
+                            <div className="small">C</div>
+                          </div>
                         </div>
+                        
+                        {/* Indicador día/noche */}
+                        {clima && (
+                          <div className="position-absolute top-0 end-0 translate-middle">
+                            <span className={`badge ${clima.esNoche ? 'bg-dark' : 'bg-warning'} px-2 py-1`}>
+                              {clima.esNoche ? (
+                                <>
+                                  <FaMoon className="me-1" /> Noche
+                                </>
+                              ) : (
+                                <>
+                                  <FaSun className="me-1" /> Día
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       
                       <h4 className="text-dark mb-2 text-capitalize">
@@ -741,32 +887,141 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Widget Noticias Económicas */}
+            {/* Widget Pronóstico Semanal */}
             <div className="card mb-3 border shadow-sm">
-              <div className="card-header bg-white">
+              <div className="card-header bg-white d-flex justify-content-between align-items-center">
                 <h5 className="card-title mb-0 d-flex align-items-center">
-                  <FaNewspaper className="me-2 text-primary" />
-                  Noticias Económicas
+                  <FaCalendarDay className="me-2 text-info" />
+                  Pronóstico 5 Días
+                  {loadingPronostico && <span className="spinner-border spinner-border-sm ms-2 text-info"></span>}
                 </h5>
-              </div>
-              <div className="card-body p-0">
-                <div className="list-group list-group-flush">
-                  {noticias.map((noticia) => (
-                    <div key={noticia.id} className="list-group-item border-bottom">
-                      <div className="d-flex justify-content-between align-items-start">
-                        <div>
-                          <h6 className="mb-1 text-dark">{noticia.titulo}</h6>
-                          <small className="text-muted">{noticia.fuente} • {noticia.hora}</small>
-                        </div>
-                        <span className={`badge bg-${noticia.color}`}>
-                          {noticia.cambio}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="text-muted small">
+                  {ciudad}
                 </div>
               </div>
+              
+              <div className="card-body">
+                {errorPronostico && (
+                  <div className="alert alert-warning d-flex align-items-center mb-3 py-2">
+                    <FaExclamationTriangle className="me-2" />
+                    <small className="flex-grow-1">{errorPronostico}</small>
+                  </div>
+                )}
+
+                {pronostico.length > 0 ? (
+                  <>
+                    {/* Días en línea para pantallas grandes */}
+                    <div className="d-none d-md-block">
+                      <div className="row g-2 text-center">
+                        {pronostico.map((dia, index) => (
+                          <div key={index} className="col">
+                            <div className={`card border-0 ${index === 0 ? 'bg-light' : 'bg-white'}`}>
+                              <div className="card-body py-3">
+                                <div className="fw-bold text-dark mb-2">{dia.dia}</div>
+                                <div className="small text-muted mb-2">
+                                  {dia.diaCompleto.split(',')[1]}
+                                </div>
+                                <div className="my-3 fs-2">
+                                  {dia.icono}
+                                </div>
+                                <div className="h4 fw-bold text-dark mb-1">
+                                  {dia.temperatura}°
+                                </div>
+                                <div className="small text-muted text-capitalize">
+                                  {dia.descripcion}
+                                </div>
+                                <div className="mt-2 d-flex justify-content-center gap-2">
+                                  <div className="small text-info">
+                                    <FaArrowDown className="me-1" />
+                                    {dia.temp_min}°
+                                  </div>
+                                  <div className="small text-danger">
+                                    <FaArrowUp className="me-1" />
+                                    {dia.temp_max}°
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Versión compacta para móviles */}
+                    <div className="d-md-none">
+                      <div className="list-group list-group-flush">
+                        {pronostico.map((dia, index) => (
+                          <div key={index} className="list-group-item border-bottom">
+                            <div className="d-flex justify-content-between align-items-center">
+                              <div className="d-flex align-items-center">
+                                <div className="me-3">
+                                  <div className="fw-bold text-dark">{dia.dia}</div>
+                                  <div className="small text-muted">
+                                    {dia.diaCompleto.split(',')[1]}
+                                  </div>
+                                </div>
+                                <div className="me-3 fs-4">
+                                  {dia.icono}
+                                </div>
+                                <div>
+                                  <div className="fw-bold text-dark">{dia.temperatura}°</div>
+                                  <div className="small text-muted text-capitalize">
+                                    {dia.descripcion}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-end">
+                                <div className="d-flex gap-3">
+                                  <div className="small text-info">
+                                    <FaArrowDown className="me-1" />
+                                    {dia.temp_min}°
+                                  </div>
+                                  <div className="small text-danger">
+                                    <FaArrowUp className="me-1" />
+                                    {dia.temp_max}°
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Leyenda */}
+                    <div className="mt-3 pt-3 border-top text-center">
+                      <div className="row small text-muted">
+                        <div className="col-4">
+                          <FaSun className="me-1 text-warning" />
+                          Soleado
+                        </div>
+                        <div className="col-4">
+                          <FaCloudSun className="me-1 text-secondary" />
+                          Nublado
+                        </div>
+                        <div className="col-4">
+                          <FaCloudRain className="me-1 text-info" />
+                          Lluvia
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-4">
+                    {loadingPronostico ? (
+                      <>
+                        <div className="spinner-border text-info mb-3"></div>
+                        <p className="text-muted">Cargando pronóstico...</p>
+                      </>
+                    ) : (
+                      <p className="text-muted">No hay datos de pronóstico disponibles</p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
+
+          
 
             {/* Widget Último acceso */}
             <div className="card mb-3 border shadow-sm">
@@ -872,4 +1127,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-} 
+}
