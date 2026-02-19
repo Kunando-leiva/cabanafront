@@ -244,7 +244,7 @@ export default function CabanaDetalle() {
         console.log('✅ Cabaña cargada:', cabanaData.nombre);
 
       } catch (err) {
-        console.error('❌ Error al cargar cabaña:', {
+        console.error('❌ Error al carga cabaña:', {
           message: err.message,
           response: err.response?.data,
           config: err.config
