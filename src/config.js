@@ -38,9 +38,9 @@ api.interceptors.response.use(
   }
 );
 
-// 🔥 FUNCIÓN MEJORADA CON LOGGING DETALLADO
+// 🔥 VERSIÓN SIMPLIFICADA - Confía en el backend
 export const getOccupiedDates = async (cabanaId = null) => {
-   console.log('📍 getOccupiedDates llamado con cabanaId:', cabanaId);
+  console.log('📍 getOccupiedDates llamado con cabanaId:', cabanaId);
   try {
     const url = cabanaId 
       ? `/api/reservas/ocupadas?cabanaId=${cabanaId}`
@@ -52,74 +52,30 @@ export const getOccupiedDates = async (cabanaId = null) => {
       timeout: 8000
     });
     
-    console.log('✅ Respuesta del servidor:', {
-      success: response.data?.success,
-      dataLength: response.data?.data?.length || response.data?.length,
-      total: response.data?.total,
-      mensaje: response.data?.mensaje
-    });
+    console.log('✅ Respuesta del servidor:', response.data);
 
-    let dates = [];
+    let fechas = [];
     
+    // El backend puede enviar en diferentes formatos
     if (response.data?.success) {
-      if (Array.isArray(response.data.data)) {
-        dates = response.data.data;
-        console.log(`📅 Formato 1: ${dates.length} fechas recibidas directamente`);
-      } 
-      else if (response.data.data && Array.isArray(response.data.data)) {
-        dates = response.data.data.map(item => item.fecha || item);
-        console.log(`📅 Formato 2: ${dates.length} fechas extraídas de objetos`);
-      }
-    } else if (Array.isArray(response.data)) {
-      dates = response.data;
-      console.log(`📅 Formato 3: ${dates.length} fechas en array directo`);
-    } else if (response.data && response.data.reservas) {
-      dates = response.data.reservas;
-      console.log(`📅 Formato 4: ${dates.length} fechas de reservas`);
-    }
-
-    const formattedDates = dates.map(date => {
-      try {
-        if (typeof date === 'string') {
-          if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-            return date;
-          }
-          const d = new Date(date);
-          if (isNaN(d.getTime())) return null;
-          return d.toISOString().split('T')[0];
-        } else if (date && typeof date === 'object') {
-          if (date.fecha) {
-            return date.fecha;
-          } else if (date.date) {
-            return date.date;
-          }
-        }
-        return null;
-      } catch (error) {
-        console.warn('⚠️ Error procesando fecha:', date);
-        return null;
-      }
-    }).filter(Boolean);
-
-    console.log(`📊 Total fechas ocupadas procesadas: ${formattedDates.length}`);
-    if (formattedDates.length > 0) {
-      console.log('📋 Fechas ocupadas:', formattedDates.slice(0, 10));
-      if (formattedDates.length > 10) {
-        console.log(`... y ${formattedDates.length - 10} más`);
+      if (Array.isArray(response.data.fechas)) {
+        fechas = response.data.fechas;
+        console.log(`📅 Formato fechas: ${fechas.length} fechas`);
+      } else if (Array.isArray(response.data.data)) {
+        fechas = response.data.data;
+        console.log(`📅 Formato data: ${fechas.length} fechas`);
       }
     }
-    
-    return formattedDates;
+
+    console.log(`📊 Total fechas ocupadas: ${fechas.length}`);
+    return fechas;
     
   } catch (error) {
-    console.error("❌ Error fetching occupied dates:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
-    });
+    console.error("❌ Error:", error);
     return [];
   }
 };
+
 
 export const calcularPrecioReserva = async (fechaInicio, fechaFin, cabanaId) => {
    console.log('📍 calcularPrecioReserva llamado:', {

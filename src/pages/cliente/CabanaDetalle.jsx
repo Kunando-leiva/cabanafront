@@ -154,6 +154,7 @@ export default function CabanaDetalle() {
     }
   };
 
+  // 🔥 FETCH OCUPADOS CORREGIDO CON MEJOR LOGGING
   useEffect(() => {
     const fetchOccupiedDates = async () => {
       if (!id) return;
@@ -164,15 +165,18 @@ export default function CabanaDetalle() {
         
         const dates = await getOccupiedDates(id);
         
-        console.log(`📊 Fechas ocupadas recibidas: ${dates.length} días`);
-        console.log('📋 Lista de fechas ocupadas:', dates);
+        console.log(`📊 Fechas ocupadas recibidas: ${dates.length} noches ocupadas`);
+        console.log('📋 Noches ocupadas (días donde se duerme):', dates);
+
+        // Verificación detallada para febrero 2026
+        const feb2026 = dates.filter(d => d.startsWith('2026-02'));
+        console.log('📅 Febrero 2026 - Noches ocupadas:', feb2026);
+        
+        if (feb2026.includes('2026-02-20')) {
+          console.log('⚠️ La noche del 20/02/2026 está ocupada');
+        }
         
         setOccupiedDates(dates);
-        
-        // Verificar que el día de check-out no esté marcado como ocupado
-        dates.forEach(date => {
-          console.log(`🛌 Noche ocupada (check-in esta fecha): ${date}`);
-        });
         
       } catch (error) {
         console.error('❌ Error obteniendo fechas ocupadas:', error);
@@ -254,6 +258,7 @@ export default function CabanaDetalle() {
     fetchCabana();
   }, [id]);
 
+  // 🔥 HANDLE RESERVAR CORREGIDO
   const handleReservar = () => {
     if (!selectedDates.start || !selectedDates.end) {
       setError('Selecciona un rango de fechas válido');
@@ -272,7 +277,6 @@ export default function CabanaDetalle() {
     console.log('🔄 Validando reserva:', {
       startDate: startDate.toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0],
-      today: today.toISOString().split('T')[0],
       noches: calcularNoches(startDate, endDate)
     });
     
@@ -286,33 +290,35 @@ export default function CabanaDetalle() {
       return;
     }
 
-    // 🔥 VALIDACIÓN DETALLADA DE DISPONIBILIDAD
+    // 🔥 VALIDACIÓN CORREGIDA - Solo noches que se van a dormir
     console.log('🔍 Validando disponibilidad contra fechas ocupadas:', occupiedDates);
     
     let tieneConflicto = false;
     let fechaConflicto = null;
     const current = new Date(startDate);
     
+    // ✅ Validar desde startDate HASTA endDate-1 (noches que se duermen)
     while (current < endDate) {
       const dateStr = current.toISOString().split('T')[0];
       
+      // Si esta noche está ocupada, hay conflicto
       if (occupiedDates.includes(dateStr)) {
         tieneConflicto = true;
         fechaConflicto = dateStr;
-        console.log(`❌ Conflicto encontrado: ${dateStr} está ocupado`);
+        console.log(`❌ Conflicto: La noche del ${dateStr} está ocupada`);
         break;
       }
       
-      console.log(`✅ ${dateStr} está disponible`);
+      console.log(`✅ Noche del ${dateStr} disponible`);
       current.setDate(current.getDate() + 1);
     }
     
     if (tieneConflicto) {
-      setError(`El ${fechaConflicto} ya está reservado. Selecciona otras fechas.`);
+      setError(`La noche del ${fechaConflicto} ya está reservada. Selecciona otras fechas.`);
       return;
     }
 
-    console.log('✅ Todas las fechas están disponibles para reserva');
+    console.log('✅ Todas las noches están disponibles');
     
     navigate(`/reservar/${id}`, {
       state: {
@@ -648,7 +654,7 @@ export default function CabanaDetalle() {
                 {occupiedDates.length > 0 && (
                   <div className="text-center mt-2">
                     <small className="text-muted">
-                      {occupiedDates.length} día{occupiedDates.length !== 1 ? 's' : ''} ocupado{occupiedDates.length !== 1 ? 's' : ''} en el calendario
+                      {occupiedDates.length} noche{occupiedDates.length !== 1 ? 's' : ''} ocupada{occupiedDates.length !== 1 ? 's' : ''} en el calendario
                     </small>
                   </div>
                 )}

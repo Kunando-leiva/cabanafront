@@ -1,3 +1,4 @@
+// HomePublico.jsx - VERSIÓN CORREGIDA
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -252,6 +253,7 @@ const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate 
   useEffect(() => {
     if (!isMounted.current) return;
     
+    // 🔥 CORRECCIÓN: Usar cabana._id para acceder a calculandoPrecios
     const estaCalculando = calculandoPrecios[cabana._id];
     const tienePrecio = cabana.precioCalculado;
     
@@ -306,7 +308,8 @@ const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate 
     cargando: cargandoLocal,
     tienePrecio: !!precioLocal,
     puedeReservar,
-    precio: precioLocal?.total
+    precio: precioLocal?.total,
+    calculandoPrecios: calculandoPrecios[cabana._id]
   });
 
   return (
@@ -420,6 +423,7 @@ const CabanaCard = React.memo(({ cabana, dateRange, calculandoPrecios, navigate 
     prevProps.cabana.precioCalculado === nextProps.cabana.precioCalculado &&
     prevProps.dateRange?.start?.getTime() === nextProps.dateRange?.start?.getTime() &&
     prevProps.dateRange?.end?.getTime() === nextProps.dateRange?.end?.getTime() &&
+    // 🔥 CORRECCIÓN: Comparar correctamente calculandoPrecios
     prevProps.calculandoPrecios[prevProps.cabana._id] === nextProps.calculandoPrecios[nextProps.cabana._id]
   );
 });
@@ -513,7 +517,7 @@ export default function HomePublico() {
     };
   }, []);
 
-  // REEMPLAZA TODO ESTE useEffect (el que causa el bucle):
+  // 🔥 EFECTO CORREGIDO PARA CALCULAR PRECIOS
   useEffect(() => {
     let isCancelled = false;
     let calculationTimeout = null;
@@ -659,7 +663,7 @@ export default function HomePublico() {
     setSearchStatus({ loading: false, error: null, searched: false });
     setAvailableCabanas([]);
     setCalculandoPrecios({});
-  }, [isMounted]);
+  }, []);
 
   const handleSearchAvailability = async () => {
     if (!isMounted.current) return;
@@ -761,7 +765,6 @@ export default function HomePublico() {
         setAvailableCabanas([]);
         setCalculandoPrecios({});
       }
-      console.log('🔍 RESPUESTA COMPLETA DEL BACKEND:', JSON.stringify(response.data, null, 2));
     }
   };
 
