@@ -692,10 +692,17 @@ export default function HomePublico() {
       const fechaInicio = formatDateForAPI(dateRange.start);
       const fechaFin = formatDateForAPI(dateRange.end);
 
-      console.log('Buscando en:', `${API_URL}/api/reservas/disponibles`);
+      console.log('Buscando en:', `${API_URL}/api/reservas/disponibles-v2`);
       console.log('Con parámetros:', { fechaInicio, fechaFin });
 
-      const response = await axios.get(`${API_URL}/api/reservas/disponibles`, {
+      // const response = await axios.get(`${API_URL}/api/reservas/disponibles`, {
+      //   params: {
+      //     fechaInicio,
+      //     fechaFin
+      //   }
+      // });
+
+      const response = await axios.get(`${API_URL}/api/reservas/disponibles-v2`, {
         params: {
           fechaInicio,
           fechaFin
@@ -1066,6 +1073,7 @@ export default function HomePublico() {
                 showInline={true}
                 showTotal={false}
                 key="calendar-home"
+                modo="global"
               />
             </Col>
           </Row>

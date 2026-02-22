@@ -116,16 +116,11 @@
 }
 
 /* ===== DÍAS DE CHECK-IN - AMARILLO (CUADRADO COMPLETO) ===== */
-.checkin-day {
-  background-color: #ffc107 !important;
-  color: black !important;
-  font-weight: 500;
-  border-radius: 0 !important; /* CUADRADO */
-  position: relative;
-}
+
 
 .checkin-day:hover {
-  background-color: #e0a800 !important;
+  /* background-color: #e0a800 !important; */  /* COMENTADO */
+  background-color: #555 !important; /* Opcional: hover normal */
 }
 
 /* Tooltip para días de check-in */
@@ -265,51 +260,63 @@
   gap: 20px;
   margin-top: 15px;
   padding: 12px;
-  background-color: #f8f9fa;
+  background-color: #555 !important;  /* CAMBIADO DE #f8f9fa a #555 */
   border-radius: 8px;
   font-size: 12px;
-  border: 1px solid #dee2e6;
-}
-
-.cabanas-detalle .calendar-legend {
-  background-color: #555;
+  border: 2px solid #ffffff !important;  /* BORDE BLANCO MÁS GRUESO */
   color: #fff;
-  border-color: #666;
 }
 
+/* Texto de la leyenda */
+.calendar-legend span {
+  color: white !important;
+  font-weight: 400;
+}
+
+/* Los items de la leyenda */
 .legend-item {
   display: flex;
   align-items: center;
   gap: 8px;
+  color: white;
 }
 
+/* Mantener los cuadritos de colores */
 .legend-color {
   width: 20px;
   height: 20px;
-  border-radius: 2px; /* CUADRADO CON BORDE LIGERAMENTE REDONDEADO PARA LA LEYENDA */
+  border-radius: 2px;
 }
 
-/* Colores de la leyenda */
+/* Colores de la leyenda (se mantienen igual) */
 .legend-occupied {
-  background-color: #dc3545;
+  background-color: #dc3545 !important;
 }
 
 .legend-checkin {
-  background-color: #ffc107;
+  background-color: #ffc107 !important;
 }
 
 .legend-selected {
-  background-color: #28a745;
+  background-color: #28a745 !important;
 }
 
 .legend-today {
-  background-color: #d1e7ff;
+  background-color: #d1e7ff !important;
   border: 1px solid #0d6efd;
 }
 
-.cabanas-detalle .legend-today {
-  background-color: #666;
-  border-color: #eaac25;
+/* Si quieres agregar el color para fechas pasadas */
+.legend-past {
+  background-color: #888 !important;
+  border: 1px solid #666;
+}
+
+/* Versión específica para CabanaDetalle (por si acaso) */
+.cabanas-detalle .calendar-legend {
+  background-color: #555 !important;
+  border: 2px solid white !important;
+  color: #fff;
 }
 
 /* ===== ESTADOS ADICIONALES ===== */
@@ -381,4 +388,39 @@
   border: 1px solid #555;
   max-width: 200px;
   pointer-events: none;
+}
+
+/* ===== FORZAR COLOR ROJO PARA OCUPADAS EN TODOS LOS CONTEXTOS ===== */
+.occupied-night,
+.cabanas-detalle .occupied-night,
+.admin-calendar .occupied-night,
+.calendar-container .occupied-night {
+  background-color: #dc3545 !important;
+  color: white !important;
+  opacity: 1 !important;
+}
+
+/* Asegurar que no sea sobreescrito por disabled */
+.occupied-night.react-calendar__tile:disabled {
+  background-color: #dc3545 !important;
+  color: white !important;
+  opacity: 1 !important;
+  cursor: not-allowed;
+}
+
+/* Asegurar que no sea sobreescrito por past-date */
+.occupied-night.past-date {
+  background-color: #dc3545 !important;
+  color: white !important;
+  opacity: 1 !important;
+}
+
+/* Hover effect */
+.occupied-night:hover {
+  background-color: #c82333 !important;
+}
+
+/* Leyenda */
+.legend-occupied {
+  background-color: #dc3545 !important;
 }

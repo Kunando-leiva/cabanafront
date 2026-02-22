@@ -554,7 +554,7 @@ export default function CabanaDetalle() {
                   />
                 </div>
                 
-                <div className="calendar-legend mt-3">
+                {/* <div className="calendar-legend mt-3">
                   <div className="legend-item">
                     <div className="legend-color legend-occupied"></div>
                     <span>Días reservados</span>
@@ -567,7 +567,7 @@ export default function CabanaDetalle() {
                     <div className="legend-color legend-today"></div>
                     <span>Hoy</span>
                   </div>
-                </div>
+                </div> */}
 
                 {selectedDates.start && selectedDates.end && (
                   <Alert variant="info" className="mt-3" style={{ backgroundColor: '#555', borderColor: '#666' }}>

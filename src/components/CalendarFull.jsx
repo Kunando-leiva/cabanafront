@@ -1,4 +1,4 @@
-// src/components/CalendarFull.jsx - VERSIÓN QUE MUESTRA OCUPACIÓN GLOBAL
+// src/components/CalendarFull.jsx - VERSIÓN CORREGIDA PARA MODO GLOBAL
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -6,18 +6,17 @@ import './CalendarFull.css';
 import { Spinner, Alert } from 'react-bootstrap';
 import { FaExclamationTriangle } from 'react-icons/fa';
 import { getOccupiedDates } from '../config';
-import api from '../config';
 
 const CalendarFull = ({ 
   cabanaId, // 🔥 Puede ser: ID real, "todas", o null/undefined
   onDatesSelected, 
   precioPorNoche,
   showInline = false,
-  showTotal = true
+  showTotal = true,
+  modo = "normal" // 👈 "normal" para CabanaDetalle, "global" para HomePublico
 }) => {
   const [dateRange, setDateRange] = useState([null, null]);
   const [occupiedNights, setOccupiedNights] = useState([]);
-  const [checkInDays, setCheckInDays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -49,15 +48,13 @@ const CalendarFull = ({
     return d ? d.toISOString().split('T')[0] : '';
   }, [normalizeDate]);
 
-  // 🔥 VERSIÓN MEJORADA - Obtiene fechas ocupadas de TODAS las cabañas si no hay ID específico
+  // Obtiene fechas ocupadas
   useEffect(() => {
     const fetchOccupiedDates = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // 🔥 Si hay cabanaId específico, obtener solo de esa cabaña
-        // Si no hay cabanaId o es "todas", obtener de todas las cabañas
         const idToFetch = cabanaId && cabanaId !== "todas" ? cabanaId : null;
         
         console.log(`📡 Obteniendo fechas ocupadas ${idToFetch ? `para cabaña ${idToFetch}` : 'para TODAS las cabañas'}`);
@@ -68,42 +65,9 @@ const CalendarFull = ({
         
         if (Array.isArray(occupiedData) && occupiedData.length > 0) {
           console.log(`📊 ${occupiedData.length} fechas ocupadas:`, occupiedData);
-          
-          // 🔥 PROCESAR LAS FECHAS PARA IDENTIFICAR CHECK-INS
-          const noches = new Set(occupiedData);
-          const checkIns = new Set();
-          
-          occupiedData.sort().forEach((fecha, index, array) => {
-            const fechaDate = new Date(fecha + 'T12:00:00Z');
-            const diaAnterior = new Date(fechaDate);
-            diaAnterior.setDate(diaAnterior.getDate() - 1);
-            const diaAnteriorStr = diaAnterior.toISOString().split('T')[0];
-            
-            if (!array.includes(diaAnteriorStr)) {
-              checkIns.add(fecha);
-              noches.delete(fecha);
-              console.log(`🔓 Día de check-in detectado: ${fecha}`);
-            }
-          });
-          
-          console.log('📊 RESULTADO FINAL:');
-          console.log('   - Noches ocupadas (se bloquean):', Array.from(noches).sort());
-          console.log('   - Días check-in (disponibles):', Array.from(checkIns).sort());
-          
-          setOccupiedNights(Array.from(noches));
-          setCheckInDays(Array.from(checkIns));
-          
-          // Verificación específica para el 20 de febrero 2026
-          if (checkIns.has('2026-02-20')) {
-            console.log('✅ 2026-02-20 es día de check-in → DISPONIBLE para check-out');
-          }
-          if (noches.has('2026-02-20')) {
-            console.log('❌ 2026-02-20 es noche ocupada → NO DISPONIBLE');
-          }
-          
+          setOccupiedNights(occupiedData);
         } else {
           setOccupiedNights([]);
-          setCheckInDays([]);
         }
         
       } catch (err) {
@@ -111,7 +75,6 @@ const CalendarFull = ({
         console.error('❌ Error:', err);
         setError('Error al cargar la disponibilidad');
         setOccupiedNights([]);
-        setCheckInDays([]);
       } finally {
         if (isMounted.current) {
           timeoutRef.current = setTimeout(() => {
@@ -124,7 +87,7 @@ const CalendarFull = ({
     fetchOccupiedDates();
   }, [cabanaId]);
 
-  // ✅ VALIDACIÓN - Solo verifica noches ocupadas
+  // ✅ VALIDACIÓN - En modo global SIEMPRE acepta el rango
   const isValidRange = useCallback((start, end) => {
     if (!start || !end) return false;
     
@@ -137,7 +100,12 @@ const CalendarFull = ({
     const today = normalizeDate(new Date());
     if (startDate < today) return false;
     
-    // Verificar que NINGUNA noche en el rango esté ocupada
+    // 🚫 En modo global, SIEMPRE aceptamos el rango
+    if (modo === "global") {
+      return true;
+    }
+    
+    // Verificar que NINGUNA noche en el rango esté ocupada (solo para modo normal)
     const occupiedSet = new Set(occupiedNights);
     const current = new Date(startDate);
     
@@ -151,7 +119,7 @@ const CalendarFull = ({
     }
     
     return true;
-  }, [occupiedNights, normalizeDate, dateToYMD]);
+  }, [occupiedNights, normalizeDate, dateToYMD, modo]);
 
   const handleDateChange = useCallback((newDateRange) => {
     if (!isMounted.current) return;
@@ -161,7 +129,7 @@ const CalendarFull = ({
     console.log('📅 Nuevo rango:', {
       start: start ? dateToYMD(start) : null,
       end: end ? dateToYMD(end) : null,
-      modo: cabanaId ? 'por cabaña' : 'global'
+      modo: modo
     });
     
     setDateRange(newDateRange);
@@ -172,17 +140,25 @@ const CalendarFull = ({
       return;
     }
     
+    // 🚫 En modo global, SIEMPRE llamamos a onDatesSelected sin validar
+    if (modo === "global") {
+      console.log('✅ Modo global - aceptando cualquier rango');
+      if (onDatesSelected) onDatesSelected(start, end);
+      return;
+    }
+    
+    // Solo validamos en modo normal
     if (isValidRange(start, end)) {
-      console.log('✅ Rango válido - todas las noches disponibles');
+      console.log('✅ Rango válido');
       if (onDatesSelected) onDatesSelected(start, end);
     } else {
-      console.log('❌ Rango inválido - hay noches ocupadas');
+      console.log('❌ Rango inválido');
       setError('Las fechas seleccionadas no están disponibles');
       if (onDatesSelected) onDatesSelected(null, null);
     }
-  }, [isValidRange, onDatesSelected, dateToYMD, cabanaId]);
+  }, [isValidRange, onDatesSelected, dateToYMD, modo]);
 
-  // 🔥 TILE DISABLED - Bloquea noches ocupadas
+  // 🔥 TILE DISABLED
   const tileDisabled = useCallback(({ date, view }) => {
     if (view !== 'month') return false;
     
@@ -190,14 +166,21 @@ const CalendarFull = ({
     const today = normalizeDate(new Date());
     
     if (!currentDate) return true;
+    
+    // BLOQUEAR FECHAS PASADAS (siempre)
     if (currentDate < today) return true;
+
+    // En modo global, NO bloqueamos noches ocupadas
+    if (modo === "global") {
+      return false;
+    }
     
     const dateStr = dateToYMD(date);
     
-    // ✅ Bloquear si es una noche ocupada
+    // Bloquear si es una noche ocupada (solo para modo normal)
     return occupiedNights.includes(dateStr);
     
-  }, [occupiedNights, normalizeDate, dateToYMD]);
+  }, [occupiedNights, normalizeDate, dateToYMD, modo]);
 
   // 🎨 Clases CSS
   const tileClassName = useCallback(({ date, view }) => {
@@ -205,13 +188,22 @@ const CalendarFull = ({
     
     const classes = [];
     const dateStr = dateToYMD(date);
+    const currentDate = normalizeDate(date);
+    const today = normalizeDate(new Date());
     
-    if (occupiedNights.includes(dateStr)) {
-      classes.push('occupied-night');
-    } else if (checkInDays.includes(dateStr)) {
-      classes.push('checkin-day');
+    // PRIORIDAD 1: Fecha pasada (siempre gris)
+    if (currentDate && currentDate < today) {
+      classes.push('past-date');
+    }
+
+    // Solo pintar noches ocupadas si NO es modo global
+    if (modo !== "global") {
+      if (occupiedNights.includes(dateStr) && !(currentDate && currentDate < today)) {
+        classes.push('occupied-night');
+      }
     }
     
+    // Rango seleccionado
     if (dateRange[0] && dateRange[1]) {
       const start = normalizeDate(dateRange[0]);
       const end = normalizeDate(dateRange[1]);
@@ -229,7 +221,7 @@ const CalendarFull = ({
     }
     
     return classes.join(' ');
-  }, [occupiedNights, checkInDays, dateRange, normalizeDate, dateToYMD]);
+  }, [occupiedNights, dateRange, normalizeDate, dateToYMD, modo]);
 
   const noches = useMemo(() => {
     if (!dateRange[0] || !dateRange[1]) return 0;
@@ -281,7 +273,7 @@ const CalendarFull = ({
       />
       
       <div className="calendar-messages mt-3">
-        {error && (
+        {error && modo !== "global" && ( // Solo mostrar error en modo normal
           <Alert 
             variant="danger" 
             className="d-flex align-items-center py-2"
@@ -294,17 +286,22 @@ const CalendarFull = ({
         )}
       </div>
       
-      {/* Leyenda siempre visible */}
+      {/* LEYENDA */}
       <div className="calendar-legend mt-3">
         <div className="d-flex flex-wrap gap-3 justify-content-center small">
           <div className="d-flex align-items-center">
-            <div className="legend-color legend-occupied"></div>
-            <span>Noche ocupada</span>
+            <div className="legend-color legend-past"></div>
+            <span>Fechas pasadas</span>
           </div>
-          <div className="d-flex align-items-center">
-            <div className="legend-color legend-checkin"></div>
-            <span>Día de check-in (disponible)</span>
-          </div>
+          
+          {/* Solo mostrar "Noche ocupada" si NO es modo global */}
+          {modo !== "global" && (
+            <div className="d-flex align-items-center">
+              <div className="legend-color legend-occupied"></div>
+              <span>Noche ocupada</span>
+            </div>
+          )}
+          
           <div className="d-flex align-items-center">
             <div className="legend-color legend-selected"></div>
             <span>Seleccionado</span>
