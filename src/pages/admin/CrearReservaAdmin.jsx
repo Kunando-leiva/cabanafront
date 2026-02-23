@@ -125,13 +125,11 @@ const CrearReservaAdmin = () => {
         return;
       }
 
-      try {
-        console.log(`📡 Obteniendo fechas ocupadas para cabaña: ${formData.cabanaId}`);
+      try {  
         const dates = await getOccupiedDates(formData.cabanaId);
-        console.log(`📊 Fechas ocupadas recibidas: ${dates.length} noches ocupadas`);
+       
         setFechasOcupadas(dates);
       } catch (error) {
-        console.error('Error obteniendo fechas ocupadas:', error);
         setFechasOcupadas([]);
       }
     };
@@ -597,41 +595,46 @@ const CrearReservaAdmin = () => {
               </Form.Group>
             </Col>
 
-            {/* 🔥 CALENDARIO UNIFICADO - IGUAL QUE EN CabanaDetalle */}
-            <Col md={12}>
-              <Form.Group className="mb-3">
-                <Form.Label>Seleccionar Fechas <span className="text-danger">*</span></Form.Label>
-                <CalendarFull 
-                  cabanaId={formData.cabanaId}
-                  onDatesSelected={(start, end) => {
-                    console.log('📅 Fechas seleccionadas en calendario:', {
-                      start: start ? new Date(start).toISOString().split('T')[0] : null,
-                      end: end ? new Date(end).toISOString().split('T')[0] : null
-                    });
-                    
-                    if (start && end) {
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      
-                      if (start < today) {
-                        setError('No puedes seleccionar fechas pasadas');
-                        return;
-                      }
-                      
-                      if (start >= end) {
-                        setError('La fecha de fin debe ser posterior al inicio');
-                        return;
-                      }
-                      
-                      setSelectedDates({ start, end });
-                      setError('');
-                    }
-                  }}
-                  precioPorNoche={cabanas.find(c => c._id === formData.cabanaId)?.precio || 0}
-                  showTotal={false}
-                  disabled={!formData.cabanaId}
-                />
-              </Form.Group>
+           {/* 🔥 CALENDARIO UNIFICADO - CORREGIDO */}
+<Col md={12}>
+  <Form.Group className="mb-3">
+    <Form.Label>Seleccionar Fechas <span className="text-danger">*</span></Form.Label>
+    <CalendarFull 
+      cabanaId={formData.cabanaId}
+      onDatesSelected={(start, end) => {
+        console.log('📅 Fechas seleccionadas en calendario:', {
+          start: start ? new Date(start).toISOString().split('T')[0] : null,
+          end: end ? new Date(end).toISOString().split('T')[0] : null
+        });
+        
+        if (start && end) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          if (start < today) {
+            setError('No puedes seleccionar fechas pasadas');
+            return;
+          }
+          
+          if (start >= end) {
+            setError('La fecha de fin debe ser posterior al inicio');
+            return;
+          }
+          
+          setSelectedDates({ start, end });
+          setError('');
+        }
+      }}
+      precioPorNoche={cabanas.find(c => c._id === formData.cabanaId)?.precio || 0}
+      showTotal={false}
+    />
+    {/* 👇 Mensaje cuando no hay cabaña seleccionada */}
+    {!formData.cabanaId && (
+      <small className="text-muted">
+        Selecciona una cabaña primero para ver la disponibilidad
+      </small>
+    )}
+  </Form.Group>
 
               {/* Leyenda del calendario
               <div className="calendar-legend mb-3" style={{ display: 'flex', gap: '20px', fontSize: '0.9rem' }}>

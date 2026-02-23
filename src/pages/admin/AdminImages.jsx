@@ -53,237 +53,234 @@ const AdminImages = () => {
     return dayjs(dateString).format('DD/MM/YYYY HH:mm');
   };
 
-  // 🔥🔥🔥 FUNCIÓN DE DIAGNÓSTICO - NUEVA
-  // 🔥🔥🔥 FUNCIÓN DE DIAGNÓSTICO CORREGIDA
-// 🔥🔥🔥 FUNCIÓN DE DIAGNÓSTICO MEJORADA Y ROBUSTA
-const runDiagnostic = async () => {
-  setTestingEndpoints(true);
-  setDiagnosticResults(null);
-  
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      message.error('No hay token de autenticación. Inicia sesión primero.');
-      return;
-    }
-
-    message.info('🔍 Iniciando diagnóstico de endpoints...');
+  // 🔥🔥🔥 FUNCIÓN DE DIAGNÓSTICO MEJORADA Y ROBUSTA
+  const runDiagnostic = async () => {
+    setTestingEndpoints(true);
+    setDiagnosticResults(null);
     
-    // Usar IDs reales de las imágenes disponibles
-    const sampleImages = imagenes.slice(0, 2); // Tomar primeras 2 imágenes
-    const testEndpoints = [];
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay token de autenticación. Inicia sesión primero.');
+        return;
+      }
 
-    // Endpoints GET (siempre deberían funcionar)
-    testEndpoints.push(
-      { method: 'GET', url: '/api/cabanas/images/all', description: 'Obtener todas las imágenes' }
-    );
-
-    // Si hay imágenes, probar endpoints específicos
-    if (sampleImages.length > 0) {
-      const firstImage = sampleImages[0];
+      message.info('🔍 Iniciando diagnóstico de endpoints...');
       
+      // Usar IDs reales de las imágenes disponibles
+      const sampleImages = imagenes.slice(0, 2); // Tomar primeras 2 imágenes
+      const testEndpoints = [];
+
+      // Endpoints GET (siempre deberían funcionar)
+      testEndpoints.push(
+        { method: 'GET', url: '/api/cabanas/images/all', description: 'Obtener todas las imágenes' }
+      );
+
+      // Si hay imágenes, probar endpoints específicos
+      if (sampleImages.length > 0) {
+        const firstImage = sampleImages[0];
+        
+        testEndpoints.push(
+          { 
+            method: 'GET', 
+            url: `/api/images/${firstImage._id}`, 
+            description: 'Obtener imagen específica por ID' 
+          },
+          { 
+            method: 'DELETE', 
+            url: `/api/images/${firstImage._id}`, 
+            description: 'Eliminar imagen por ID (método principal)' 
+          }
+        );
+
+        // Si la imagen está asignada a una cabaña, probar ese endpoint
+        if (firstImage.cabanaId) {
+          testEndpoints.push({
+            method: 'DELETE', 
+            url: `/api/cabanas/${firstImage.cabanaId}/images/${firstImage._id}`, 
+            description: 'Eliminar imagen desde cabaña' 
+          });
+        }
+      }
+
+      // Endpoints alternativos
       testEndpoints.push(
         { 
-          method: 'GET', 
-          url: `/api/images/${firstImage._id}`, 
-          description: 'Obtener imagen específica por ID' 
+          method: 'POST', 
+          url: '/api/images/delete', 
+          data: { docId: 'test-id', fileId: 'test-id' },
+          description: 'Eliminar con POST (alternativa)' 
         },
         { 
           method: 'DELETE', 
-          url: `/api/images/${firstImage._id}`, 
-          description: 'Eliminar imagen por ID (método principal)' 
+          url: '/api/images', 
+          data: { docId: 'test-id', fileId: 'test-id' },
+          description: 'Eliminar con body en DELETE' 
         }
       );
 
-      // Si la imagen está asignada a una cabaña, probar ese endpoint
-      if (firstImage.cabanaId) {
-        testEndpoints.push({
-          method: 'DELETE', 
-          url: `/api/cabanas/${firstImage.cabanaId}/images/${firstImage._id}`, 
-          description: 'Eliminar imagen desde cabaña' 
-        });
-      }
-    }
-
-    // Endpoints alternativos
-    testEndpoints.push(
-      { 
-        method: 'POST', 
-        url: '/api/images/delete', 
-        data: { docId: 'test-id', fileId: 'test-id' },
-        description: 'Eliminar con POST (alternativa)' 
-      },
-      { 
-        method: 'DELETE', 
-        url: '/api/images', 
-        data: { docId: 'test-id', fileId: 'test-id' },
-        description: 'Eliminar con body en DELETE' 
-      }
-    );
-
-    const results = [];
-    
-    for (const endpoint of testEndpoints) {
-      let startTime = Date.now();
-      let responseTime = 0;
+      const results = [];
       
-      try {
-        const config = {
-          method: endpoint.method,
-          url: `${API_URL}${endpoint.url}`,
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 8000
-        };
+      for (const endpoint of testEndpoints) {
+        let startTime = Date.now();
+        let responseTime = 0;
+        
+        try {
+          const config = {
+            method: endpoint.method,
+            url: `${API_URL}${endpoint.url}`,
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 8000
+          };
 
-        // Agregar data solo si existe
-        if (endpoint.data) {
-          config.data = endpoint.data;
+          // Agregar data solo si existe
+          if (endpoint.data) {
+            config.data = endpoint.data;
+          }
+
+          const response = await axios(config);
+          responseTime = Date.now() - startTime;
+          
+          results.push({
+            method: endpoint.method,
+            url: endpoint.url,
+            description: endpoint.description,
+            status: '✅ FUNCIONA',
+            statusCode: response.status,
+            responseTime: `${responseTime}ms`,
+            success: response.data?.success,
+            message: response.data?.message || 'OK'
+          });
+          
+        } catch (error) {
+          responseTime = Date.now() - startTime;
+          
+          const errorData = {
+            method: endpoint.method,
+            url: endpoint.url,
+            description: endpoint.description,
+            status: '❌ FALLA',
+            statusCode: error.response?.status || 0,
+            responseTime: `${responseTime}ms`,
+            error: error.response?.data?.error || error.message,
+            errorType: error.code || 'Unknown'
+          };
+
+          // Clasificar el error
+          if (error.response?.status === 404) {
+            errorData.errorCategory = 'ENDPOINT_NO_ENCONTRADO';
+            errorData.solution = 'El endpoint no existe. Verifica la ruta en el backend.';
+          } else if (error.response?.status === 401 || error.response?.status === 403) {
+            errorData.errorCategory = 'SIN_PERMISOS';
+            errorData.solution = 'Falta autenticación o permisos insuficientes.';
+          } else if (error.code === 'ECONNABORTED') {
+            errorData.errorCategory = 'TIMEOUT';
+            errorData.solution = 'El servidor tardó demasiado en responder.';
+          } else if (!error.response) {
+            errorData.errorCategory = 'SIN_CONEXION';
+            errorData.solution = 'No hay conexión con el servidor.';
+          }
+
+          results.push(errorData);
         }
-
-        const response = await axios(config);
-        responseTime = Date.now() - startTime;
         
-        results.push({
-          method: endpoint.method,
-          url: endpoint.url,
-          description: endpoint.description,
-          status: '✅ FUNCIONA',
-          statusCode: response.status,
-          responseTime: `${responseTime}ms`,
-          success: response.data?.success,
-          message: response.data?.message || 'OK'
-        });
-        
-      } catch (error) {
-        responseTime = Date.now() - startTime;
-        
-        const errorData = {
-          method: endpoint.method,
-          url: endpoint.url,
-          description: endpoint.description,
-          status: '❌ FALLA',
-          statusCode: error.response?.status || 0,
-          responseTime: `${responseTime}ms`,
-          error: error.response?.data?.error || error.message,
-          errorType: error.code || 'Unknown'
-        };
-
-        // Clasificar el error
-        if (error.response?.status === 404) {
-          errorData.errorCategory = 'ENDPOINT_NO_ENCONTRADO';
-          errorData.solution = 'El endpoint no existe. Verifica la ruta en el backend.';
-        } else if (error.response?.status === 401 || error.response?.status === 403) {
-          errorData.errorCategory = 'SIN_PERMISOS';
-          errorData.solution = 'Falta autenticación o permisos insuficientes.';
-        } else if (error.code === 'ECONNABORTED') {
-          errorData.errorCategory = 'TIMEOUT';
-          errorData.solution = 'El servidor tardó demasiado en responder.';
-        } else if (!error.response) {
-          errorData.errorCategory = 'SIN_CONEXION';
-          errorData.solution = 'No hay conexión con el servidor.';
-        }
-
-        results.push(errorData);
+        // Pequeña pausa para no saturar el servidor
+        await new Promise(resolve => setTimeout(resolve, 600));
       }
+
+      // Analizar resultados
+      const workingEndpoints = results.filter(r => r.status === '✅ FUNCIONA');
+      const deleteEndpoints = results.filter(r => r.method === 'DELETE');
+      const workingDeleteEndpoints = deleteEndpoints.filter(r => r.status === '✅ FUNCIONA');
+
+      // Generar recomendaciones
+      const recommendations = [];
       
-      // Pequeña pausa para no saturar el servidor
-      await new Promise(resolve => setTimeout(resolve, 600));
-    }
-
-    // Analizar resultados
-    const workingEndpoints = results.filter(r => r.status === '✅ FUNCIONA');
-    const deleteEndpoints = results.filter(r => r.method === 'DELETE');
-    const workingDeleteEndpoints = deleteEndpoints.filter(r => r.status === '✅ FUNCIONA');
-
-    // Generar recomendaciones
-    const recommendations = [];
-    
-    if (workingDeleteEndpoints.length === 0) {
-      recommendations.push({
-        type: 'error',
-        title: 'CRÍTICO: No hay endpoints DELETE funcionando',
-        action: 'Necesitas agregar un endpoint DELETE en el backend.',
-        code: `// En imageRoutes.js agrega:
-router.delete('/:id', auth, isAdmin, deleteImage);`
-      });
-    } else {
-      workingDeleteEndpoints.forEach(ep => {
+      if (workingDeleteEndpoints.length === 0) {
         recommendations.push({
-          type: 'success',
-          title: `Usar este endpoint: ${ep.method} ${ep.url}`,
-          action: `El frontend debería usar: ${ep.url}`
+          type: 'error',
+          title: 'CRÍTICO: No hay endpoints DELETE funcionando',
+          action: 'Necesitas agregar un endpoint DELETE en el backend.',
+          code: `// En imageRoutes.js agrega:
+router.delete('/:id', auth, isAdmin, deleteImage);`
         });
-      });
-    }
+      } else {
+        workingDeleteEndpoints.forEach(ep => {
+          recommendations.push({
+            type: 'success',
+            title: `Usar este endpoint: ${ep.method} ${ep.url}`,
+            action: `El frontend debería usar: ${ep.url}`
+          });
+        });
+      }
 
-    // Preparar reporte final
-    const diagnosticReport = {
-      timestamp: new Date().toLocaleString(),
-      totalTests: testEndpoints.length,
-      successfulTests: workingEndpoints.length,
-      failedTests: results.length - workingEndpoints.length,
-      deleteEndpointsWorking: workingDeleteEndpoints.length,
-      deleteEndpointsTotal: deleteEndpoints.length,
-      results: results,
-      recommendations: recommendations,
-      summary: `✅ ${workingEndpoints.length}/${results.length} endpoints funcionan`
-    };
+      // Preparar reporte final
+      const diagnosticReport = {
+        timestamp: new Date().toLocaleString(),
+        totalEndpoints: testEndpoints.length,
+        workingEndpoints: workingEndpoints.length,
+        failedTests: results.length - workingEndpoints.length,
+        deleteEndpointsWorking: workingDeleteEndpoints.length,
+        deleteEndpointsTotal: deleteEndpoints.length,
+        results: results,
+        recommendations: recommendations,
+        summary: `✅ ${workingEndpoints.length}/${results.length} endpoints funcionan`
+      };
 
-    setDiagnosticResults(diagnosticReport);
-    
-    // Mostrar alerta con resumen
-    if (workingDeleteEndpoints.length > 0) {
-      Modal.success({
-        title: '✅ Diagnóstico completado',
-        content: (
-          <div>
-            <p><strong>Resultado:</strong> {diagnosticReport.summary}</p>
-            <p><strong>Endpoints DELETE funcionando:</strong> {workingDeleteEndpoints.length}</p>
-            <p>Usa el endpoint: <code>{workingDeleteEndpoints[0]?.method} {workingDeleteEndpoints[0]?.url}</code></p>
-          </div>
-        )
-      });
-    } else {
-      Modal.error({
-        title: '❌ Problema detectado',
-        width: 700,
-        content: (
-          <div>
-            <p><strong>Ningún endpoint DELETE funciona.</strong></p>
-            <p>Esto impide eliminar imágenes desde el panel de administración.</p>
-            
-            <div style={{ marginTop: 16, padding: 12, background: '#fff2e8', borderRadius: 4 }}>
-              <h4>🔧 Solución:</h4>
-              <p>Agrega este código a <code>imageRoutes.js</code>:</p>
-              <pre style={{ 
-                backgroundColor: '#f5f5f5', 
-                padding: '12px', 
-                borderRadius: '4px',
-                fontSize: '11px',
-                overflow: 'auto'
-              }}>
+      setDiagnosticResults(diagnosticReport);
+      
+      // Mostrar alerta con resumen
+      if (workingDeleteEndpoints.length > 0) {
+        Modal.success({
+          title: '✅ Diagnóstico completado',
+          content: (
+            <div>
+              <p><strong>Resultado:</strong> {diagnosticReport.summary}</p>
+              <p><strong>Endpoints DELETE funcionando:</strong> {workingDeleteEndpoints.length}</p>
+              <p>Usa el endpoint: <code>{workingDeleteEndpoints[0]?.method} {workingDeleteEndpoints[0]?.url}</code></p>
+            </div>
+          )
+        });
+      } else {
+        Modal.error({
+          title: '❌ Problema detectado',
+          width: 700,
+          content: (
+            <div>
+              <p><strong>Ningún endpoint DELETE funciona.</strong></p>
+              <p>Esto impide eliminar imágenes desde el panel de administración.</p>
+              
+              <div style={{ marginTop: 16, padding: 12, background: '#fff2e8', borderRadius: 4 }}>
+                <h4>🔧 Solución:</h4>
+                <p>Agrega este código a <code>imageRoutes.js</code>:</p>
+                <pre style={{ 
+                  backgroundColor: '#f5f5f5', 
+                  padding: '12px', 
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  overflow: 'auto'
+                }}>
 {`// Agrega esta línea a tus rutas:
 router.delete('/:id', auth, isAdmin, deleteImage);
 
 // Y asegúrate que deleteImage en imageController.js use:
 // const { id } = req.params; // ✅ Correcto
 // NO: const { docId, fileId } = req.body; // ❌ Incorrecto`}</pre>
+              </div>
             </div>
-          </div>
-        )
-      });
-    }
+          )
+        });
+      }
 
-  } catch (error) {
-    console.error('❌ Error en diagnóstico:', error);
-    message.error(`Error: ${error.message}`);
-  } finally {
-    setTestingEndpoints(false);
-  }
-};
+    } catch (error) {
+      message.error(`Error: ${error.message}`);
+    } finally {
+      setTestingEndpoints(false);
+    }
+  };
 
   // Generar recomendaciones basadas en los resultados
   const generateRecommendations = (results) => {
@@ -502,16 +499,12 @@ router.delete('/:id', auth, isAdmin, deleteImage);
   const fetchImages = async () => {
     setLoading(true);
     try {
-      console.log('📡 Obteniendo imágenes...');
-      
       const response = await axios.get(`${API_URL}/api/cabanas/images/all`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         },
         timeout: 15000
       });
-      
-      console.log('✅ Respuesta del servidor:', response.data);
       
       let imagesData = [];
       
@@ -540,8 +533,6 @@ router.delete('/:id', auth, isAdmin, deleteImage);
           cabanaNombre: img.cabanaNombre,
           relatedCabana: img.relatedCabana
         }));
-      
-      console.log(`📊 Imágenes formateadas: ${formattedImages.length}`);
       
       // Aplicar filtros
       let filteredImages = formattedImages;
@@ -576,7 +567,6 @@ router.delete('/:id', auth, isAdmin, deleteImage);
       }));
       
     } catch (error) {
-      console.error('❌ Error obteniendo imágenes:', error);
       message.error({
         content: 'Error al cargar las imágenes. Verifica la conexión.',
         duration: 5
@@ -617,8 +607,6 @@ router.delete('/:id', auth, isAdmin, deleteImage);
         setDeletingId(record._id);
         
         try {
-          console.log('🗑️ Iniciando eliminación inteligente...');
-          
           // ESTRATEGIA 1: Si tiene cabaña, usar ese endpoint
           if (record.cabanaId) {
             try {
@@ -637,7 +625,7 @@ router.delete('/:id', auth, isAdmin, deleteImage);
                 return;
               }
             } catch (cabanaError) {
-              console.log('❌ Eliminación por cabaña falló:', cabanaError.message);
+              // Continuar con siguiente estrategia
             }
           }
           
@@ -658,7 +646,7 @@ router.delete('/:id', auth, isAdmin, deleteImage);
               return;
             }
           } catch (directError) {
-            console.log('❌ Eliminación directa falló:', directError.message);
+            // Continuar con siguiente estrategia
           }
           
           // ESTRATEGIA 3: DELETE con body
@@ -682,7 +670,7 @@ router.delete('/:id', auth, isAdmin, deleteImage);
               return;
             }
           } catch (bodyError) {
-            console.log('❌ Eliminación con body falló:', bodyError.message);
+            // Continuar con siguiente estrategia
           }
           
           // ESTRATEGIA 4: POST /api/images/delete
@@ -707,15 +695,13 @@ router.delete('/:id', auth, isAdmin, deleteImage);
               return;
             }
           } catch (postError) {
-            console.log('❌ Eliminación con POST falló:', postError.message);
+            // Continuar con siguiente estrategia
           }
           
           // Si llegamos aquí, todos los métodos fallaron
           throw new Error('Todos los métodos de eliminación fallaron');
           
         } catch (error) {
-          console.error('❌ Todos los métodos fallaron:', error);
-          
           // Mostrar diagnóstico detallado
           Modal.error({
             title: 'No se pudo eliminar la imagen',
@@ -774,7 +760,7 @@ router.delete('/:id', auth, isAdmin, deleteImage);
     });
   };
 
-  // Modal de vista previa
+  // Modal de vista previa - CORREGIDO: destroyOnClose → destroyOnHidden
   const renderPreviewModal = () => (
     <Modal
       title="Detalles de la Imagen"
@@ -786,7 +772,7 @@ router.delete('/:id', auth, isAdmin, deleteImage);
         setImageDetails(null);
       }}
       width={800}
-      destroyOnClose={true}
+      destroyOnHidden={true}  // ✅ CORREGIDO: destroyOnClose → destroyOnHidden
     >
       {imageDetails && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -896,118 +882,118 @@ router.delete('/:id', auth, isAdmin, deleteImage);
     </Modal>
   );
 
-// Panel de diagnóstico COMPLETO CORREGIDO
-const renderDiagnosticPanel = () => {
-  if (!diagnosticResults) return null;
+  // Panel de diagnóstico COMPLETO CORREGIDO
+  const renderDiagnosticPanel = () => {
+    if (!diagnosticResults) return null;
 
-  return (
-    <Card 
-      title={
-        <Space>
-          <BugOutlined />
-          <span>Resultados del Diagnóstico</span>
-          <Tag color="blue">{diagnosticResults.timestamp}</Tag>
-        </Space>
-      }
-      style={{ margin: '16px 24px' }}
-      extra={
-        <Button 
-          size="small" 
-          onClick={() => setDiagnosticResults(null)}
-        >
-          Cerrar
-        </Button>
-      }
-    >
-      <Alert
-        type={diagnosticResults.workingEndpoints > 0 ? "success" : "error"}
-        message={`${diagnosticResults.workingEndpoints}/${diagnosticResults.totalEndpoints} endpoints funcionan`}
-        description={diagnosticResults.workingEndpoints === 0 ? 
-          "Ningún endpoint DELETE funciona. Necesitas configurar el backend." : 
-          "Algunos endpoints están funcionando correctamente."
+    return (
+      <Card 
+        title={
+          <Space>
+            <BugOutlined />
+            <span>Resultados del Diagnóstico</span>
+            <Tag color="blue">{diagnosticResults.timestamp}</Tag>
+          </Space>
         }
-        style={{ marginBottom: 16 }}
-      />
-      
-      <Collapse defaultActiveKey={['results']}>
-        <Panel header="📋 Resultados Detallados" key="results">
-          <Table
-            size="small"
-            dataSource={diagnosticResults.results}
-            rowKey={(record, index) => `result-${index}-${Date.now()}`}
-            columns={[
-              { 
-                title: 'Método', 
-                dataIndex: 'method', 
-                key: 'method-col',
-                width: 80,
-                render: (method, record, index) => (
-                  <Tag key={`method-tag-${index}`} color={method === 'GET' ? 'blue' : 'red'}>
-                    {method}
-                  </Tag>
-                )
-              },
-              { 
-                title: 'URL', 
-                dataIndex: 'url', 
-                key: 'url-col',
-                render: (url, record, index) => (
-                  <code key={`url-code-${index}`}>{url}</code>
-                )
-              },
-              { 
-                title: 'Descripción', 
-                dataIndex: 'description', 
-                key: 'description-col',
-                width: 200 
-              },
-              { 
-                title: 'Estado', 
-                dataIndex: 'status', 
-                key: 'status-col',
-                width: 100,
-                render: (status, record, index) => status.includes('✅') ? 
-                  <Tag key={`status-tag-${index}`} color="success">OK</Tag> : 
-                  <Tag key={`status-tag-${index}`} color="error">FALLA</Tag>
-              },
-              { 
-                title: 'Código', 
-                dataIndex: 'statusCode', 
-                key: 'statusCode-col',
-                width: 80,
-                render: (code, record, index) => (
-                  <Tag key={`code-tag-${index}`} color={code === 200 ? 'green' : 'red'}>
-                    {code}
-                  </Tag>
-                )
-              },
-              { 
-                title: 'Tiempo', 
-                dataIndex: 'responseTime', 
-                key: 'responseTime-col',
-                width: 80 
-              }
-            ]}
-            pagination={false}
-          />
-        </Panel>
+        style={{ margin: '16px 24px' }}
+        extra={
+          <Button 
+            size="small" 
+            onClick={() => setDiagnosticResults(null)}
+          >
+            Cerrar
+          </Button>
+        }
+      >
+        <Alert
+          type={diagnosticResults.workingEndpoints > 0 ? "success" : "error"}
+          message={`${diagnosticResults.workingEndpoints}/${diagnosticResults.totalEndpoints} endpoints funcionan`}
+          description={diagnosticResults.workingEndpoints === 0 ? 
+            "Ningún endpoint DELETE funciona. Necesitas configurar el backend." : 
+            "Algunos endpoints están funcionando correctamente."
+          }
+          style={{ marginBottom: 16 }}
+        />
         
-        <Panel header="💡 Recomendaciones" key="recommendations">
-          {diagnosticResults.recommendations?.map((rec, index) => (
-            <Alert
-              key={`rec-${index}`} // ✅ KEY ÚNICA
-              type={rec.type}
-              message={rec.message}
-              description={rec.action}
-              showIcon
-              style={{ marginBottom: 8 }}
+        <Collapse defaultActiveKey={['results']}>
+          <Panel header="📋 Resultados Detallados" key="results">
+            <Table
+              size="small"
+              dataSource={diagnosticResults.results}
+              rowKey={(record, index) => `result-${index}-${Date.now()}`}
+              columns={[
+                { 
+                  title: 'Método', 
+                  dataIndex: 'method', 
+                  key: 'method-col',
+                  width: 80,
+                  render: (method, record, index) => (
+                    <Tag key={`method-tag-${index}`} color={method === 'GET' ? 'blue' : 'red'}>
+                      {method}
+                    </Tag>
+                  )
+                },
+                { 
+                  title: 'URL', 
+                  dataIndex: 'url', 
+                  key: 'url-col',
+                  render: (url, record, index) => (
+                    <code key={`url-code-${index}`}>{url}</code>
+                  )
+                },
+                { 
+                  title: 'Descripción', 
+                  dataIndex: 'description', 
+                  key: 'description-col',
+                  width: 200 
+                },
+                { 
+                  title: 'Estado', 
+                  dataIndex: 'status', 
+                  key: 'status-col',
+                  width: 100,
+                  render: (status, record, index) => status.includes('✅') ? 
+                    <Tag key={`status-tag-${index}`} color="success">OK</Tag> : 
+                    <Tag key={`status-tag-${index}`} color="error">FALLA</Tag>
+                },
+                { 
+                  title: 'Código', 
+                  dataIndex: 'statusCode', 
+                  key: 'statusCode-col',
+                  width: 80,
+                  render: (code, record, index) => (
+                    <Tag key={`code-tag-${index}`} color={code === 200 ? 'green' : 'red'}>
+                      {code}
+                    </Tag>
+                  )
+                },
+                { 
+                  title: 'Tiempo', 
+                  dataIndex: 'responseTime', 
+                  key: 'responseTime-col',
+                  width: 80 
+                }
+              ]}
+              pagination={false}
             />
-          ))}
-        </Panel>
-      </Collapse>
-    </Card>
-  );
-};
+          </Panel>
+          
+          <Panel header="💡 Recomendaciones" key="recommendations">
+            {diagnosticResults.recommendations?.map((rec, index) => (
+              <Alert
+                key={`rec-${index}`}
+                type={rec.type}
+                message={rec.message}
+                description={rec.action}
+                showIcon
+                style={{ marginBottom: 8 }}
+              />
+            ))}
+          </Panel>
+        </Collapse>
+      </Card>
+    );
+  };
 
   // Efectos para cargar datos iniciales
   useEffect(() => {

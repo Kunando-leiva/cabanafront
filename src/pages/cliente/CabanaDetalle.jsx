@@ -161,25 +161,19 @@ export default function CabanaDetalle() {
       
       try {
         setLoadingOccupiedDates(true);
-        console.log(`📡 Obteniendo fechas ocupadas para cabaña: ${id}`);
         
         const dates = await getOccupiedDates(id);
-        
-        console.log(`📊 Fechas ocupadas recibidas: ${dates.length} noches ocupadas`);
-        console.log('📋 Noches ocupadas (días donde se duerme):', dates);
+      
 
         // Verificación detallada para febrero 2026
         const feb2026 = dates.filter(d => d.startsWith('2026-02'));
-        console.log('📅 Febrero 2026 - Noches ocupadas:', feb2026);
         
         if (feb2026.includes('2026-02-20')) {
-          console.log('⚠️ La noche del 20/02/2026 está ocupada');
         }
         
         setOccupiedDates(dates);
         
       } catch (error) {
-        console.error('❌ Error obteniendo fechas ocupadas:', error);
         setOccupiedDates([]);
       } finally {
         setLoadingOccupiedDates(false);
@@ -202,8 +196,6 @@ export default function CabanaDetalle() {
         if (!id || !/^[0-9a-fA-F]{24}$/.test(id)) {
           throw new Error('ID de cabaña no válido');
         }
-
-        console.log(`📡 Cargando cabaña ID: ${id}`);
         
         const cabanaResponse = await axios.get(`${API_URL}/api/cabanas/${id}`);
         
@@ -240,8 +232,6 @@ export default function CabanaDetalle() {
             : [{ url: `${API_URL}/default-cabana.jpg`, filename: 'default.jpg', isDefault: true }],
           imagenPrincipal: formatImageUrl(cabanaData.imagenPrincipal || imagenes[0])
         });
-
-        console.log('✅ Cabaña cargada:', cabanaData.nombre);
 
       } catch (err) {
         console.error('❌ Error al carga cabaña:', {
@@ -523,36 +513,38 @@ export default function CabanaDetalle() {
                 </h5>
                 
                 <div className="mb-3">
-                  <CalendarFull 
-                    cabanaId={id}
-                    onDatesSelected={(start, end) => {
-                      console.log('📅 Fechas seleccionadas en calendario:', {
-                        start: start ? new Date(start).toISOString().split('T')[0] : null,
-                        end: end ? new Date(end).toISOString().split('T')[0] : null
-                      });
-                      
-                      if (start && end) {
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        
-                        if (start < today) {
-                          setError('No puedes seleccionar fechas pasadas');
-                          return;
-                        }
-                        
-                        if (start >= end) {
-                          setError('La fecha de fin debe ser posterior al inicio');
-                          return;
-                        }
-                        
-                        setSelectedDates({ start, end });
-                        setError('');
-                      }
-                    }}
-                    precioPorNoche={cabana?.precio || 0}
-                    showTotal={false}
-                  />
-                </div>
+  <div className="cabanas-detalle-calendar"> {/* 👈 Nuevo wrapper */}
+    <CalendarFull 
+      cabanaId={id}
+      onDatesSelected={(start, end) => {
+        console.log('📅 Fechas seleccionadas en calendario:', {
+          start: start ? new Date(start).toISOString().split('T')[0] : null,
+          end: end ? new Date(end).toISOString().split('T')[0] : null
+        });
+        
+        if (start && end) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          if (start < today) {
+            setError('No puedes seleccionar fechas pasadas');
+            return;
+          }
+          
+          if (start >= end) {
+            setError('La fecha de fin debe ser posterior al inicio');
+            return;
+          }
+          
+          setSelectedDates({ start, end });
+          setError('');
+        }
+      }}
+      precioPorNoche={cabana?.precio || 0}
+      showTotal={false}
+    />
+  </div>
+</div>
                 
                 {/* <div className="calendar-legend mt-3">
                   <div className="legend-item">

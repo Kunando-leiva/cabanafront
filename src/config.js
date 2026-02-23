@@ -1,4 +1,4 @@
-// src/config.js - VERSIÓN CON LOGGING
+// src/config.js - VERSIÓN SIN LOGS
 export const API_URL = process.env.REACT_APP_API_URL || 'https://backendcabana.onrender.com';
 
 import axios from 'axios';
@@ -40,19 +40,14 @@ api.interceptors.response.use(
 
 // 🔥 VERSIÓN SIMPLIFICADA - Confía en el backend
 export const getOccupiedDates = async (cabanaId = null) => {
-  console.log('📍 getOccupiedDates llamado con cabanaId:', cabanaId);
   try {
     const url = cabanaId 
       ? `/api/reservas/ocupadas?cabanaId=${cabanaId}`
       : '/api/reservas/ocupadas';
     
-    console.log('📡 Obteniendo fechas ocupadas de:', url);
-    
     const response = await api.get(url, {
       timeout: 8000
     });
-    
-    console.log('✅ Respuesta del servidor:', response.data);
 
     let fechas = [];
     
@@ -60,29 +55,20 @@ export const getOccupiedDates = async (cabanaId = null) => {
     if (response.data?.success) {
       if (Array.isArray(response.data.fechas)) {
         fechas = response.data.fechas;
-        console.log(`📅 Formato fechas: ${fechas.length} fechas`);
       } else if (Array.isArray(response.data.data)) {
         fechas = response.data.data;
-        console.log(`📅 Formato data: ${fechas.length} fechas`);
       }
     }
 
-    console.log(`📊 Total fechas ocupadas: ${fechas.length}`);
     return fechas;
     
   } catch (error) {
-    console.error("❌ Error:", error);
     return [];
   }
 };
 
 
 export const calcularPrecioReserva = async (fechaInicio, fechaFin, cabanaId) => {
-   console.log('📍 calcularPrecioReserva llamado:', {
-    fechaInicio: fechaInicio ? new Date(fechaInicio).toISOString().split('T')[0] : null,
-    fechaFin: fechaFin ? new Date(fechaFin).toISOString().split('T')[0] : null,
-    cabanaId
-  });
   try {
     const formatDateForAPI = (date) => {
       if (!date) return null;
@@ -91,11 +77,6 @@ export const calcularPrecioReserva = async (fechaInicio, fechaFin, cabanaId) => 
       return d.toISOString().split('T')[0];
     };
 
-    console.log('🧮 Calculando precio para fechas:', {
-      fechaInicio: formatDateForAPI(fechaInicio),
-      fechaFin: formatDateForAPI(fechaFin)
-    });
-
     const response = await api.post('/api/reservas/calcular-precio', {
       fechaInicio: formatDateForAPI(fechaInicio),
       fechaFin: formatDateForAPI(fechaFin),
@@ -103,17 +84,11 @@ export const calcularPrecioReserva = async (fechaInicio, fechaFin, cabanaId) => 
     });
     
     if (response.data && response.data.success) {
-      console.log('✅ Precio calculado:', {
-        total: response.data.precioTotal,
-        noches: response.data.totalNoches,
-        mensaje: response.data.mensaje
-      });
       return response.data;
     } else {
       throw new Error(response.data?.error || 'Error calculando precio');
     }
   } catch (error) {
-    console.error('❌ Error calculando precio:', error);
     throw error;
   }
 };
@@ -139,12 +114,10 @@ export const obtenerCabanas = async (forceRefresh = false) => {
   const now = Date.now();
   
   if (!forceRefresh && cabanasCache.data && (now - cabanasCache.timestamp) < cabanasCache.ttl) {
-    console.log('📦 Usando cache de cabañas');
     return cabanasCache.data;
   }
   
   try {
-    console.log('📡 Obteniendo cabañas desde servidor');
     const response = await api.get('/api/cabanas', {
       timeout: 12000
     });
@@ -157,17 +130,13 @@ export const obtenerCabanas = async (forceRefresh = false) => {
       data = response.data;
     }
     
-    console.log(`✅ ${data.length} cabañas obtenidas`);
-    
     cabanasCache.data = data;
     cabanasCache.timestamp = now;
     
     return data;
   } catch (error) {
-    console.error('❌ Error obteniendo cabañas:', error);
     
     if (cabanasCache.data) {
-      console.log('⚠️ Usando datos cacheados por error');
       return cabanasCache.data;
     }
     

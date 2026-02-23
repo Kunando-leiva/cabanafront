@@ -58,7 +58,6 @@ export default function EditCabana() {
         }
 
         const cabana = response.data.data;
-        console.log('Cabaña cargada:', cabana);
 
         // Procesar imágenes
         const imagenesProcesadas = (cabana.images || cabana.imagenes || []).map(img => {

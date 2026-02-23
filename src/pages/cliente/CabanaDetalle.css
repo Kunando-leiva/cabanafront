@@ -359,3 +359,37 @@ html, body {
     color: #333 !important;
     font-weight: 500;
 }
+
+/* ===== CORRECCIÓN: DÍAS PASADOS SIEMPRE GRISES ===== */
+.cabanas-detalle .past-day {
+  background-color: #333 !important;
+  color: #777 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+}
+
+/* FORZAR GRIS PARA CUALQUIER COMBINACIÓN EN DÍAS PASADOS */
+.cabanas-detalle .past-day.occupied-night,
+.cabanas-detalle .past-day.checkin-day,
+.cabanas-detalle .past-day.react-calendar__tile--now,
+.cabanas-detalle .past-day.selected-range-start,
+.cabanas-detalle .past-day.selected-range-end,
+.cabanas-detalle .past-day.selected-range-middle,
+.cabanas-detalle .past-day.react-calendar__tile--active {
+  background-color: #333 !important;
+  color: #777 !important;
+  opacity: 0.7 !important;
+}
+
+/* Eliminar cualquier indicador visual en días pasados */
+.cabanas-detalle .past-day.occupied-night::after,
+.cabanas-detalle .past-day.checkin-day::after,
+.cabanas-detalle .past-day.react-calendar__tile--now::after {
+  display: none !important;
+}
+
+/* Asegurar que los días ocupados normales (futuros) mantengan su color */
+.cabanas-detalle .occupied-night:not(.past-day) {
+  background-color: #c82333 !important;
+  color: white !important;
+}

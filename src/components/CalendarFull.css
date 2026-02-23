@@ -1,4 +1,4 @@
-/* CalendarFull.css - VERSIÓN CON DÍAS CUADRADOS COMPLETOS */
+/* CalendarFull.css - VERSIÓN CORREGIDA - DÍAS PASADOS SIEMPRE GRISES */
 
 /* Prevenir conflictos con react-calendar */
 .react-calendar,
@@ -116,8 +116,6 @@
 }
 
 /* ===== DÍAS DE CHECK-IN - AMARILLO (CUADRADO COMPLETO) ===== */
-
-
 .checkin-day:hover {
   /* background-color: #e0a800 !important; */  /* COMENTADO */
   background-color: #555 !important; /* Opcional: hover normal */
@@ -182,13 +180,38 @@
   font-size: 14px;
 }
 
-/* Días pasados (no seleccionables) */
-.react-calendar__tile:disabled {
-  color: #727070 !important;
-  background-color: #f8f9fa !important;
-  cursor: not-allowed;
-  opacity: 0.6;
-  border-radius: 0 !important; /* CUADRADO */
+/* ===== DÍAS PASADOS - GRISES (CON MÁXIMA PRIORIDAD) ===== */
+.past-day {
+  background-color: #f0f0f0 !important;
+  color: #999 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+  border-radius: 0 !important;
+}
+
+.past-day:hover {
+  background-color: #e0e0e0 !important;
+  color: #999 !important;
+}
+
+/* 🔥 SOBREESCRIBIR CUALQUIER OTRO COLOR PARA DÍAS PASADOS */
+.past-day.occupied-night,
+.past-day.checkin-day,
+.past-day.react-calendar__tile--now,
+.past-day.selected-range-start,
+.past-day.selected-range-end,
+.past-day.selected-range-middle,
+.past-day.react-calendar__tile--active {
+  background-color: #f0f0f0 !important;
+  color: #999 !important;
+  opacity: 0.7 !important;
+}
+
+/* Eliminar cualquier indicador visual en días pasados */
+.past-day.occupied-night::after,
+.past-day.checkin-day::after,
+.past-day.react-calendar__tile--now::after {
+  display: none !important;
 }
 
 /* ===== ESTILOS ESPECÍFICOS PARA CABANADETALLE (fondo oscuro) ===== */
@@ -232,22 +255,51 @@
   color: #eaac25;
 }
 
-/* Noches ocupadas en fondo oscuro */
-.cabanas-detalle .occupied-night {
+/* Días pasados en fondo oscuro */
+.cabanas-detalle .past-day {
+  background-color: #333 !important;
+  color: #777 !important;
+}
+
+.cabanas-detalle .past-day:hover {
+  background-color: #3a3a3a !important;
+}
+
+/* 🔥 SOBREESCRIBIR TODOS LOS COLORES EN FONDO OSCURO */
+.cabanas-detalle .past-day.occupied-night,
+.cabanas-detalle .past-day.checkin-day,
+.cabanas-detalle .past-day.react-calendar__tile--now,
+.cabanas-detalle .past-day.selected-range-start,
+.cabanas-detalle .past-day.selected-range-end,
+.cabanas-detalle .past-day.selected-range-middle,
+.cabanas-detalle .past-day.react-calendar__tile--active {
+  background-color: #333 !important;
+  color: #777 !important;
+}
+
+/* Eliminar indicadores en fondo oscuro */
+.cabanas-detalle .past-day.occupied-night::after,
+.cabanas-detalle .past-day.checkin-day::after,
+.cabanas-detalle .past-day.react-calendar__tile--now::after {
+  display: none !important;
+}
+
+/* Noches ocupadas en fondo oscuro (solo para fechas futuras) */
+.cabanas-detalle .occupied-night:not(.past-day) {
   background-color: #c82333 !important;
   color: white !important;
 }
 
-/* Días de check-in en fondo oscuro */
-.cabanas-detalle .checkin-day {
+/* Días de check-in en fondo oscuro (solo para fechas futuras) */
+.cabanas-detalle .checkin-day:not(.past-day) {
   background-color: #ffc107 !important;
   color: black !important;
 }
 
-/* Rango seleccionado en fondo oscuro */
-.cabanas-detalle .selected-range-start,
-.cabanas-detalle .selected-range-end,
-.cabanas-detalle .selected-range-middle {
+/* Rango seleccionado en fondo oscuro (solo para fechas futuras) */
+.cabanas-detalle .selected-range-start:not(.past-day),
+.cabanas-detalle .selected-range-end:not(.past-day),
+.cabanas-detalle .selected-range-middle:not(.past-day) {
   background-color: #4caf50 !important;
   color: white !important;
 }
@@ -260,10 +312,10 @@
   gap: 20px;
   margin-top: 15px;
   padding: 12px;
-  background-color: #555 !important;  /* CAMBIADO DE #f8f9fa a #555 */
+  background-color: #555 !important;
   border-radius: 8px;
   font-size: 12px;
-  border: 2px solid #ffffff !important;  /* BORDE BLANCO MÁS GRUESO */
+  border: 2px solid #ffffff !important;
   color: #fff;
 }
 
@@ -288,7 +340,7 @@
   border-radius: 2px;
 }
 
-/* Colores de la leyenda (se mantienen igual) */
+/* Colores de la leyenda */
 .legend-occupied {
   background-color: #dc3545 !important;
 }
@@ -306,17 +358,22 @@
   border: 1px solid #0d6efd;
 }
 
-/* Si quieres agregar el color para fechas pasadas */
+/* Color para fechas pasadas en la leyenda */
 .legend-past {
-  background-color: #888 !important;
-  border: 1px solid #666;
+  background-color: #f0f0f0 !important;
+  border: 1px solid #999;
 }
 
-/* Versión específica para CabanaDetalle (por si acaso) */
+/* Versión específica para CabanaDetalle */
 .cabanas-detalle .calendar-legend {
   background-color: #555 !important;
   border: 2px solid white !important;
   color: #fff;
+}
+
+.cabanas-detalle .legend-past {
+  background-color: #333 !important;
+  border: 1px solid #777;
 }
 
 /* ===== ESTADOS ADICIONALES ===== */
@@ -381,7 +438,7 @@
   background: #333;
   color: white;
   padding: 8px 12px;
-  border-radius: 4px; /* BORDE LIGERAMENTE REDONDEADO PARA TOOLTIP */
+  border-radius: 4px;
   font-size: 12px;
   z-index: 1000;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
@@ -390,37 +447,25 @@
   pointer-events: none;
 }
 
-/* ===== FORZAR COLOR ROJO PARA OCUPADAS EN TODOS LOS CONTEXTOS ===== */
-.occupied-night,
-.cabanas-detalle .occupied-night,
-.admin-calendar .occupied-night,
-.calendar-container .occupied-night {
+/* ===== FORZAR COLOR ROJO PARA OCUPADAS (SOLO FUTURAS) ===== */
+.occupied-night:not(.past-day),
+.cabanas-detalle .occupied-night:not(.past-day),
+.admin-calendar .occupied-night:not(.past-day),
+.calendar-container .occupied-night:not(.past-day) {
   background-color: #dc3545 !important;
   color: white !important;
   opacity: 1 !important;
 }
 
 /* Asegurar que no sea sobreescrito por disabled */
-.occupied-night.react-calendar__tile:disabled {
+.occupied-night:not(.past-day).react-calendar__tile:disabled {
   background-color: #dc3545 !important;
   color: white !important;
   opacity: 1 !important;
   cursor: not-allowed;
 }
 
-/* Asegurar que no sea sobreescrito por past-date */
-.occupied-night.past-date {
-  background-color: #dc3545 !important;
-  color: white !important;
-  opacity: 1 !important;
-}
-
-/* Hover effect */
-.occupied-night:hover {
+/* Hover effect solo para no-pasados */
+.occupied-night:not(.past-day):hover {
   background-color: #c82333 !important;
-}
-
-/* Leyenda */
-.legend-occupied {
-  background-color: #dc3545 !important;
 }
