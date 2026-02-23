@@ -8,7 +8,7 @@ import {
 import { API_URL } from '../../config';
 import { formatearPrecioArgentino, getOccupiedDates, calcularPrecioReserva } from '../../config';
 import { FaCalendarAlt, FaMoneyBillWave, FaTag, FaUser, FaPhone, FaEnvelope, FaHome } from 'react-icons/fa';
-import CalendarFull from '../../components/CalendarFull'; // 🔥 IMPORTAR EL MISMO CALENDARIO
+import CalendarFull from '../../components/CalendarFull';
 
 const CrearReservaAdmin = () => {
   const { user, token, isAuthenticated, logout, isAdmin } = useAuth();
@@ -28,7 +28,7 @@ const CrearReservaAdmin = () => {
     precioFormateado: '$0'
   });
   const [fechasOcupadas, setFechasOcupadas] = useState([]);
-  const [selectedDates, setSelectedDates] = useState({ start: null, end: null }); // 🔥 USAR MISMO FORMATO
+  const [selectedDates, setSelectedDates] = useState({ start: null, end: null });
   
   const processCabanasData = (data) => {
     if (Array.isArray(data)) return data;
@@ -49,7 +49,21 @@ const CrearReservaAdmin = () => {
     }
   });
 
-  // Redirigir si no está autenticado o no es admin
+  // ============================================
+  // FUNCIÓN AUXILIAR PARA FORMATEAR FECHAS
+  // ============================================
+  const formatDateForAPI = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // ============================================
+  // REDIRECCIONES DE AUTENTICACIÓN
+  // ============================================
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login', { 
@@ -70,7 +84,9 @@ const CrearReservaAdmin = () => {
     }
   }, [isAuthenticated, navigate, isAdmin]);
 
-  // Obtener cabañas al cargar
+  // ============================================
+  // OBTENER CABAÑAS
+  // ============================================
   useEffect(() => {
     const fetchCabanas = async () => {
       try {
@@ -93,10 +109,8 @@ const CrearReservaAdmin = () => {
         }
     
         const data = await response.json();
-        console.log('Datos recibidos de cabañas:', data);
         
         const processedCabanas = processCabanasData(data);
-        console.log('Cabañas procesadas:', processedCabanas);
         
         if (!Array.isArray(processedCabanas)) {
           throw new Error('Formato de datos inesperado');
@@ -117,7 +131,9 @@ const CrearReservaAdmin = () => {
     }
   }, [token, isAuthenticated, logout, isAdmin]);
 
-  // 🔥 OBTENER FECHAS OCUPADAS USANDO getOccupiedDates (IGUAL QUE EN CabanaDetalle)
+  // ============================================
+  // OBTENER FECHAS OCUPADAS
+  // ============================================
   useEffect(() => {
     const fetchFechasOcupadas = async () => {
       if (!formData.cabanaId) {
@@ -127,7 +143,6 @@ const CrearReservaAdmin = () => {
 
       try {  
         const dates = await getOccupiedDates(formData.cabanaId);
-       
         setFechasOcupadas(dates);
       } catch (error) {
         setFechasOcupadas([]);
@@ -139,7 +154,9 @@ const CrearReservaAdmin = () => {
     }
   }, [formData.cabanaId]);
 
-  // 🔥 ACTUALIZAR formData cuando cambian las fechas seleccionadas
+  // ============================================
+  // ACTUALIZAR FORMDATA CON FECHAS SELECCIONADAS
+  // ============================================
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
@@ -148,7 +165,9 @@ const CrearReservaAdmin = () => {
     }));
   }, [selectedDates]);
 
-  // 🔥 CALCULAR PRECIO USANDO calcularPrecioReserva (IGUAL QUE EN CabanaDetalle)
+  // ============================================
+  // CALCULAR PRECIO DINÁMICO
+  // ============================================
   useEffect(() => {
     const calcularPrecioDinamico = async () => {
       if (!selectedDates.start || !selectedDates.end || !formData.cabanaId) {
@@ -170,18 +189,12 @@ const CrearReservaAdmin = () => {
       setLoading(prev => ({ ...prev, calculando: true }));
       
       try {
-        console.log('🧮 Calculando precio para:', {
-          fechaInicio: new Date(selectedDates.start).toISOString().split('T')[0],
-          fechaFin: new Date(selectedDates.end).toISOString().split('T')[0]
-        });
-
         const precioData = await calcularPrecioReserva(
           selectedDates.start,
           selectedDates.end,
           formData.cabanaId
         );
 
-        // Agrupar desglose por tipo (IGUAL QUE EN CabanaDetalle)
         const desgloseAgrupado = [];
         const agrupadoPorTipo = {};
         
@@ -234,7 +247,9 @@ const CrearReservaAdmin = () => {
     calcularPrecioDinamico();
   }, [selectedDates.start, selectedDates.end, formData.cabanaId]);
 
-  // Función para renderizar el desglose de precios
+  // ============================================
+  // RENDERIZAR DESGLOSE DE PRECIOS
+  // ============================================
   const renderDesglosePrecios = () => {
     if (!precioCalculado.desgloseAgrupado || precioCalculado.desgloseAgrupado.length === 0) {
       return null;
@@ -286,7 +301,9 @@ const CrearReservaAdmin = () => {
     );
   };
 
-  // 🔥 VALIDAR DISPONIBILIDAD (IGUAL QUE EN CabanaDetalle)
+  // ============================================
+  // VALIDAR DISPONIBILIDAD
+  // ============================================
   const validarDisponibilidad = () => {
     if (!selectedDates.start || !selectedDates.end) {
       return { valido: false, error: 'Selecciona un rango de fechas válido' };
@@ -309,7 +326,13 @@ const CrearReservaAdmin = () => {
       return { valido: false, error: 'El precio calculado no es válido' };
     }
 
-    // Validar contra fechas ocupadas
+    console.log('🔍 Validando disponibilidad:');
+    console.log('   - Fechas seleccionadas:', {
+      start: startDate.toISOString().split('T')[0],
+      end: endDate.toISOString().split('T')[0]
+    });
+    console.log('   - Fechas ocupadas:', fechasOcupadas);
+
     let tieneConflicto = false;
     let fechaConflicto = null;
     const current = new Date(startDate);
@@ -324,6 +347,7 @@ const CrearReservaAdmin = () => {
         break;
       }
       
+      console.log(`✅ Noche del ${dateStr} disponible`);
       current.setDate(current.getDate() + 1);
     }
     
@@ -331,13 +355,16 @@ const CrearReservaAdmin = () => {
       return { valido: false, error: `La noche del ${fechaConflicto} ya está reservada. Selecciona otras fechas.` };
     }
 
+    console.log('✅ Todas las noches están disponibles');
     return { valido: true };
   };
 
+  // ============================================
+  // HANDLE SUBMIT
+  // ============================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validar disponibilidad primero
     const validacion = validarDisponibilidad();
     if (!validacion.valido) {
       setError(validacion.error);
@@ -348,7 +375,6 @@ const CrearReservaAdmin = () => {
     setError('');
 
     try {
-      // Validar campos obligatorios
       const requiredFields = {
         cabanaId: 'Cabaña',
         'huesped.nombre': 'Nombre del huésped',
@@ -370,16 +396,18 @@ const CrearReservaAdmin = () => {
         throw new Error(`Faltan campos obligatorios: ${missingFields.join(', ')}`);
       }
 
-      // Validar DNI
       if (!/^\d+$/.test(formData.huesped.dni)) {
         throw new Error('El DNI debe contener solo números');
       }
 
-      // Preparar payload (precioTotal NO se envía, el backend lo calcula)
+      // 🔥 FORMATEAR FECHAS CORRECTAMENTE PARA EL BACKEND
+      const fechaInicio = formatDateForAPI(selectedDates.start);
+      const fechaFin = formatDateForAPI(selectedDates.end);
+
       const payload = {
         cabanaId: formData.cabanaId,
-        fechaInicio: selectedDates.start.toISOString(),
-        fechaFin: selectedDates.end.toISOString(),
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
         huesped: {
           nombre: formData.huesped.nombre.trim(),
           apellido: formData.huesped.apellido.trim(),
@@ -390,7 +418,7 @@ const CrearReservaAdmin = () => {
         }
       };
 
-      console.log('Enviando reserva:', payload);
+      console.log('📤 Enviando reserva:', payload);
 
       const response = await fetch(`${API_URL}/api/reservas/admin/crear`, {
         method: 'POST',
@@ -402,6 +430,7 @@ const CrearReservaAdmin = () => {
       });
 
       const responseData = await response.json();
+      console.log('📥 Respuesta:', responseData);
 
       if (!response.ok) {
         throw new Error(responseData.error || 'Error al crear la reserva');
@@ -415,6 +444,7 @@ const CrearReservaAdmin = () => {
       });
 
     } catch (error) {
+      console.error('❌ Error:', error);
       setError(error.message);
     } finally {
       setLoading(prev => ({ ...prev, form: false }));
@@ -435,7 +465,6 @@ const CrearReservaAdmin = () => {
     return null;
   }
 
-  // Calcular noches para mostrar
   const noches = (() => {
     if (!selectedDates.start || !selectedDates.end) return 0;
     const start = new Date(selectedDates.start);
@@ -577,7 +606,7 @@ const CrearReservaAdmin = () => {
                   value={formData.cabanaId}
                   onChange={(e) => {
                     setFormData({...formData, cabanaId: e.target.value});
-                    setSelectedDates({ start: null, end: null }); // Resetear fechas al cambiar cabaña
+                    setSelectedDates({ start: null, end: null });
                   }}
                   required
                   disabled={loading.initial || loading.form}
@@ -595,65 +624,46 @@ const CrearReservaAdmin = () => {
               </Form.Group>
             </Col>
 
-           {/* 🔥 CALENDARIO UNIFICADO - CORREGIDO */}
-<Col md={12}>
-  <Form.Group className="mb-3">
-    <Form.Label>Seleccionar Fechas <span className="text-danger">*</span></Form.Label>
-    <CalendarFull 
-      cabanaId={formData.cabanaId}
-      onDatesSelected={(start, end) => {
-        console.log('📅 Fechas seleccionadas en calendario:', {
-          start: start ? new Date(start).toISOString().split('T')[0] : null,
-          end: end ? new Date(end).toISOString().split('T')[0] : null
-        });
-        
-        if (start && end) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          if (start < today) {
-            setError('No puedes seleccionar fechas pasadas');
-            return;
-          }
-          
-          if (start >= end) {
-            setError('La fecha de fin debe ser posterior al inicio');
-            return;
-          }
-          
-          setSelectedDates({ start, end });
-          setError('');
-        }
-      }}
-      precioPorNoche={cabanas.find(c => c._id === formData.cabanaId)?.precio || 0}
-      showTotal={false}
-    />
-    {/* 👇 Mensaje cuando no hay cabaña seleccionada */}
-    {!formData.cabanaId && (
-      <small className="text-muted">
-        Selecciona una cabaña primero para ver la disponibilidad
-      </small>
-    )}
-  </Form.Group>
-
-              {/* Leyenda del calendario
-              <div className="calendar-legend mb-3" style={{ display: 'flex', gap: '20px', fontSize: '0.9rem' }}>
-                <div className="legend-item" style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ width: '20px', height: '20px', backgroundColor: '#ffcccc', border: '1px solid #ff0000', marginRight: '5px' }}></div>
-                  <span>Días reservados</span>
-                </div>
-                <div className="legend-item" style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ width: '20px', height: '20px', backgroundColor: '#cce5ff', border: '1px solid #004085', marginRight: '5px' }}></div>
-                  <span>Días seleccionados</span>
-                </div>
-                <div className="legend-item" style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ width: '20px', height: '20px', backgroundColor: '#fff3cd', border: '1px solid #856404', marginRight: '5px' }}></div>
-                  <span>Hoy</span>
-                </div>
-              </div> */}
+            <Col md={12}>
+              <Form.Group className="mb-3">
+                <Form.Label>Seleccionar Fechas <span className="text-danger">*</span></Form.Label>
+                <CalendarFull 
+                  cabanaId={formData.cabanaId}
+                  onDatesSelected={(start, end) => {
+                    console.log('📅 Fechas seleccionadas en calendario:', {
+                      start: start ? new Date(start).toISOString().split('T')[0] : null,
+                      end: end ? new Date(end).toISOString().split('T')[0] : null
+                    });
+                    
+                    if (start && end) {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      
+                      if (start < today) {
+                        setError('No puedes seleccionar fechas pasadas');
+                        return;
+                      }
+                      
+                      if (start >= end) {
+                        setError('La fecha de fin debe ser posterior al inicio');
+                        return;
+                      }
+                      
+                      setSelectedDates({ start, end });
+                      setError('');
+                    }
+                  }}
+                  precioPorNoche={cabanas.find(c => c._id === formData.cabanaId)?.precio || 0}
+                  showTotal={false}
+                />
+                {!formData.cabanaId && (
+                  <small className="text-muted">
+                    Selecciona una cabaña primero para ver la disponibilidad
+                  </small>
+                )}
+              </Form.Group>
             </Col>
             
-            {/* Sección de Precio Calculado */}
             <Col md={12}>
               <Form.Group className="mb-3">
                 <Form.Label>Precio Total Calculado</Form.Label>
