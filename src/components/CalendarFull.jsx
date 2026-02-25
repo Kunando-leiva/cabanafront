@@ -311,7 +311,7 @@ const tileClassName = useCallback(({ date, view }) => {
           </div>
           <div className="d-flex align-items-center">
             <div className="legend-color legend-checkin"></div>
-            <span>Día de check-in (disponible)</span>
+            <span>Día de salida (disponible)</span>
           </div>
           <div className="d-flex align-items-center">
             <div className="legend-color legend-selected"></div>

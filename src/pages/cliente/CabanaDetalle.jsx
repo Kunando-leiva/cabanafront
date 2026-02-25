@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  Container, Row, Col, Card, Button, Alert, Badge, Carousel, Spinner
+  Container, Row, Col, Card, Button, Alert, Badge, Carousel, Spinner, Overlay, Tooltip
 } from 'react-bootstrap';
 import { 
   FaArrowLeft, FaCalendarAlt, FaUsers, FaMoneyBillWave,
   FaWifi, FaSwimmingPool, FaSnowflake, FaParking, FaTv,
-  FaUtensils, FaBed, FaShower, FaUmbrellaBeach, FaTemperatureHigh
+  FaUtensils, FaBed, FaShower, FaUmbrellaBeach, FaTemperatureHigh, FaQuestionCircle
 } from 'react-icons/fa';
 import { BiFridge } from 'react-icons/bi';
 import { GiElectric } from 'react-icons/gi';
@@ -15,6 +15,7 @@ import axios from 'axios';
 import CalendarFull from '../../components/CalendarFull';
 import { API_URL } from '../../config';
 import { calcularPrecioReserva, formatearPrecioArgentino, getOccupiedDates } from '../../config';
+
 import "./CabanaDetalle.css";
 
 const SERVICIOS = [
@@ -65,6 +66,8 @@ export default function CabanaDetalle() {
 
   const [occupiedDates, setOccupiedDates] = useState([]);
   const [loadingOccupiedDates, setLoadingOccupiedDates] = useState(true);
+   const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipTarget = useRef(null);
 
   const calcularNoches = (start, end) => {
     if (!start || !end || start >= end) return 0;
@@ -511,6 +514,49 @@ export default function CabanaDetalle() {
                   <FaCalendarAlt className="me-2" />
                   Disponibilidad y Reserva
                 </h5>
+
+                <Row className="justify-content-center mb-3">
+                            <Col lg={8} className="text-center">
+                              <div className="d-inline-block position-relative">
+                                {/* Botón wrapper que acepta ref */}
+                                <div ref={tooltipTarget} style={{ display: 'inline-block' }}>
+                                  <Button 
+                                    variant="outline-secondary"
+                                    size="sm"
+                                    className="rounded-pill mb-3"
+                                    style={{ color: 'white' }}
+                                    onClick={() => setShowTooltip(!showTooltip)}
+                                  >
+                                    <FaQuestionCircle className="me-1" />
+                                    ¿Cómo seleccionar fechas?
+                                  </Button>
+                                </div>
+                                
+                                <Overlay 
+                                  target={tooltipTarget.current} 
+                                  show={showTooltip} 
+                                  placement="bottom"
+                                  rootClose
+                                  onHide={() => setShowTooltip(false)}
+                                >
+                                  {(props) => (
+                                    <Tooltip id="date-instructions-tooltip" {...props}>
+                                      <div className="text-start p-2">
+                                        <strong>Instrucciones:</strong>
+                                        <ul className="mb-0 mt-2">
+                                          <li>Primer click: Fecha de inicio</li>
+                                          <li>Segundo click: Fecha de fin</li>
+                                          <li>Click en fecha seleccionada: Cancelar</li>
+                                          <li>Click fuera del rango: Nuevo rango</li>
+                                          <li>Dia en<div className="legend-color legend-checkin"></div>seleccionable solo para check out</li>
+                                        </ul>
+                                      </div>
+                                    </Tooltip>
+                                  )}
+                                </Overlay>
+                              </div>
+                            </Col>
+                          </Row>
                 
                 <div className="mb-3">
   <div className="cabanas-detalle-calendar"> {/* 👈 Nuevo wrapper */}
