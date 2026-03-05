@@ -86,94 +86,109 @@ export default function Reservar() {
   }, [state, isMounted, navigate]);
 
   // Función para mostrar desglose de precios
-  const renderDesglosePrecios = useCallback(() => {
-    if (!reservaData.desglosePrecios || !Array.isArray(reservaData.desglosePrecios) || reservaData.desglosePrecios.length === 0) {
-      return null;
+  // Función para mostrar desglose de precios - VERSIÓN ACTUALIZADA
+const renderDesglosePrecios = useCallback(() => {
+  if (!reservaData.desglosePrecios || !Array.isArray(reservaData.desglosePrecios) || reservaData.desglosePrecios.length === 0) {
+    return null;
+  }
+
+  const resumen = {
+    lunesViernes: { count: 0, total: 0 },
+    sabado: { count: 0, total: 0 },
+    domingo: { count: 0, total: 0 },
+    feriado: { count: 0, total: 0 }
+  };
+
+  reservaData.desglosePrecios.forEach(dia => {
+    if (!dia || !dia.categoria) return;
+    
+    switch(dia.categoria) {
+      case 'Lunes a Viernes':
+        resumen.lunesViernes.count++;
+        resumen.lunesViernes.total += dia.precio || 0;
+        break;
+      case 'Sábado':
+        resumen.sabado.count++;
+        resumen.sabado.total += dia.precio || 0;
+        break;
+      case 'Domingo':
+        resumen.domingo.count++;
+        resumen.domingo.total += dia.precio || 0;
+        break;
+      case 'feriado':
+        resumen.feriado.count++;
+        resumen.feriado.total += dia.precio || 0;
+        break;
+      default:
+        break;
     }
+  });
 
-    const resumen = {
-      semana: { count: 0, total: 0 },
-      finSemana: { count: 0, total: 0 },
-      feriado: { count: 0, total: 0 }
-    };
-
-    reservaData.desglosePrecios.forEach(dia => {
-      if (!dia || !dia.tipo) return;
-      
-      const tipo = dia.tipo.includes('fin de semana') || dia.tipo.includes('finSemana') 
-        ? 'finSemana' 
-        : dia.tipo.includes('feriado') 
-          ? 'feriado' 
-          : 'semana';
-      
-      if (resumen[tipo]) {
-        resumen[tipo].count += 1;
-        resumen[tipo].total += dia.precio || 0;
-      }
-    });
-
-    return (
-      <div className="mt-3 p-3 bg-light rounded">
-        <h6 className="mb-2">
-          <FaTag className="me-2" />
-          Desglose de Precios
-        </h6>
-        <ListGroup variant="flush">
-          {resumen.semana.count > 0 && (
-            <ListGroup.Item
-  className="d-flex justify-content-between align-items-center px-0 py-1"
-  style={{ borderTop: 'none', boxShadow: 'none', backgroundColor: 'transparent' }}>
-              <span>
-                <Badge bg="info" className="me-2">L-V</Badge>
-                {resumen.semana.count} día{resumen.semana.count !== 1 ? 's' : ''} semana
-              </span>
-              <span className="fw-bold">
-                {formatearPrecioArgentino(resumen.semana.total)}
-              </span>
-            </ListGroup.Item>
-          )}
-          {resumen.finSemana.count > 0 && (
-            <ListGroup.Item
-  className="d-flex justify-content-between align-items-center px-0 py-1"
-  style={{ borderTop: 'none', boxShadow: 'none', backgroundColor: 'transparent' }}>
-              <span>
-                <Badge bg="warning" className="me-2">S-D</Badge>
-                {resumen.finSemana.count} fin{resumen.finSemana.count !== 1 ? 'es' : ''} de semana
-              </span>
-              <span className="fw-bold">
-                {formatearPrecioArgentino(resumen.finSemana.total)}
-              </span>
-            </ListGroup.Item>
-          )}
-          {resumen.feriado.count > 0 && (
-            <ListGroup.Item
-  className="d-flex justify-content-between align-items-center px-0 py-1"
-  style={{ borderTop: 'none', boxShadow: 'none', backgroundColor: 'transparent' }}>
-              <span>
-                <Badge bg="danger" className="me-2">F</Badge>
-                {resumen.feriado.count} feriado{resumen.feriado.count !== 1 ? 's' : ''}
-              </span>
-              <span className="fw-bold">
-                {formatearPrecioArgentino(resumen.feriado.total)}
-              </span>
-            </ListGroup.Item>
-          )}
-         <ListGroup.Item
-  className="d-flex justify-content-between align-items-center border-0 px-0 py-1 mt-2 pt-2"
-  style={{ borderTop: 'none', boxShadow: 'none', backgroundColor: 'transparent' }}>
-            <span className="fw-bold">Total {reservaData.noches} noche{reservaData.noches !== 1 ? 's' : ''}:</span>
-            <span className="fs-5 fw-bold text-success">
-              {formatearPrecioArgentino(reservaData.total)}
+  return (
+    <div className="mt-3 p-3 bg-light rounded">
+      <h6 className="mb-2">
+        <FaTag className="me-2" />
+        Desglose de Precios
+      </h6>
+      <ListGroup variant="flush">
+        {resumen.lunesViernes.count > 0 && (
+          <ListGroup.Item className="d-flex justify-content-between align-items-center px-0 py-1 bg-transparent border-0">
+            <span>
+              <Badge bg="info" className="me-2">L-V</Badge>
+              {resumen.lunesViernes.count} noche{resumen.lunesViernes.count !== 1 ? 's' : ''} (Lun-Vie)
+            </span>
+            <span className="fw-bold">
+              {formatearPrecioArgentino(resumen.lunesViernes.total)}
             </span>
           </ListGroup.Item>
-        </ListGroup>
-        
-        <div className="small text-muted mt-2">
-          <div><strong>Tarifas:</strong> Lunes a Jueves: $180.000 - Viernes y Domingo: $200.000 - Sabados: $220.000 - Feriados: $250.000</div>
-        </div>
+        )}
+        {resumen.sabado.count > 0 && (
+          <ListGroup.Item className="d-flex justify-content-between align-items-center px-0 py-1 bg-transparent border-0">
+            <span>
+              <Badge bg="warning" className="me-2">S</Badge>
+              {resumen.sabado.count} noche{resumen.sabado.count !== 1 ? 's' : ''} (Sábado)
+            </span>
+            <span className="fw-bold">
+              {formatearPrecioArgentino(resumen.sabado.total)}
+            </span>
+          </ListGroup.Item>
+        )}
+        {resumen.domingo.count > 0 && (
+          <ListGroup.Item className="d-flex justify-content-between align-items-center px-0 py-1 bg-transparent border-0">
+            <span>
+              <Badge bg="warning" className="me-2">D</Badge>
+              {resumen.domingo.count} noche{resumen.domingo.count !== 1 ? 's' : ''} (Domingo)
+            </span>
+            <span className="fw-bold">
+              {formatearPrecioArgentino(resumen.domingo.total)}
+            </span>
+          </ListGroup.Item>
+        )}
+        {resumen.feriado.count > 0 && (
+          <ListGroup.Item className="d-flex justify-content-between align-items-center px-0 py-1 bg-transparent border-0">
+            <span>
+              <Badge bg="danger" className="me-2">F</Badge>
+              {resumen.feriado.count} noche{resumen.feriado.count !== 1 ? 's' : ''} (Feriado)
+            </span>
+            <span className="fw-bold">
+              {formatearPrecioArgentino(resumen.feriado.total)}
+            </span>
+          </ListGroup.Item>
+        )}
+        <ListGroup.Item className="d-flex justify-content-between align-items-center border-0 px-0 py-1 mt-2 pt-2 bg-transparent">
+          <span className="fw-bold">Total {reservaData.noches} noche{reservaData.noches !== 1 ? 's' : ''}:</span>
+          <span className="fs-5 fw-bold text-success">
+            {formatearPrecioArgentino(reservaData.total)}
+          </span>
+        </ListGroup.Item>
+      </ListGroup>
+      
+      <div className="small text-muted mt-2">
+        <div><strong>Tarifas:</strong> Lunes a Viernes: $150.000 - Sábados y Domingos: $210.000 - Feriados: $300.000</div>
       </div>
-    );
-  }, [reservaData.desglosePrecios, reservaData.noches, reservaData.total]);
+    </div>
+  );
+}, [reservaData.desglosePrecios, reservaData.noches, reservaData.total]);
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
