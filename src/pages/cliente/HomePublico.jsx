@@ -1016,137 +1016,137 @@ export default function HomePublico() {
         </Container>
       </section>
 
-      {/* Buscador de disponibilidad */}
-      <section className="py-4" style={{ backgroundColor: "#333" }}>
-        <Container>
-          <h3 className="text-center mb-4 fw-bold" style={{ color: "#ffffff" }}>
-            <FaCalendarAlt className="me-2" />
-            Consultar disponibilidad
-          </h3>
+     {/* Buscador de disponibilidad - SOLO MODIFICAR ESTA PARTE */}
+<section className="py-4" style={{ backgroundColor: "#333" }}>
+  <Container>
+    <h3 className="text-center mb-4 fw-bold" style={{ color: "#ffffff" }}>
+      <FaCalendarAlt className="me-2" />
+      Consultar disponibilidad
+    </h3>
 
-          <Row className="justify-content-center mb-3">
-            <Col lg={8} className="text-center">
-              <div className="d-inline-block position-relative">
-                {/* Botón wrapper que acepta ref */}
-                <div ref={tooltipTarget} style={{ display: 'inline-block' }}>
-                  <Button 
-                    variant="outline-secondary"
-                    size="sm"
-                    className="rounded-pill mb-3"
-                    style={{ color: 'white' }}
-                    onClick={() => setShowTooltip(!showTooltip)}
-                  >
-                    <FaQuestionCircle className="me-1" />
-                    ¿Cómo seleccionar fechas?
-                  </Button>
+    <Row className="justify-content-center mb-3">
+      <Col lg={8} className="text-center">
+        <div className="d-inline-block position-relative">
+          <div ref={tooltipTarget} style={{ display: 'inline-block' }}>
+            <Button 
+              variant="outline-secondary"
+              size="sm"
+              className="rounded-pill mb-3"
+              style={{ color: 'white' }}
+              onClick={() => setShowTooltip(!showTooltip)}
+            >
+              <FaQuestionCircle className="me-1" />
+              ¿Cómo seleccionar fechas?
+            </Button>
+          </div>
+          
+          <Overlay 
+            target={tooltipTarget.current} 
+            show={showTooltip} 
+            placement="bottom"
+            rootClose
+            onHide={() => setShowTooltip(false)}
+          >
+            {(props) => (
+              <Tooltip id="date-instructions-tooltip" {...props}>
+                <div className="text-start p-2">
+                  <strong>Instrucciones:</strong>
+                  <ul className="mb-0 mt-2">
+                    <li>Primer click: Fecha de inicio</li>
+                    <li>Segundo click: Fecha de fin</li>
+                    <li>Click en fecha seleccionada: Cancelar</li>
+                    <li>Click fuera del rango: Nuevo rango</li>
+                  </ul>
                 </div>
-                
-                <Overlay 
-                  target={tooltipTarget.current} 
-                  show={showTooltip} 
-                  placement="bottom"
-                  rootClose
-                  onHide={() => setShowTooltip(false)}
-                >
-                  {(props) => (
-                    <Tooltip id="date-instructions-tooltip" {...props}>
-                      <div className="text-start p-2">
-                        <strong>Instrucciones:</strong>
-                        <ul className="mb-0 mt-2">
-                          <li>Primer click: Fecha de inicio</li>
-                          <li>Segundo click: Fecha de fin</li>
-                          <li>Click en fecha seleccionada: Cancelar</li>
-                          <li>Click fuera del rango: Nuevo rango</li>
-                        </ul>
-                      </div>
-                    </Tooltip>
-                  )}
-                </Overlay>
+              </Tooltip>
+            )}
+          </Overlay>
+        </div>
+      </Col>
+    </Row>
+    
+    <Row className="justify-content-center mb-3">
+      <Col lg={8}>
+        <CalendarFull 
+          onDatesSelected={handleDatesSelected}
+          showInline={true}
+          showTotal={false}
+          key="calendar-home"
+          modo="global"
+          allowSelectOccupied={true} // 👈 PERMITE SELECCIONAR FECHAS OCUPADAS
+        />
+      </Col>
+    </Row>
+    
+    {dateRange.start && dateRange.end && (
+      <Row className="justify-content-center mb-3">
+        <Col md={8} className="text-center">
+          <Alert variant="info" className="py-2">
+            <div className="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>Fechas seleccionadas:</strong>
+                <div className="small">
+                  {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
+                </div>
               </div>
-            </Col>
-          </Row>
-          
-          <Row className="justify-content-center mb-3">
-            <Col lg={8}>
-              <CalendarFull 
-                onDatesSelected={handleDatesSelected}
-                showInline={true}
-                showTotal={false}
-                key="calendar-home"
-                modo="global"
-              />
-            </Col>
-          </Row>
-          
-          {dateRange.start && dateRange.end && (
-            <Row className="justify-content-center mb-3">
-              <Col md={8} className="text-center">
-                <Alert variant="info" className="py-2">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div>
-                      <strong>Fechas seleccionadas:</strong>
-                      <div className="small">
-                        {formatDate(dateRange.start)} al {formatDate(dateRange.end)}
-                      </div>
-                    </div>
-                    <div className="text-end">
-                      <strong>Noches:</strong>
-                      <div className="small">
-                        {calcularNoches(dateRange.start, dateRange.end)} noche{calcularNoches(dateRange.start, dateRange.end) !== 1 ? 's' : ''}
-                      </div>
-                    </div>
-                  </div>
-                </Alert>
-              </Col>
-            </Row>
+              <div className="text-end">
+                <strong>Noches:</strong>
+                <div className="small">
+                  {calcularNoches(dateRange.start, dateRange.end)} noche{calcularNoches(dateRange.start, dateRange.end) !== 1 ? 's' : ''}
+                </div>
+              </div>
+            </div>
+          </Alert>
+        </Col>
+      </Row>
+    )}
+    
+    <Row className="justify-content-center">
+      <Col md={4} className="text-center">
+        <Button 
+          variant="primary" 
+          onClick={handleSearchAvailability}
+          disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
+          type="button"
+          style={{
+            fontWeight: 500,
+            backgroundColor: '#eaac25',
+            borderColor: '#eaac25',
+            padding: '10px 30px',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          {searchStatus.loading ? (
+            <>
+              <div className="spinner-grow spinner-grow-sm me-2"></div>
+              Buscando...
+            </>
+          ) : (
+            <>
+              <FaSearch className="me-2" />
+              Buscar disponibilidad
+            </>
           )}
-          
-          <Row className="justify-content-center">
-            <Col md={4} className="text-center">
-              <Button 
-                variant="primary" 
-                onClick={handleSearchAvailability}
-                disabled={searchStatus.loading || !dateRange.start || !dateRange.end}
-                type="button"
-                style={{
-                  fontWeight: 500,
-                  backgroundColor: '#eaac25',
-                  borderColor: '#eaac25',
-                  padding: '10px 30px',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                {searchStatus.loading ? (
-                  <>
-                    <div className="spinner-grow spinner-grow-sm me-2"></div>
-                    Buscando...
-                  </>
-                ) : (
-                  <>
-                    <FaSearch className="me-2" />
-                    Buscar disponibilidad
-                  </>
-                )}
-              </Button>
-            </Col>
-          </Row>
-          
-          {searchStatus.error && (
-            <Row className="justify-content-center mt-3">
-              <Col md={8}>
-                <Alert 
-                  variant="danger" 
-                  className="text-center"
-                  dismissible
-                  onClose={() => setSearchStatus(prev => ({ ...prev, error: null }))}
-                >
-                  {searchStatus.error}
-                </Alert>
-              </Col>
-            </Row>
-          )}
-        </Container>
-      </section>
+        </Button>
+      </Col>
+    </Row>
+    
+    {searchStatus.error && (
+      <Row className="justify-content-center mt-3">
+        <Col md={8}>
+          <Alert 
+            variant="danger" 
+            className="text-center"
+            dismissible
+            onClose={() => setSearchStatus(prev => ({ ...prev, error: null }))}
+          >
+            {searchStatus.error}
+          </Alert>
+        </Col>
+      </Row>
+    )}
+  </Container>
+</section>
 
       {/* Resultados de búsqueda */}
       {searchStatus.searched && (

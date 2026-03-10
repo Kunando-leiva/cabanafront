@@ -383,17 +383,6 @@ Comentarios: ${state?.comentarios || 'Ninguno'}`;
                   </Row>
                 </Alert>
 
-                {/* Tarifas de referencia */}
-                <Alert variant="light" className="text-center border-0 p-3 rounded-4" style={{ backgroundColor: '#f8f9fa' }}>
-                  <h6 className="mb-2 text-muted">Tarifas vigentes</h6>
-                  <div className="d-flex flex-wrap justify-content-center gap-2 gap-md-3 tarifas-container">
-                    <Badge bg="secondary" className="p-2 rounded-3">Lunes a Jueves: $180.000</Badge>
-                    <Badge bg="info" className="p-2 rounded-3">Viernes y Domingo: $200.000</Badge>
-                    <Badge bg="warning" className="p-2 rounded-3 text-dark">Sábados: $220.000</Badge>
-                    <Badge bg="danger" className="p-2 rounded-3">Feriados: $250.000</Badge>
-                  </div>
-                </Alert>
-
                 {/* Botones de contacto */}
                 <div className="text-center mt-4 mt-md-5 mb-4">
                   <h4 className="mb-3 mb-md-4 h5 h4-md fw-semibold">Contactanos para confirmar tu reserva</h4>
