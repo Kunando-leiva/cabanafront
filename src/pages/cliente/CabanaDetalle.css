@@ -393,3 +393,12 @@ html, body {
   background-color: #c82333 !important;
   color: white !important;
 }
+
+/* Estilo para el precio en h2 */
+.cabanas-detalle .precio-destacado {
+    color: #eaac25 !important;
+    font-size: inherit;
+    margin: 0;
+    display: inline;
+    font-weight: bold;
+}

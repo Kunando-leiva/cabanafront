@@ -498,11 +498,13 @@ export default function CabanaDetalle() {
                       <FaMoneyBillWave className="text-success me-3 fs-4" />
                       <div>
                         <small className="text-muted">Precio por noche desde</small>
-                        <div className="fs-5">
-                          <strong style={{ color: '#eaac25' }}>
-                            {formatearPrecioArgentino(cabana.precio || 0)}
-                          </strong>
-                        </div>
+                      <div className="fs-5">
+                        <strong style={{ color: '#eaac25' }}>
+                          <h2 className="precio-destacado">
+                            $150.000
+                          </h2>
+                        </strong>
+                      </div>                      
                       </div>
                     </div>
                   </Col>
